@@ -125,6 +125,14 @@ details.card summary{min-height:48px}
 .tut-link{min-height:48px;padding:4px 8px}
 .save-warning button{min-width:48px;min-height:48px}
 .tabs .tab{min-height:48px}
+/* ===== UX Fase 1: balão do tutorial não tapa o destaque; instrução sempre visível ===== */
+.tut-box:not(.tut-mini){display:flex;flex-direction:column;overflow:hidden}
+.tut-box[hidden]{display:none!important}
+.tut-box:not(.tut-mini) .tut-text{overflow:auto;min-height:0;flex:1 1 auto;overscroll-behavior:contain}
+.tut-box .tut-head,.tut-box h3,.tut-cta,.tut-box .tut-warn,.tut-box .tut-actions{flex:0 0 auto}
+.tut-box.more .tut-text{-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.tut-cta{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(244,189,80,.12);border-left:3px solid #f4bd50;font-size:14px;line-height:1.4}
+@media (max-width:640px){.tut-box{padding:10px 12px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}.tut-box h3{font-size:16px;margin:4px 0}.tut-text{font-size:13.5px;line-height:1.45}.tut-actions{margin-top:8px}}
 </style>
 </head>
 <body>
@@ -2358,10 +2366,10 @@ init();
  const STEPS=[
   {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`Você (verde) e uma IA disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
   {t:"Orçamento e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>receita</strong>: cada território rende, e a infraestrutura e a tecnologia somam mais. O <strong>orçamento</strong> é o que pode investir agora.`},
-  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três investimentos:<br>⚔ <strong>Militar</strong>: poder de ataque já na próxima era (perde 20% por era).<br>▰ <strong>Infraestrutura</strong>: rende em médio prazo e depois acaba.<br>✦ <strong>Tecnologia</strong>: rende tarde, mas para sempre.<br><br>👉 Para atacar na próxima era precisa de pelo menos ${fmt(needMil(),0)} u. no militar. <strong>Clique no plano “Ataque”.</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
-  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Os investimentos ficam definidos. 👉 <strong>Clique em “Concluir a era”.</strong> As IAs jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
+  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três investimentos:<br>⚔ <strong>Militar</strong>: poder de ataque já na próxima era (perde 20% por era).<br>▰ <strong>Infraestrutura</strong>: rende em médio prazo e depois acaba.<br>✦ <strong>Tecnologia</strong>: rende tarde, mas para sempre.<br><br>👉 Para atacar na próxima era precisa de pelo menos ${fmt(needMil(),0)} u. no militar. <strong>Toque no plano “Ataque”.</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
+  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Os investimentos ficam definidos. 👉 <strong>Toque em “Concluir a era”.</strong> As IAs jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
   {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo (livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Pode dar várias ordens por era, mas cada ataque adicional custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque no território ${TARGET+1} e depois em “Dar ordem”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
-  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> resolvem-se juntas no fim da era, numa ordem sorteada. Se dois mirarem o mesmo território há <strong>batalha</strong> — vence a maior força (poder militar + tecnologia).<br><br>👉 <strong>Clique em “Concluir a era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
+  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> resolvem-se juntas no fim da era, numa ordem sorteada. Se dois mirarem o mesmo território há <strong>batalha</strong> — vence a maior força (poder militar + tecnologia).<br><br>👉 <strong>Toque em “Concluir a era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
   {t:"Conquista!",target:()=>card(5),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui também vê quantos faltam para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
   {t:"A infraestrutura rende",target:()=>card(3),html:()=>`A <strong>receita da era</strong> mostra de onde vem o dinheiro: territórios, infraestrutura e tecnologia. A infraestrutura cresce até à 4.ª era de cada investimento e depois vai acabando — reinvista para mantê-la.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
   {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`A IA atacou o seu território ${state.tutorial.attackIdx+1} e <strong>foi repelida</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem poder suficiente, os seus territórios vizinhos deles são alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com a sua infraestrutura e tecnologia — o atacante tem de pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde algum poder militar e não deixe a economia parada.`},
@@ -2406,13 +2414,36 @@ init();
   const tu=cur();clearFocus();if(!tu||!$("homeScreen").hidden||state.result){box.hidden=true;return}
   if(tu.waitEra&&state.era<tu.waitEra){box.hidden=false;box.className="tut-box tut-mini";box.innerHTML=`<span>🎓 Tutorial: continue jogando — volta na era ${tu.waitEra}.</span><button type="button" data-tut="skip" class="tut-link">Sair</button>`;bind();return}
   const st=STEPS[tu.step];if(!st){endTutorial(false);return}
-  const el=st.target();if(el){focused=el;el.classList.add("tut-focus");if(scrolledStep!==tu.step){scrolledStep=tu.step;el.scrollIntoView({block:"center",behavior:"smooth"})}}
+  const el=st.target();if(el){focused=el;el.classList.add("tut-focus");if(scrolledStep!==tu.step){scrolledStep=tu.step;const tall=el.getBoundingClientRect().height>innerHeight*0.55;el.scrollIntoView({block:tall?"start":"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}}
   box.hidden=false;box.className="tut-box";
   // Em ecrãs largos, o balão fica do lado oposto ao elemento destacado para não o tapar.
   if(window.innerWidth>640&&el){const r=el.getBoundingClientRect(),right=r.left+r.width/2>window.innerWidth/2;box.style.left=right?"16px":"auto";box.style.right=right?"auto":"16px"}else{box.style.left="";box.style.right=""}
-  box.innerHTML=`<div class="tut-head"><span class="pill">Tutorial ${tu.step+1}/${STEPS.length}</span><button type="button" data-tut="skip" class="tut-link">Pular tutorial</button></div><h3>${st.t}</h3><div class="tut-text">${st.html()}</div>${msg?`<div class="tut-warn">${msg}</div>`:""}<div class="tut-actions">${st.action?'<span class="small muted">Faça a ação indicada para continuar.</span>':`<button type="button" class="primary" data-tut="next">${st.last?"Terminar tutorial":"Próximo →"}</button>`}</div>`;
-  bind();
+  // A instrução de ação (👉 ...) fica sempre visível por baixo do texto, que rola dentro do balão se for longo.
+  const full=st.html(),k=full.indexOf("👉"),body=(k>=0?full.slice(0,k):full).replace(/(<br>\s*)+$/,""),cta=k>=0?full.slice(k):"";
+  box.innerHTML=`<div class="tut-head"><span class="pill">Tutorial ${tu.step+1}/${STEPS.length}</span><button type="button" data-tut="skip" class="tut-link">Pular tutorial</button></div><h3>${st.t}</h3><div class="tut-text">${body}</div>${cta?`<div class="tut-cta">${cta}</div>`:""}${msg?`<div class="tut-warn">${msg}</div>`:""}${st.action&&cta?"":`<div class="tut-actions">${st.action?'<span class="small muted">Faça a ação indicada para continuar.</span>':`<button type="button" class="primary" data-tut="next">${st.last?"Terminar tutorial":"Próximo →"}</button>`}</div>`}`;
+  bind();place();
  }
+ // Telemóvel (≤ 640 px): o balão fica acima ou abaixo do elemento destacado, do lado com mais espaço,
+ // e nunca por cima da barra fixa de baixo. Se o elemento ocupar a tela toda, o balão fica em baixo.
+ const safeProbe=document.createElement("div");safeProbe.style.cssText="position:fixed;left:0;top:env(safe-area-inset-top,0px);width:0;height:0;visibility:hidden;pointer-events:none";document.body.appendChild(safeProbe);
+ // Texto mais comprido que o balão: esbate o fim para mostrar que dá para rolar.
+ const markMore=()=>{const tt=box.querySelector(".tut-text");box.classList.toggle("more",!!tt&&tt.scrollHeight>tt.clientHeight+2&&tt.scrollTop+tt.clientHeight<tt.scrollHeight-2)};
+ box.addEventListener("scroll",markMore,true);
+ function place(){requestAnimationFrame(markMore);
+  const reset=()=>{box.style.top="";box.style.bottom="";box.style.maxHeight=""};
+  if(box.hidden||box.classList.contains("tut-mini")||!focused||window.innerWidth>640){reset();return}
+  const vh=innerHeight,gap=10,minH=170,r=focused.getBoundingClientRect(),bar=document.querySelector(".actionbar");
+  const sTop=safeProbe.getBoundingClientRect().top+8,barTop=bar&&bar.offsetParent?Math.min(vh,bar.getBoundingClientRect().top):vh;
+  const inBar=bar&&bar.contains(focused),limitBot=inBar?vh:barTop;
+  const visTop=Math.max(sTop,r.top),visBot=Math.min(limitBot,r.bottom);
+  const above=visTop-gap-sTop,below=inBar?-1:barTop-8-(visBot+gap);
+  if(below>=minH&&below>=above){box.style.top=(visBot+gap)+"px";box.style.bottom="auto";box.style.maxHeight=below+"px";return}
+  if(above>=minH){box.style.top="auto";box.style.bottom=(vh-visTop+gap)+"px";box.style.maxHeight=above+"px";return}
+  // Sem espaço livre suficiente (elemento grande): balão em baixo, por cima da barra, ocupando no máximo 45% da tela.
+  box.style.top="auto";box.style.bottom=(vh-barTop+8)+"px";box.style.maxHeight=Math.round(Math.min(vh*0.45,barTop-sTop-8))+"px";
+ }
+ let placeQueued=false;const queuePlace=()=>{if(placeQueued)return;placeQueued=true;requestAnimationFrame(()=>{placeQueued=false;place()})};
+ window.addEventListener("scroll",queuePlace,{passive:true});window.addEventListener("resize",queuePlace);
  function bind(){box.querySelectorAll("[data-tut]").forEach(b=>b.onclick=()=>{
   if(b.dataset.tut==="skip"){endTutorial(true);return}
   const tu=cur(),st=STEPS[tu.step];st.after?.();if(st.last){endTutorial(false);return}tu.step++;saveGame();enterStep()})}

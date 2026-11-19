@@ -55,7 +55,7 @@ Para uma verificação rápida só das regras (uns 3 segundos): `npm run test:ra
 | `tests/difficulty.test.js` | Valores de uma dificuldade não "vazam" para outra nem para "Configurações"; o tutorial não grava as suas escolhas (Fácil, 1 IA, 30 eras) nas do jogador. |
 | `tests/player-version.test.js` | Sem `?dev=1` não aparece nada de laboratórios/Exportar/"Versão completa"; com `?dev=1` aparece tudo. |
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Ver `tests/README.md`. |
-| `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. |
+| `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**
 

@@ -1,7 +1,7 @@
-// BUGS CONHECIDOS — testes que descrevem o comportamento CORRETO e que hoje falham.
-// Estão marcados com test.todo: aparecem no relatório como "# TODO" e não quebram `npm test`.
-// Não corrigimos regras de jogo aqui; quando o bug for corrigido, o teste passa a "ok # TODO"
-// e deve ser movido para o ficheiro normal correspondente (sem o test.todo).
+// BUGS CONHECIDOS — testes que descrevem o comportamento CORRETO e que hoje falham ficam marcados com
+// test.todo ("BUG: ..."): aparecem no relatório como "# TODO" e não quebram `npm test`.
+// Quando o bug é corrigido, o teste perde o test.todo e passa a ser um teste normal.
+// Hoje não há bugs conhecidos em aberto: os testes abaixo são de bugs já corrigidos (proteção contra regressão).
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -23,10 +23,10 @@ const focusVisibility = (page) =>
     return { target: f.id || f.className, height: Math.round(a.height), uncovered: Math.round(vis - cover) };
   });
 
-// No Pixel 7 já está correto: fica como teste normal (proteção contra regressão).
+// Corrigido na Fase 1 de UX (o balão fica do lado com mais espaço): era test.todo "BUG:" no Galaxy S9+ e 360x640.
+// Agora é teste normal nos 3 celulares (proteção contra regressão).
 for (const [name, opts] of MOBILE_SCREENS) {
-  const t = name === "Pixel 7" ? test : test.todo;
-  t(`${name === "Pixel 7" ? "" : "BUG: "}tutorial — o balão não pode tapar o elemento destacado no celular (${name})`, async () => {
+  test(`tutorial — o balão não pode tapar o elemento destacado no celular (${name})`, async () => {
     const { context, page, errors } = await openGame(browser, { contextOptions: opts, offerTutorial: true });
     const problems = [];
     await playTutorial(page, {
@@ -38,6 +38,11 @@ for (const [name, opts] of MOBILE_SCREENS) {
           problems.push(`passo ${n} (${v.target}): só ${v.uncovered}px de ${v.height}px visíveis`);
           await screenshot(page, `BUG-tutorial-${name}-passo${n}`);
         }
+        // A instrução de ação (👉) fica sempre visível dentro do balão, sem precisar rolar o texto.
+        const cta = await page.evaluate(() => { const c = document.querySelector("#tutBox .tut-cta"), bx = document.getElementById("tutBox"); if (!c) return null; const a = c.getBoundingClientRect(), b = bx.getBoundingClientRect(); return { inside: a.top >= b.top - 1 && a.bottom <= b.bottom + 1 && a.height > 0, text: c.innerText }; });
+        if (cta && !cta.inside) problems.push(`passo ${n}: instrução cortada no balão (${cta.text.slice(0, 40)}…)`);
+        const txt = await page.evaluate(() => document.getElementById("tutBox").innerText);
+        if (/\bClique\b/.test(txt)) problems.push(`passo ${n}: texto diz "Clique" (no celular é "Toque")`);
       },
     });
     assert.deepEqual(errors, []);
