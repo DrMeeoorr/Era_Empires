@@ -63,6 +63,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 .tut-focus{outline:3px solid #f4bd50!important;outline-offset:4px;border-radius:14px;animation:tutPulse 1.6s ease-in-out infinite}
 @keyframes tutPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,189,80,.45)}50%{box-shadow:0 0 0 10px rgba(244,189,80,0)}}
 @media (prefers-reduced-motion:reduce){.tut-focus{animation:none}}
+.save-warning{position:fixed;left:8px;right:8px;top:8px;z-index:1500;display:flex;gap:10px;align-items:flex-start;background:#3a1820;color:var(--text);border:1px solid var(--red);border-radius:10px;padding:10px 12px;font-size:14px;box-shadow:0 6px 20px #0008}.save-warning[hidden]{display:none}.save-warning button{flex:none;min-width:36px;min-height:36px}
 .tut-box{position:fixed;z-index:60;right:16px;bottom:92px;width:min(380px,calc(100vw - 32px));background:#111c30;border:1px solid #f4bd50;border-radius:16px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.55);color:#e8eef8;max-height:min(60vh,520px);overflow:auto}
 .tut-box h3{margin:6px 0 6px;font-size:17px}.tut-text{font-size:14px;line-height:1.5}
 .tut-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -1042,13 +1043,77 @@ function profileLabel(c,reveal=false){if(c.id==="player")return "";if(c.hiddenPr
 function playEra(allocation){const row=finishEra(state,configApplied,{playerAllocation:allocation});if(!state.result)beginEra(state,configApplied);saveGame();return row}
 
 /* ── Guardar a partida no navegador ── */
-const SAVE_KEY="imperios-completo-partida";
-function saveGame(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty}))}catch(e){}}
-function loadSavedGame(){
- try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;const o=JSON.parse(raw);
-  if(o.v!==1||!o.state||!Array.isArray(o.state.civs)||!Array.isArray(o.state.owners))return null;
-  return {config:normalizeConfig(o.config),state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty:DIFFICULTIES[o.difficulty]?o.difficulty:null};
- }catch(e){return null}
+const SAVE_KEY="imperios-completo-partida", SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";
+// Grava a partida. Se o navegador recusar (espaço cheio, armazenamento bloqueado), avisa o jogador
+// com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
+let saveFailed=false;
+function saveGame(){
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty}));if(saveFailed){saveFailed=false;showSaveWarning(null)}return true}
+ catch(e){saveFailed=true;showSaveWarning(e);return false}
+}
+function showSaveWarning(err){
+ if(typeof document==="undefined")return;let el=document.getElementById("saveWarning");
+ if(!err){if(el)el.hidden=true;return}
+ if(!el){el=document.createElement("div");el.id="saveWarning";el.className="save-warning";el.setAttribute("role","alert");document.body.appendChild(el)}
+ const full=err&&(err.name==="QuotaExceededError"||err.code===22);
+ el.innerHTML=`<span>⚠ <strong>Não foi possível salvar a partida.</strong> ${full?"O espaço de armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se fechar o jogo agora, o progresso desde o último salvamento pode perder-se.</span><button type="button" aria-label="Fechar aviso">✕</button>`;
+ el.querySelector("button").onclick=()=>{el.hidden=true};el.hidden=false;
+}
+// Valida a estrutura de um estado salvo antes de o usar. Devolve null se estiver bem, ou o motivo.
+function validateSavedState(st){
+ const isInt=Number.isInteger,fin=Number.isFinite,obj=v=>!!v&&typeof v==="object"&&!Array.isArray(v),arr=Array.isArray;
+ if(!obj(st))return "estado ausente";
+ if(st.formatVersion!==undefined&&!SUPPORTED_VERSIONS.includes(st.formatVersion))return "versão do formato não suportada: "+st.formatVersion;
+ if(!arr(st.civs)||st.civs.length<2||st.civs.length>MAX_AI+1)return "lista de civilizações inválida";
+ const ids=new Set();
+ for(const c of st.civs){
+  if(!obj(c)||typeof c.id!=="string"||!c.id||c.id==="neutral"||ids.has(c.id))return "civilização sem identificador válido";ids.add(c.id);
+  if(typeof c.name!=="string")return "civilização sem nome";
+  if(!fin(c.treasury)||!fin(c.military))return "tesouro/poder militar inválido ("+c.id+")";
+  for(const k of ["color","chartColor"])if(c[k]!==undefined&&typeof c[k]!=="string")return "cor inválida";
+  for(const k of ["invested","attacks","lastRevenue"])if(c[k]!==undefined&&!obj(c[k]))return "dados da civilização inválidos";
+ }
+ if(st.civs[0].id!=="player")return "o jogador não é a primeira civilização";
+ if(!arr(st.owners)||st.owners.length<4||st.owners.length>30)return "mapa inválido";
+ if(st.owners.some(o=>o!=="neutral"&&!ids.has(o)))return "território com dono desconhecido";
+ if(!isInt(st.era)||st.era<0||!isInt(st.maxEras)||st.maxEras<1)return "era inválida";
+ for(const k of ["investments","history","timeline","log"])if(!arr(st[k]))return "lista "+k+" ausente";
+ if(st.orders!==undefined&&!arr(st.orders))return "ordens inválidas";
+ for(const inv of st.investments)if(!obj(inv)||!["military","infrastructure","technology"].includes(inv.type)||!ids.has(inv.owner)||!isInt(inv.origin)||!fin(inv.amount)||!obj(inv.params))return "investimento inválido";
+ for(const o of st.orders||[])if(!obj(o)||!ids.has(o.owner)||!isInt(o.idx)||o.idx<0||o.idx>=st.owners.length)return "ordem inválida";
+ for(const e of st.log)if(!obj(e)||!fin(e.era)||typeof e.text!=="string")return "registo de eventos inválido";
+ for(const r of st.history)if(!obj(r)||!fin(r.era))return "histórico inválido";
+ for(const e of st.timeline)if(!obj(e)||!fin(e.era)||!arr(e.civs))return "linha do tempo inválida";
+ if(st.result!=null&&(!obj(st.result)||!arr(st.result.winners)))return "resultado inválido";
+ if(st.pending!=null&&!obj(st.pending))return "era em curso inválida";
+ if(st.tutorial!=null&&!obj(st.tutorial))return "tutorial inválido";
+ return null;
+}
+// Lê o save: {status:"none"} (não há), {status:"ok",game} ou {status:"invalid",raw,reason}.
+function readSavedGame(){
+ let raw=null;try{raw=localStorage.getItem(SAVE_KEY)}catch(e){return {status:"none"}}
+ if(!raw)return {status:"none"};
+ try{const o=JSON.parse(raw);
+  if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
+  const why=validateSavedState(o.state);if(why)return {status:"invalid",raw,reason:why};
+  return {status:"ok",game:{config:normalizeConfig(o.config),state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty:DIFFICULTIES[o.difficulty]?o.difficulty:null}};
+ }catch(e){return {status:"invalid",raw,reason:e.message||String(e)}}
+}
+function loadSavedGame(){const r=readSavedGame();return r.status==="ok"?r.game:null}
+// Save que não pode ser usado: guarda uma cópia noutra chave (para análise) e tira-o do caminho,
+// para o jogo não voltar a quebrar sempre que for aberto.
+function quarantineSave(raw){try{localStorage.setItem(SAVE_CORRUPT_KEY,raw)}catch(e){}try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+let savedGameLoaded=false,saveProblem=null;
+function noticeBrokenSave(){setTimeout(()=>showModal(`<h2>Não foi possível continuar a partida salva</h2><p class="small muted">Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Começou uma partida nova; uma cópia dos dados antigos foi guardada à parte.</p>`,[{label:"Entendi",cls:"primary"}]),350)}
+// Primeiro desenho com um save carregado: se falhar, o save é posto de lado e começa uma partida nova.
+function renderSavedSafely(render){
+ try{render()}catch(e){
+  if(!savedGameLoaded)throw e;
+  savedGameLoaded=false;try{quarantineSave(localStorage.getItem(SAVE_KEY)||JSON.stringify({v:1,state}))}catch(_){}
+  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty="config";opponentChoices=["config","config","config"];selectedTerritory=null;state=newGame();
+  if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
+  render();
+ }
 }
 const civLabel=c=>c.id==="player"?"Você":escapeHtml(c.name);
 
@@ -2003,9 +2068,10 @@ function setupValLab(){
  $("exportVal").onclick=exportValidation;$("valChartPick").onchange=drawValChart;
 }
 function init(){
- const saved=loadSavedGame();
- if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty}else state=newGame();
- renderParams();renderAll();
+ const read=readSavedGame(),saved=read.status==="ok"?read.game:null;
+ if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
+ if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;savedGameLoaded=true}else state=newGame();
+ renderSavedSafely(()=>{renderParams();renderAll()});
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
   const input=$(k+"Spend");
@@ -2143,7 +2209,7 @@ init();
   const top=PTS(lv[0].score),prev=state.timeline.length>1?(()=>{const e=state.timeline.at(-2);const sc=finalScores(e.civs.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied);const m={};e.civs.forEach((r,k)=>m[r.id]=PTS(sc[k].score));return m})():{};
   strip.innerHTML=`<span class="score-title" title="Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; militar, infraestrutura, tecnologia e saldo 15% cada. 1000 pontos = desempenho de referência.">🏆 Placar <span class="muted">(?)</span></span>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
    return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span> ${x.id==="player"?"Você":escapeHtml(x.name)} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
- renderAll();
+ renderSavedSafely(renderAll);
 })();
 
 /* ── Tutorial: partida guiada (1 IA, roteiro controlado; depois jogo livre no Fácil) ──
