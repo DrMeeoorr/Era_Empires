@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="color-scheme" content="dark">
+<!-- Versão de DESENVOLVIMENTO: o jogo e os laboratórios. É a fonte do index.html (versão do jogador), gerado com
+     `npm run build:jogador`, que tira tudo o que tem a classe dev-only e troca labs.css/main-dev.js. -->
+<title>Impérios — MVP estratégico por eras</title>
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/game.css">
+<link rel="stylesheet" href="styles/labs.css">
+</head>
+<body>
+<div id="modalRoot"></div>
+<section class="home-screen" id="homeScreen" aria-label="Tela inicial de Impérios">
+  <div class="home-shell">
+    <div class="home-top">
+      <div class="home-brand"><div class="home-mark" aria-hidden="true">I</div><div><div class="home-brand-title">IMPÉRIOS</div><div class="small muted">Economia das eras</div></div></div>
+      <span class="home-version">MVP · estratégia por eras</span>
+    </div>
+    <div class="home-hero">
+      <div>
+        <div class="home-kicker">Cada era muda o futuro</div>
+        <h1 class="home-title">Construa seu legado.<br><em>Domine as eras.</em></h1>
+        <p class="home-lede">Equilibre Militar, Obras e Ciência. Expanda seu território, antecipe os rivais controlados pela IA e descubra qual estratégia sustenta seu império.</p>
+        <div class="home-actions">
+          <button type="button" class="home-primary" id="homeStart">Nova partida <span aria-hidden="true">→</span></button>
+          <button type="button" class="home-secondary" id="homeHowTo">Como jogar</button>
+          <button type="button" class="home-secondary hidden" id="homeContinue">Continuar partida</button>
+          <button type="button" class="home-secondary dev-only" id="homeCompare">Balanceamento</button>
+          <button type="button" class="home-secondary dev-only" id="homeLab">Configurações</button>
+        </div>
+      </div>
+      <div class="home-art" aria-label="Ilustração conceitual de um mapa com territórios próprios, rivais e neutros">
+        <div class="home-map-label"><span>FRONTEIRA DO IMPÉRIO</span><span>ERA 01</span></div>
+        <div class="home-map" aria-hidden="true">
+          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile p">I</div><div class="home-tile p">II</div><div class="home-tile n">·</div>
+          <div class="home-tile n">·</div><div class="home-tile p">III</div><div class="home-tile p glow">IV</div><div class="home-tile e">V</div><div class="home-tile n">·</div>
+          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile p">VI</div><div class="home-tile e">VII</div><div class="home-tile e">VIII</div>
+          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile e">IX</div><div class="home-tile n">·</div>
+        </div>
+        <div class="home-art-caption"><div><strong>Uma escolha por era.</strong><br><span>Investir · expandir · adaptar</span></div><span class="gold">◆ Estratégia</span></div>
+      </div>
+    </div>
+    <div class="home-features">
+      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">⚔️</div><strong>Dispute o território</strong><p>Conquiste regiões livres, enfrente os rivais e veja quanto custa cada conquista.</p></div>
+      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">▥</div><strong>Planeje seus investimentos</strong><p>Escolha entre Força imediata, ouro das Obras por algumas eras e Ciência que rende para sempre.</p></div>
+      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">⌁</div><strong>Escolha seus rivais</strong><p>Até 3 rivais, cada um com seu estilo: agressivo, militar, científico, construtor…</p></div>
+    </div>
+    <div class="home-footer"><span>Funciona offline · sem instalação · sua partida fica salva neste navegador</span></div>
+  </div>
+</section>
+
+<section class="home-screen setup-screen" id="setupScreen" aria-label="Configurar partida" hidden>
+  <div class="setup-shell">
+    <div class="home-top" style="margin-bottom:18px"><button type="button" class="home-link" id="setupBack">← Voltar</button><span class="home-version">Configurar partida</span></div>
+    <h1 class="home-title" style="font-size:clamp(28px,5vw,40px);margin-bottom:6px">Configure <em>sua partida</em></h1>
+    <p class="home-lede" style="margin:6px 0 18px">Suas escolhas ficam salvas para a próxima vez.</p>
+        <div class="home-kicker">Ritmo da partida</div>
+        <div class="mode-picker" role="group" aria-label="Modo de jogo">
+          <button type="button" class="mode-option selected" id="modeSlow" aria-pressed="true"><strong>⌛ Modo lento</strong><span>Ritmo normal; os investimentos rendem com os atrasos padrão.</span></button>
+          <button type="button" class="mode-option" id="modeFast" aria-pressed="false"><strong>⚡ Modo rápido</strong><span>Retornos antecipados: tudo acontece em menos eras.</span></button>
+        </div>
+        <div class="home-settings">
+          <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip selected" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button><button type="button" class="chip dev-only" data-diff="config">⚙ Configurações</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
+          <div><label>Rivais</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de rivais"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
+          <div><label>Estilo de cada rival</label><div id="homeProfiles" class="profile-rows"></div></div>
+          <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:48px" aria-label="Limite de eras"></div></div>
+          <div><label>Vitória</label><div class="chips" id="homeVictoryMode" role="group" aria-label="Modo de vitória"><button type="button" class="chip selected" id="homeClassic" aria-pressed="true">Clássico</button><button type="button" class="chip" id="homeConquest" aria-pressed="false">⚔ Conquista</button></div><div class="small muted" id="homeVictoryDesc" style="margin-top:4px"></div></div>
+          <div><label class="toggle-row"><input type="checkbox" id="homeRandomStart"> 🎲 Posição inicial aleatória</label></div>
+        </div>
+    <div class="setup-footer"><div class="setup-summary" id="setupSummary"></div><button type="button" class="home-primary" id="setupStart">Começar <span aria-hidden="true">→</span></button></div>
+  </div>
+</section>
+<div class="wrap">
+<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions" id="topActions"><button id="exportHistory" class="dev-only" title="Salva um arquivo com a partida para enviar como feedback">Exportar</button></div></header>
+<div class="tabs dev-only">
+<button class="tab active" data-view="game">Jogo</button><button class="tab" data-view="lab">Configurações</button><button class="tab" data-view="tests">Testes funcionais</button><button class="tab" data-view="balanceLab">Balanceamento</button><button class="tab" data-view="aiLab">Validação das IAs</button>
+</div>
+<div id="game" class="view active">
+<div id="resultBanner" class="hidden"></div>
+<div class="hud" id="metrics">
+ <div class="hud-row">
+  <button type="button" class="hud-btn" id="menuBtn" data-open="menuSheet" aria-haspopup="dialog" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="hud-era" id="statEra"></div>
+  <button type="button" class="hud-pill" id="scorePill" data-open="scoreSheet" aria-haspopup="dialog"></button>
+  <button type="button" class="hud-btn" id="helpBtn" data-open="howTo" aria-haspopup="dialog" aria-label="Como jogar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.9v.2"/></svg></button>
+ </div>
+ <div class="hud-stats">
+  <div class="hud-stat" id="statGold"></div>
+  <div class="hud-stat" id="statForce"></div>
+  <button type="button" class="hud-stat" id="statTerr" data-open="scoreSheet" aria-haspopup="dialog"></button>
+ </div>
+</div>
+<section class="map-card" id="mapCard" aria-labelledby="mapTitle">
+ <h2 class="sr-only" id="mapTitle">Mapa</h2>
+ <div class="map-box"><div class="map" id="map"></div></div>
+ <div class="legend" id="mapLegend"></div>
+</section>
+<section class="drawer" id="investCard" aria-labelledby="investTitle">
+ <div class="drawer-head"><h2 id="investTitle">Dividir o ouro</h2><button type="button" class="plans-btn" id="plansBtn" data-open="planSheet" aria-haspopup="dialog">Planos <span aria-hidden="true">▾</span></button><button type="button" class="hud-btn fine-btn" id="fineBtn" data-open="fineSheet" aria-haspopup="dialog" aria-label="Ajuste fino: zerar, resto e previsões"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h10M4 14h16M18 8v4M10 12v4"/><path d="M4 18h6"/></svg></button></div>
+ <div class="stackbar" id="stackBar" aria-hidden="true"><span id="milBar" class="sb-mil"></span><span id="infraBar" class="sb-infra"></span><span id="techBar" class="sb-tech"></span></div>
+ <div class="plans-slot" id="plansInline"><div class="plans" id="plans" role="group" aria-label="Planos rápidos (usam todo o ouro)"><button type="button" data-plan="balanced">Equilibrado<span class="plan-d">um pouco de tudo</span></button><button type="button" data-plan="attack">Ataque<span class="plan-d">65% Militar</span></button><button type="button" data-plan="economy">Economia<span class="plan-d">65% Obras</span></button><button type="button" data-plan="tech">Ciência<span class="plan-d">60% Ciência</span></button><button type="button" data-plan="clear" class="plan-clear" aria-label="Limpar (zerar tudo)" title="Limpar (zerar tudo)"><span class="plan-ico" aria-hidden="true">↺</span><span class="plan-lbl">Limpar</span><span class="plan-d">zera as três áreas</span></button></div></div>
+ <div class="inv-row" data-row="mil"><span class="inv-ico gold" aria-hidden="true">⚔</span><div class="inv-lbl"><strong><span class="inv-sym gold" aria-hidden="true">⚔ </span>Militar</strong><span class="inv-prev" id="milPrev"></span></div><div class="inv-ctrl" data-area="mil"><button type="button" data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais militar">+</button></div></div>
+ <div class="inv-row" data-row="infra"><span class="inv-ico green" aria-hidden="true">▰</span><div class="inv-lbl"><strong><span class="inv-sym green" aria-hidden="true">▰ </span>Obras</strong><span class="inv-prev" id="infraPrev"></span></div><div class="inv-ctrl" data-area="infra"><button type="button" data-step="-1" aria-label="Menos obras">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em obras" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais obras">+</button></div></div>
+ <div class="inv-row" data-row="tech"><span class="inv-ico purple" aria-hidden="true">✦</span><div class="inv-lbl"><strong><span class="inv-sym purple" aria-hidden="true">✦ </span>Ciência</strong><span class="inv-prev" id="techPrev"></span></div><div class="inv-ctrl" data-area="tech"><button type="button" data-step="-1" aria-label="Menos ciência">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em ciência" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais ciência">+</button></div></div>
+</section>
+<div class="actionbar"><button class="primary" id="advance"><span class="adv-t" id="advTitle">Concluir era</span><span class="adv-s"><span id="actionLeft">sobram <strong>0</strong> de ouro</span><span id="actionEnded" class="hidden"><strong>Partida encerrada</strong></span></span></button></div>
+<div class="sheet-scrim" id="sheetScrim" hidden></div>
+<section class="sheet" id="attackSheet" role="dialog" aria-modal="true" aria-labelledby="attackTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><button type="button" class="sheet-x sheet-x-float" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+ <div id="mapStatus" class="target-body"></div>
+ <button id="attack" class="good attack-btn" disabled>Escolha um alvo</button>
+ <button type="button" id="attackInvest" class="attack-invest" hidden>Investir em Militar</button>
+</section>
+<section class="sheet " id="menuSheet" role="dialog" aria-modal="true" aria-labelledby="menuSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="menuSheetTitle">Menu</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
+</section>
+<section class="sheet sheet-tall" id="scoreSheet" role="dialog" aria-modal="true" aria-labelledby="scoreSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="scoreSheetTitle">Placar e vitória</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="small muted" id="matchInfo"></div>
+ <div id="scoreStrip" class="score-list"></div>
+ <div class="section-title"><h3>Condições de vitória</h3><span class="pill" id="victoryPill"></span></div><div id="victoryPanel"></div>
+</section>
+<section class="sheet " id="planSheet" role="dialog" aria-modal="true" aria-labelledby="planSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="planSheetTitle">Planos rápidos</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="small muted sheet-hint">Dividem todo o ouro de uma vez. Depois você pode ajustar.</p><div class="plans-slot" id="plansSheetSlot"></div>
+</section>
+<section class="sheet " id="fineSheet" role="dialog" aria-modal="true" aria-labelledby="fineSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="fineSheetTitle">Ajuste fino</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="small muted sheet-hint">Toque no valor de uma área para digitar o número exato.</p><div class="fine-row" data-area="mil"><div class="fine-top"><strong><span class="gold" aria-hidden="true">⚔</span> Militar</strong><span class="fine-val" id="milFine"></span></div><div class="small muted" id="milForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar militar">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Militar">Resto</button></div></div><div class="fine-row" data-area="infra"><div class="fine-top"><strong><span class="green" aria-hidden="true">▰</span> Obras</strong><span class="fine-val" id="infraFine"></span></div><div class="small muted" id="infraForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar obras">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Obras">Resto</button></div></div><div class="fine-row" data-area="tech"><div class="fine-top"><strong><span class="purple" aria-hidden="true">✦</span> Ciência</strong><span class="fine-val" id="techFine"></span></div><div class="small muted" id="techForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar ciência">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Ciência">Resto</button></div></div><div class="status" id="allocationStatus" role="status"></div>
+</section>
+<section class="sheet sheet-tall" id="howTo" role="dialog" aria-modal="true" aria-labelledby="howToTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="howToTitle">Como jogar</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="grid three" style="margin-top:12px">
+<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em um território dourado para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
+<div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 2 eras, rende para sempre e aumenta todo o ouro da era. Obras reforçam a defesa dos seus territórios; Ciência barateia os seus ataques.</p></div>
+<div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div>
+</div>
+</section>
+<section class="sheet sheet-tall" id="details" role="dialog" aria-modal="true" aria-labelledby="detailsTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="detailsTitle">Detalhes da partida</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+ <div class="grid two" style="margin-top:12px">
+  <section><h3>Previsão de retornos</h3><div id="forecast"></div></section>
+  <section><h3>De onde vem o ouro</h3><div id="revenueBreakdown"></div><canvas id="revenueChart" class="chart"></canvas><div class="chart-legend"><span style="--c:#62a8ff">Territórios</span><span style="--c:#56d6a1">Obras</span><span style="--c:#b49aff">Ciência</span></div></section>
+  <section><h3>Territórios por era</h3><canvas id="territoryChart" class="chart"></canvas><div class="chart-legend" id="territoryLegend"></div></section>
+  <section><h3>Força por era</h3><canvas id="militaryChart" class="chart"></canvas><div class="chart-legend" id="militaryLegend"></div></section>
+ </div>
+ <h3>Eventos militares <span class="pill" id="notificationCount">0</span></h3><div id="notifications" class="log"></div>
+ <h3>Histórico <span class="pill" id="historyCount"></span></h3>
+ <div class="tablewrap" style="max-height:330px"><table><thead><tr><th>Era</th><th>Ouro recebido</th><th>Em Militar</th><th>Em Obras</th><th>Em Ciência</th><th>Ouro guardado</th><th>Territórios</th><th>Força</th></tr></thead><tbody id="historyTable"></tbody></table></div>
+</section>
+</div>
+<div id="lab" class="view dev-only">
+<div class="card"><div class="section-title"><div><h2>Configurações do jogo</h2><p class="muted small">Edite parâmetros, aplique-os sem alterar retornos já registrados ou reinicie usando a nova configuração.</p></div><span id="configState" class="pill">Configuração aplicada</span></div><div class="notice">Alterações são aplicadas a novas decisões e investimentos. Investimentos existentes preservam uma cópia dos parâmetros usados quando foram criados. Para recalcular toda a partida, marque a opção explícita abaixo e reinicie.</div>
+<div class="notice">A IA agora mantém tesouro próprio, recebe receitas dos territórios e dos seus investimentos, investe usando as mesmas fórmulas e decide quando atacar. Perfil, agressividade e prioridade de alvo podem ser ajustados abaixo.</div><div id="params"></div><div class="field"><label><input type="checkbox" id="recalcExisting"> Recalcular a simulação inteira com os parâmetros atuais (substitui a partida ao aplicar)</label></div>
+<div class="actions"><button class="primary" id="applyConfig">Aplicar configurações</button><button id="restoreConfig">Restaurar padrões</button><button id="saveConfig">Salvar configuração JSON</button><button id="loadConfigBtn">Carregar configuração JSON</button><button class="good" id="restartWithConfig">Reiniciar com configuração atual</button><input type="file" id="configFile" accept=".json,application/json" class="hidden"></div><div id="labStatus" class="status"></div>
+</div>
+<div class="grid two" style="margin-top:14px"><section class="card"><h2>Avanço rápido de eras</h2><p class="muted small">Executa as mesmas regras de processamento da partida normal. Pode cancelar sem perder eras já concluídas.</p><div class="actions"><button class="quick" data-n="5">+5 eras</button><button class="quick" data-n="10">+10 eras</button><button class="quick" data-n="50">+50 eras</button></div><div class="row" style="margin-top:10px"><input id="customEras" type="number" min="1" step="1" value="100" style="width:120px"><button id="customAdvance">Avançar quantidade</button><button id="cancelAdvance" class="danger" disabled>Cancelar</button></div><div class="progress" style="margin-top:12px"><span id="advanceProgress"></span></div><div id="advanceStatus" class="status">Pronto.</div></section>
+<section class="card"><h2>Estratégias predefinidas</h2><p class="muted small">Simulações independentes com expansão territorial automática para estratégias de teste. Não alteram a partida em andamento.</p><div class="field"><label>Quantidade de eras</label><input id="strategyEras" type="number" min="1" step="1" value="50"></div><div class="actions"><button class="strategy" data-strategy="military">Militar</button><button class="strategy" data-strategy="aggressive">Militar agressiva</button><button class="strategy" data-strategy="infrastructure">Infraestrutura</button><button class="strategy" data-strategy="technology">Tecnologia</button><button class="strategy" data-strategy="techFirst">Tecnologia primeiro</button><button class="strategy" data-strategy="balanced">Equilibrada</button><button class="strategy" data-strategy="growth">Crescimento</button><button class="strategy" data-strategy="custom">Personalizada</button></div><div class="field"><label>Percentuais personalizados (militar / infraestrutura / tecnologia)</label><div class="row"><input id="customMil" type="number" min="0" max="100" value="34"><input id="customInfra" type="number" min="0" max="100" value="33"><input id="customTech" type="number" min="0" max="100" value="33"></div></div><div id="strategyStatus" class="status"></div><div id="strategyResult"></div></section></div>
+</div>
+<div id="tests" class="view dev-only">
+<div class="card">
+ <div class="section-title"><div><h2>Laboratório de testes funcionais</h2><p class="muted small">Verifica se as regras estão implementadas corretamente usando o motor real do jogo. Cada teste tem um identificador estável (categoria + código derivado do nome), para comparar falhas entre versões do HTML.</p></div><span class="pill">Laboratório 1</span></div>
+ <div class="row"><button class="primary" id="runTests">Executar todos</button><select id="ftCategory"></select><button id="runCategory">Executar categoria</button><button id="ftRepeat" disabled>Repetir última execução</button><input id="ftFilter" placeholder="Filtrar por nome ou ID" style="min-width:220px"><label class="small" style="margin:0"><input type="checkbox" id="ftOnlyFail"> Só falhas</label><button id="ftExport">Exportar relatório CSV</button></div>
+ <div id="testSummary" class="notice">Execute a bateria para verificar o estado do MVP.</div>
+ <div id="ftCategories" class="grid three"></div>
+ <div id="testResults" style="margin-top:12px"></div>
+ <h3>Histórico de execuções</h3><div id="ftHistory" class="small muted">Sem execuções registadas.</div>
+</div>
+</div>
+<div id="balanceLab" class="view dev-only">
+<div class="card" id="expLab">
+ <div class="section-title"><div><h2>Experiências de balanceamento</h2><p class="muted small">Compara cenários em paralelo com as mesmas sementes, perfis, mapa e condições iniciais; todas as civilizações são controladas por IA e usam o motor real. Assim, as diferenças observadas resultam dos parâmetros testados.</p></div><span class="pill">Laboratório 2</span></div>
+ <div class="param-grid">
+  <div class="param"><label for="expKind">Modo de simulação</label><select id="expKind"><option value="auto">Encerramento automático (Modo B)</option><option value="fixed">Duração fixa (Modo A)</option></select></div>
+  <div class="param"><label for="expGamesPreset">Partidas por cenário</label><div class="row"><select id="expGamesPreset" style="width:auto"><option value="20">20</option><option value="50" selected>50</option><option value="100">100</option><option value="custom">Outro</option></select><input id="expGames" type="number" min="1" max="5000" step="1" value="50" style="width:100px"></div></div>
+  <div class="param"><label for="expEras">Eras por partida (Modo A)</label><input id="expEras" type="number" min="1" max="300" step="1" value="30"><div class="small muted">No Modo B vale o limite de eras de cada cenário.</div></div>
+  <div class="param"><label for="expCivs">Civilizações por partida</label><input id="expCivs" type="number" min="2" max="6" step="1" value="2"></div>
+  <div class="param"><label for="expMode">Velocidade</label><select id="expMode"><option value="slow">Lenta</option><option value="fast">Rápida</option><option value="both">Ambas (comparar lento × rápido)</option></select></div>
+  <div class="param"><label for="expSeed">Semente base</label><input id="expSeed" type="number" min="0" step="1" value="74291"></div>
+ </div>
+ <h3>Perfis de IA</h3><div class="row" id="expProfiles"></div>
+ <h3>Cenários</h3>
+ <p class="small muted">Cada cenário parte da configuração aplicada e altera apenas os parâmetros nas colunas. Adicione parâmetros como colunas, ou gere um cenário por valor de um parâmetro.</p>
+ <div class="row"><select id="expParamPick" style="max-width:340px"></select><button id="expAddParam">Adicionar coluna</button><span class="small muted">·</span><button id="expAddScenario">Adicionar cenário</button></div>
+ <div class="row" style="margin-top:8px"><span class="small">Gerar variações de</span><select id="expVaryParam" style="max-width:300px"></select><input id="expVaryValues" placeholder="valores separados por ; ex.: 0,6; 0,7; 0,8" style="min-width:260px"><button id="expVary">Gerar cenários</button></div>
+ <div class="tablewrap" style="margin-top:8px"><table><thead><tr id="expHead"></tr></thead><tbody id="expBody"></tbody></table></div>
+ <div class="actions" style="margin-top:12px"><button id="runExp" class="primary">Executar experiência</button><button id="cancelExp" class="danger" disabled>Cancelar</button><button id="exportExpSummary">CSV · resumo</button><button id="exportExpGames">CSV · partidas</button><button id="exportExpEras">CSV · histórico por era</button></div>
+ <div class="progress" style="margin-top:12px"><span id="expProgress"></span></div><div id="expStatus" class="status">Pronto.</div>
+ <div id="expResults"></div>
+ <div id="expCharts" class="hidden">
+  <div class="grid two" style="margin-top:14px">
+   <section class="card"><h2>Distribuição dos tipos de desfecho</h2><canvas id="expChartTypes" class="chart"></canvas><div class="chart-legend" id="expLegendTypes"></div></section>
+   <section class="card"><h2>Duração das partidas</h2><canvas id="expChartDuration" class="chart"></canvas><div class="chart-legend" id="expLegendScen1"></div><div class="small muted">Número de partidas encerradas em cada era.</div></section>
+   <section class="card"><h2>Relação ICE 2º / líder por era</h2><canvas id="expChartIce" class="chart"></canvas><div class="chart-legend" id="expLegendScen2"></div><div class="small muted">Média por era; quanto mais baixa, maior a vantagem do líder.</div></section>
+   <section class="card"><h2>Comparação dos perfis</h2><canvas id="expChartProfiles" class="chart"></canvas><div class="chart-legend" id="expLegendProfiles"></div></section>
+  </div>
+  <section class="card" style="margin-top:14px"><div class="section-title"><h2>Evolução dos recursos por era</h2><div class="row"><label class="small" style="margin:0">Cenário <select id="expResScenario"></select></label><label class="small" style="margin:0">Perfil <select id="expResProfile"></select></label></div></div><canvas id="expChartRes" class="chart"></canvas><div class="chart-legend"><span style="--c:#f4bd50">Militar</span><span style="--c:#56d6a1">Infraestrutura</span><span style="--c:#b49aff">Tecnologia</span><span style="--c:#62a8ff">Tesouraria</span><span style="--c:#ff737b">Receita</span></div></section>
+  <section class="card" style="margin-top:14px"><div class="section-title"><h2>Resultados por perfil de IA</h2><label class="small" style="margin:0">Cenário <select id="expProfScenario"></select></label></div><div id="expProfileTable"></div></section>
+ </div>
+</div>
+<div class="card" style="margin-top:14px" id="fixedLab">
+ <div class="section-title"><div><h2>Simulação de duração fixa e calibração de referências</h2><p class="muted small">Modo A: todas as civilizações são controladas por IA e cada partida corre sempre o número de eras pedido, sem condições de fim. A mediana de cada dimensão em cada era torna-se a referência inicial do ICE e da pontuação final.</p></div><span class="pill">Duração fixa</span></div>
+ <div class="notice">Os perfis rodam pelos lugares do mapa a cada partida (partida g, lugar k → perfil (g+k)), por isso convém usar um número de partidas múltiplo do número de perfis. As referências calibradas podem ser ajustadas à mão na tabela abaixo e são guardadas junto da configuração.</div>
+ <div class="param-grid">
+  <div class="param"><label for="fixedGames">Partidas</label><input id="fixedGames" type="number" min="1" max="2000" step="1" value="60"></div>
+  <div class="param"><label for="fixedEras">Eras por partida (fixas)</label><input id="fixedEras" type="number" min="1" max="300" step="1" value="30"></div>
+  <div class="param"><label for="fixedCivs">Civilizações por partida</label><input id="fixedCivs" type="number" min="2" max="6" step="1" value="2"></div>
+  <div class="param"><label for="fixedMode">Velocidade</label><select id="fixedMode"><option value="slow">Lenta</option><option value="fast">Rápida</option></select></div>
+  <div class="param"><label for="fixedSeed">Semente base</label><input id="fixedSeed" type="number" min="0" step="1" value="74291"></div>
+ </div>
+ <h3>Perfis de IA</h3>
+ <div class="row" id="fixedProfiles"></div>
+ <div class="actions" style="margin-top:12px"><button id="runFixed" class="primary">Executar simulações</button><button id="cancelFixed" class="danger" disabled>Cancelar</button><button id="applyCalibration" class="good" disabled>Aplicar como referências</button><button id="exportFixedCsv">Exportar histórico CSV</button></div>
+ <div class="progress" style="margin-top:12px"><span id="fixedProgress"></span></div><div id="fixedStatus" class="status">Pronto.</div>
+ <div id="fixedSummary"></div>
+ <h3>Referências por era</h3>
+ <div class="row"><label>Conjunto <select id="refSet"><option value="ice">ICE (supremacia)</option><option value="score">Pontuação final</option></select></label><button id="exportRefs">Exportar referências JSON</button><button id="importRefsBtn">Importar referências JSON</button><input type="file" id="refsFile" accept=".json,application/json" class="hidden"></div>
+ <div id="refStatus" class="status"></div>
+ <div class="tablewrap" style="max-height:420px"><table><thead><tr id="refHead"></tr></thead><tbody id="refTable"></tbody></table></div>
+</div>
+<details class="card" style="margin-top:14px"><summary><strong>Ferramentas anteriores</strong> <span class="small muted">— comparar estratégias do jogador, cenários de parâmetros e torneio estratégia × perfil</span></summary>
+<h2 style="margin-top:14px">Comparar estratégias do jogador</h2>
+<div class="card"><h2>Comparar estratégias</h2><p class="muted small">Marque duas ou mais estratégias. Cada uma começa com o mesmo estado e usa a mesma configuração de IA e semente aleatória.</p><div class="row" id="compareChecks"><label><input type="checkbox" value="military" checked> Militar</label><label><input type="checkbox" value="aggressive" checked> Militar agressiva</label><label><input type="checkbox" value="infrastructure" checked> Infraestrutura</label><label><input type="checkbox" value="technology" checked> Tecnologia</label><label><input type="checkbox" value="techFirst"> Tecnologia primeiro</label><label><input type="checkbox" value="balanced" checked> Equilibrada</label><label><input type="checkbox" value="growth"> Crescimento</label><label><input type="checkbox" value="custom"> Personalizada</label></div><div class="row" style="margin:12px 0"><label>Quantidade de eras <input id="compareEras" type="number" min="1" value="50" style="width:110px"></label><label><input id="compareAI" type="checkbox" checked> Incluir IA adversária</label><label>Perfil de alvo <select id="compareTarget"><option value="weakest">Menor índice elegível</option><option value="strongest">Maior índice elegível</option></select></label><label>Alocação personalizada (% M/I/T) <input id="compareCustom" type="text" value="34/33/33" style="width:110px"></label><button id="runCompare" class="primary">Executar comparação</button><button id="exportCompare">Exportar resultados CSV</button></div><div id="compareStatus" class="status"></div><div class="tablewrap"><table><thead><tr><th>Estratégia</th><th>Receita última era</th><th>Receita acumulada</th><th>Saldo final</th><th>Poder militar</th><th>Territórios finais</th><th>Máx. territórios</th><th>Território-era acumulado</th><th>Eficiência militar</th><th>Conquistas neutras</th><th>Conquistas de territórios inimigos</th><th>Ataques ganhos</th><th>Ataques perdidos</th><th>Invest. militar</th><th>Invest. infra.</th><th>Invest. tec.</th><th>Retorno infra.</th><th>Benefício tec.</th><th>Primeiro retorno infra.</th><th>Ativação tecnologia</th></tr></thead><tbody id="compareTable"></tbody></table></div></div>
+<div class="grid two" style="margin-top:14px"><section class="card"><h2>Receita total por era</h2><canvas id="compareRevenue" class="chart"></canvas></section><section class="card"><h2>Receita acumulada</h2><canvas id="compareAccum" class="chart"></canvas></section><section class="card"><h2>Territórios controlados</h2><canvas id="compareTerritory" class="chart"></canvas></section><section class="card"><h2>Saldo econômico</h2><canvas id="compareBalance" class="chart"></canvas></section><section class="card"><h2>Ataques bem-sucedidos acumulados</h2><canvas id="compareAttacks" class="chart"></canvas></section></div>
+<div class="card" style="margin-top:14px"><h2>Referência das cores</h2><p class="muted small">Cada cor representa uma estratégia e mantém o mesmo significado em todos os gráficos abaixo.</p><div id="compareLegend" class="chart-legend" aria-live="polite"><span class="muted">Execute uma comparação para exibir a legenda.</span></div></div>
+<h2 style="margin-top:18px">Cenários de parâmetros</h2>
+<div class="grid three"><section class="card"><h2>⚔ Retorno rápido</h2><p class="muted small">Atraso militar curto e custo de conquista baixo para observar a expansão.</p><button class="scenario" data-scenario="fast">Carregar cenário</button></section><section class="card"><h2>⚖ Equilíbrio econômico</h2><p class="muted small">Parâmetros moderados para comparar as três categorias.</p><button class="scenario" data-scenario="balanced">Carregar cenário</button></section><section class="card"><h2>⌛ Longo prazo</h2><p class="muted small">Tecnologia com ativação demorada e infraestrutura com retorno prolongado.</p><button class="scenario" data-scenario="long">Carregar cenário</button></section></div>
+<div class="card" style="margin-top:14px"><h2>Cenário completo</h2><p class="muted small">Inclui parâmetros, estado inicial, distribuição territorial, comportamento da IA, eras e estratégia de investimento.</p><div class="row"><label>Nome <input id="scenarioName" value="Meu cenário"></label><label>Eras para simular <input id="scenarioEras" type="number" min="1" value="50"></label></div><div class="actions" style="margin-top:10px"><button id="saveScenario" class="primary">Exportar cenário JSON</button><button id="loadScenarioBtn">Importar cenário JSON</button><input type="file" id="scenarioFile" accept=".json,application/json" class="hidden"><button id="runScenario">Executar cenário</button></div><div id="scenarioStatus" class="status"></div><div id="scenarioResult"></div></div>
+<div style="margin-top:14px">
+<div class="card">
+ <div class="section-title"><div><h2>Torneio estratégia × perfil</h2><p class="muted small">Torneio pareado entre estratégias do jogador e perfis adversários, utilizando o motor real e sementes repetíveis.</p></div><span class="pill">Anterior</span></div>
+ <div class="notice">Como o MVP ainda não possui uma condição formal de vitória/derrota, este laboratório não inventa taxas de vitória. Ele compara participação territorial, saldo final, poder militar e receita acumulada. O índice de vantagem é uma métrica descritiva, com 50 indicando equilíbrio entre os lados.</div>
+ <div class="grid two">
+  <div><label for="balanceSeeds">Sementes por confronto (3–100)</label><input id="balanceSeeds" type="number" min="3" max="100" value="10"></div>
+  <div><label for="balanceEras">Eras por partida (5–300)</label><input id="balanceEras" type="number" min="5" max="300" value="30"></div>
+ </div>
+ <h3>Estratégias do lado do jogador</h3>
+ <div class="row" id="balanceStrategies"><label><input type="checkbox" value="military" checked> Militar</label><label><input type="checkbox" value="aggressive" checked> Militar agressiva</label><label><input type="checkbox" value="infrastructure" checked> Infraestrutura</label><label><input type="checkbox" value="technology" checked> Tecnologia</label><label><input type="checkbox" value="balanced" checked> Equilibrada</label><label><input type="checkbox" value="growth"> Crescimento</label></div>
+ <h3>Perfis adversários</h3>
+ <div class="row" id="balanceProfiles"><label><input type="checkbox" value="adaptive" checked> Adaptativa</label><label><input type="checkbox" value="reference" checked> Equilibrado</label><label><input type="checkbox" value="military" checked> Militar</label><label><input type="checkbox" value="aggressive" checked> Agressivo</label><label><input type="checkbox" value="economist" checked> Infraestrutura</label><label><input type="checkbox" value="technologist" checked> Tecnológico</label></div>
+ <div class="actions" style="margin-top:12px"><button id="runBalanceLab" class="primary">Executar torneio</button><button id="exportBalanceLab">Exportar resultados CSV</button></div>
+ <div class="progress" style="margin-top:12px"><span id="balanceProgress"></span></div><div id="balanceStatus" class="status">Pronto para executar confrontos pareados.</div>
+ <div id="balanceSummary"></div>
+ <div class="tablewrap"><table><thead><tr><th>Estratégia</th><th>Perfil adversário</th><th>Vantagem jogador</th><th>Territórios jogador / IA</th><th>Saldo jogador / IA</th><th>Poder militar jogador / IA</th><th>Receita acumulada jogador / IA</th><th>Investimento acumulado jogador / IA</th><th>Partidas válidas</th></tr></thead><tbody id="balanceTable"></tbody></table></div>
+ <p class="small muted">Interpretação: o índice resume quatro dimensões com pesos iguais. Consulte as métricas individuais antes de concluir que uma regra está desequilibrada. Os confrontos usam as mesmas sementes dentro de cada comparação.</p>
+</div>
+</div>
+</details>
+</div>
+<div id="aiLab" class="view dev-only">
+<div class="card" id="valLab">
+ <div class="section-title"><div><h2>Validação estratégica das IAs</h2><p class="muted small">Verifica se cada perfil adota o comportamento que representa e se transforma os recursos investidos em resultados. Mesmas sementes, mapa e condições para todos os perfis; o consolidado é a média simples entre perfis.</p></div><span class="pill">Laboratório 3</span></div>
+ <div class="param-grid">
+  <div class="param"><label for="valKind">Modo de simulação</label><select id="valKind"><option value="auto">Encerramento automático (Modo B)</option><option value="fixed">Duração fixa (Modo A)</option></select></div>
+  <div class="param"><label for="valGames">Partidas</label><input id="valGames" type="number" min="1" max="5000" step="1" value="60"></div>
+  <div class="param"><label for="valEras">Eras por partida (Modo A)</label><input id="valEras" type="number" min="1" max="300" step="1" value="30"></div>
+  <div class="param"><label for="valCivs">Civilizações por partida</label><input id="valCivs" type="number" min="2" max="6" step="1" value="2"></div>
+  <div class="param"><label for="valMode">Velocidade</label><select id="valMode"><option value="slow">Lenta</option><option value="fast">Rápida</option></select></div>
+  <div class="param"><label for="valSeed">Semente base</label><input id="valSeed" type="number" min="0" step="1" value="74291"></div>
+ </div>
+ <div class="row" style="margin-top:8px"><label class="small" style="margin:0">Configuração a validar <select id="valConfig"></select></label><span class="small muted">Use a configuração aplicada ou um cenário da última experiência de balanceamento.</span></div>
+ <h3>Perfis</h3><div class="row" id="valProfiles"></div>
+ <div class="actions" style="margin-top:12px"><button id="runVal" class="primary">Executar validação</button><button id="cancelVal" class="danger" disabled>Cancelar</button><button id="exportVal">Exportar CSV</button></div>
+ <div class="progress" style="margin-top:12px"><span id="valProgress"></span></div><div id="valStatus" class="status">Pronto.</div>
+ <div id="valResults"></div>
+ <section id="valChartBox" class="hidden" style="margin-top:14px"><div class="section-title"><h3>Evolução por era</h3><select id="valChartPick"></select></div><canvas id="valChart" class="chart"></canvas><div class="chart-legend" id="valChartLegend"></div></section>
+</div>
+<div style="margin-top:14px">
+<div class="card">
+ <div class="section-title"><div><h2>Benchmarks de conformidade</h2><p class="muted small">Benchmarks executados pelo motor real do jogo. O resultado mede conformidade com critérios observáveis; não é uma nota universal de inteligência.</p></div><span class="pill">Benchmarks</span></div>
+ <div class="notice">Cada perfil será submetido a testes de disciplina econômica, comportamento militar e coerência estratégica. Perfis adaptativos também serão testados em situações com e sem ameaça. Os resultados não alteram a partida atual.</div>
+ <div class="grid two">
+  <div><label for="aiValidationRuns">Sementes por perfil</label><input id="aiValidationRuns" type="number" min="3" max="100" value="12"></div>
+  <div><label for="aiValidationEras">Eras por execução</label><input id="aiValidationEras" type="number" min="5" max="100" value="15"></div>
+ </div>
+ <h3>Perfis a validar</h3>
+ <div class="row" id="aiValidationProfiles">
+  <label><input type="checkbox" value="adaptive" checked> Adaptativa</label><label><input type="checkbox" value="reference" checked> Equilibrado</label><label><input type="checkbox" value="military" checked> Militar</label><label><input type="checkbox" value="aggressive" checked> Agressivo</label><label><input type="checkbox" value="economist" checked> Infraestrutura</label><label><input type="checkbox" value="technologist" checked> Tecnológico</label><label><input type="checkbox" value="custom"> Personalizada</label>
+ </div>
+ <div class="actions" style="margin-top:12px"><button id="runAiValidation" class="primary">Executar benchmarks</button><button id="exportAiValidation">Exportar relatório CSV</button></div>
+ <div class="progress" style="margin-top:12px"><span id="aiValidationProgress"></span></div><div id="aiValidationStatus" class="status">Pronto para validar os perfis selecionados.</div>
+ <div id="aiValidationSummary"></div>
+ <div class="tablewrap"><table><thead><tr><th>Perfil</th><th>Disciplina econômica</th><th>Coerência do perfil</th><th>Adaptação</th><th>Controle de ataques</th><th>Conformidade geral</th></tr></thead><tbody id="aiValidationTable"></tbody></table></div>
+ <div id="aiValidationDetails"></div>
+</div>
+</div>
+</div>
+<div class="footer dev-only">MVP local · HTML, CSS e JavaScript puro, sem dependências · Fim de partida (território, eliminação, supremacia, pontuação) · Laboratórios de testes funcionais, balanceamento e validação das IAs · Exportações JSON/CSV</div>
+</div>
+<script type="module" src="src/main-dev.js"></script>
+</body>
+</html>

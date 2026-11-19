@@ -82,7 +82,8 @@ before(async () => {
   browser = await launch();
   // Duas páginas independentes: o resultado não pode depender de estado global nem da ordem.
   for (const k of [0, 1]) {
-    const ctx = await openGame(browser);
+    // runGame (motor dos laboratórios) só existe na versão de desenvolvimento (dev.html).
+    const ctx = await openGame(browser, { dev: true });
     const res = await ctx.page.evaluate(runScenariosInPage);
     const flat = Object.fromEntries(Object.entries(res).map(([n, v]) => [n, { summary: v.summary, hash: hash(v.detail) }]));
     if (k === 0) first = flat; else second = flat;

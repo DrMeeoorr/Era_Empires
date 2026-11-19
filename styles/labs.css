@@ -1,0 +1,19 @@
+/* Impérios — laboratórios (só versão de desenvolvimento): abas, parâmetros, testes funcionais, barras de progresso. */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}
+.tab{background:transparent}
+.tab.active{background:#e7b64f;color:#1b2430;border-color:#e7b64f;font-weight:700}
+.progress{height:8px;background:#293951;border-radius:20px;overflow:hidden}
+.progress>span{height:100%;display:block;background:var(--gold);width:0;transition:width .15s}
+.param-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.param{border:1px solid var(--line);padding:10px;border-radius:9px;background:#0e1929}
+.param label{min-height:30px}
+.param input{width:100%}
+.test{padding:9px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}
+.pass{color:var(--green);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+.footer{color:var(--muted);font-size:11px;margin-top:20px;text-align:center}
+@media(max-width:1050px){.param-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.param-grid{grid-template-columns:1fr}}
+.tabs{margin:0 0 12px}.tabs .tab{min-height:40px}
+@media(max-width:620px){.tabs{overflow-x:auto;flex-wrap:nowrap}.tabs .tab{white-space:nowrap}}
+.tabs .tab{min-height:48px}

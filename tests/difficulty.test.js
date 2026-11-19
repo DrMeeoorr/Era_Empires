@@ -47,7 +47,7 @@ test("pela interface (?dev=1): Difícil → Configurações não herda agressivi
   await startVia(page, { diff: "dificil", ai: 2 });
   assert.deepEqual(await aiVals(page), [1.03, -1, 100, "leader"]);
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await startVia(page, { diff: "config", ai: 2 });
   assert.deepEqual(await aiVals(page), DEFAULT_AI);
   assert.equal(await page.evaluate(() => currentDifficulty), "config");
@@ -87,7 +87,7 @@ test("tutorial não grava Fácil/1 IA/30 eras/modo lento nas escolhas do jogador
   await page.locator('#tutBox [data-tut="skip"]').click();
   await dismissModals(page);
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   // A tela de configuração mostra as escolhas de antes do tutorial.
   await page.locator("#homeStart").click();
   const shown = await page.evaluate(() => ({

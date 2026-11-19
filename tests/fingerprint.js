@@ -40,7 +40,7 @@ if (require.main === module) {
   (async () => {
     const browser = await launch();
     try {
-      const { page, errors } = await openGame(browser);
+      const { page, errors } = await openGame(browser, { dev: true });
       const out = await page.evaluate(fingerprintInPage);
       console.log(JSON.stringify(out, null, 1));
       console.log(out.all === EXPECTED ? `OK: impressão digital ${out.all} igual à referência.` : `DIFERENTE: ${out.all} (referência ${EXPECTED}).`);

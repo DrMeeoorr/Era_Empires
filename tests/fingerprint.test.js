@@ -12,7 +12,8 @@ before(async () => (browser = await launch()));
 after(async () => browser && browser.close());
 
 test(`impressão digital das simulações com SEED fixo continua ${EXPECTED}`, async () => {
-  const { context, page, errors } = await openGame(browser);
+  // runTests() só existe na versão de desenvolvimento (dev.html); as regras e a IA são as mesmas do jogador.
+  const { context, page, errors } = await openGame(browser, { dev: true });
   const out = await page.evaluate(fingerprintInPage);
   await context.close();
   assert.deepEqual(errors, []);

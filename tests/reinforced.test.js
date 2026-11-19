@@ -1,7 +1,6 @@
-// Versões reforçadas de testes internos fracos de defineTests() (index.html).
-// Os testes internos continuam a correr em internal.test.js; estes NÃO os substituem ainda.
-// Quando index.html puder ser editado, os internos devem ser trocados por estas versões
-// (lista em tests/README.md, secção "Testes internos a trocar").
+// Versões reforçadas de testes internos fracos de defineTests() (src/labs/tests-def.js).
+// Cinco delas já foram portadas para defineTests(); continuam aqui também (a do avanço rápido só existe aqui).
+// (lista em tests/README.md, secção "Testes internos fracos").
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -11,7 +10,8 @@ const PIXEL = MOBILE_SCREENS[0][1];
 let browser, ctx;
 before(async () => {
   browser = await launch();
-  ctx = await openGame(browser);
+  // Os casos de regras usam o motor dos laboratórios (runGame), que só existe na versão de desenvolvimento.
+  ctx = await openGame(browser, { dev: true });
 });
 after(async () => browser && browser.close());
 
@@ -218,7 +218,7 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
 
   // Depois de recarregar continua a partida reiniciada (o save foi substituído).
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const reloaded = await snap(page);
   assert.equal(reloaded.era, 1);
   assert.equal(reloaded.history, 0);
