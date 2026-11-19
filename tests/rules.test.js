@@ -305,3 +305,21 @@ test("interface: não deixa investir mais do que o orçamento (campo ajustado ao
   const sum = await p.evaluate(() => readAlloc().reduce((a, b) => a + b, 0));
   assert.ok(sum <= budget + 1e-9, `soma ${sum} acima do orçamento ${budget}`);
 });
+
+test("interface: números no formato do Brasil (vírgula decimal, sem 'u..') e campos aceitam vírgula", async () => {
+  const p = ctx.page;
+  await p.evaluate(() => { configApplied = clone(DEFAULTS); state = newGame(); renderAll(); document.getElementById("homeScreen").hidden = true; });
+  assert.deepEqual(await p.evaluate(() => [parseAmount("12,5"), parseAmount("12.5"), parseAmount("1.250"), parseAmount("1.250,75"), parseAmount(""), parseAmount("abc")]), [12.5, 12.5, 1250, 1250.75, 0, 0]);
+  assert.equal(await p.evaluate(() => fmt(1234.5, 1)), "1.234,5");
+  await p.locator('[data-plan="balanced"]').click();
+  const shown = await p.locator("#milSpend").inputValue();
+  assert.ok(!shown.includes("."), `campo mostra ponto decimal: ${shown}`);
+  const alloc = await p.evaluate(() => readAlloc());
+  assert.ok(Math.abs(alloc.reduce((a, b) => a + b, 0) - (await p.evaluate(() => P(state).treasury))) < 0.02, "plano não distribuiu o orçamento todo");
+  await p.locator("#infraSpend").fill("10,5");
+  await p.locator("#infraSpend").dispatchEvent("input");
+  assert.equal(await p.evaluate(() => readAlloc()[1]), 10.5);
+  await p.evaluate(() => { document.getElementById("details").open = true; renderAll(); });
+  const text = await p.evaluate(() => document.getElementById("game").innerText);
+  assert.ok(!/u\.\./.test(text), "texto com 'u..'");
+});

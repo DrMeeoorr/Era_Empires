@@ -97,6 +97,8 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 .setup-footer{bottom:env(safe-area-inset-bottom,0px)}
 .modal-back{padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .save-warning{top:calc(8px + env(safe-area-inset-top,0px))}
+/* ===== UX Fase 1: cartões do topo sem frases cortadas (quebram linha em vez de "...") ===== */
+.stat .f{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -181,9 +183,9 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
    <div class="section-title"><h2>Investir nesta era</h2><span class="pill" id="budgetPill"></span></div>
    <div class="small muted">Planos rápidos (usam todo o orçamento):</div>
    <div class="plans" id="plans"><button data-plan="balanced">Equilibrado</button><button data-plan="attack">Ataque</button><button data-plan="economy">Economia</button><button data-plan="tech">Tecnologia</button><button data-plan="clear">Limpar</button></div>
-   <div class="inv-row"><div class="inv-head"><strong class="gold">⚔ Militar</strong><span class="small muted">curto prazo · poder na era seguinte</span></div><div class="inv-ctrl" data-area="mil"><button data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="number" min="0" step="any" inputmode="decimal" value="0" aria-label="Investimento militar"><button data-step="1" aria-label="Mais militar">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="milBar" style="background:var(--gold)"></span></div><div class="small muted" id="milForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="green">▰ Infraestrutura</strong><span class="small muted">médio prazo · cresce e depois termina</span></div><div class="inv-ctrl" data-area="infra"><button data-step="-1" aria-label="Menos infraestrutura">−</button><input id="infraSpend" type="number" min="0" step="any" inputmode="decimal" value="0" aria-label="Investimento em infraestrutura"><button data-step="1" aria-label="Mais infraestrutura">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="infraBar" style="background:var(--green)"></span></div><div class="small muted" id="infraForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="purple">✦ Tecnologia</strong><span class="small muted">longo prazo · rende para sempre</span></div><div class="inv-ctrl" data-area="tech"><button data-step="-1" aria-label="Menos tecnologia">−</button><input id="techSpend" type="number" min="0" step="any" inputmode="decimal" value="0" aria-label="Investimento em tecnologia"><button data-step="1" aria-label="Mais tecnologia">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="techBar" style="background:var(--purple)"></span></div><div class="small muted" id="techForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="gold">⚔ Militar</strong><span class="small muted">curto prazo · poder na era seguinte</span></div><div class="inv-ctrl" data-area="mil"><button data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar"><button data-step="1" aria-label="Mais militar">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="milBar" style="background:var(--gold)"></span></div><div class="small muted" id="milForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="green">▰ Infraestrutura</strong><span class="small muted">médio prazo · cresce e depois termina</span></div><div class="inv-ctrl" data-area="infra"><button data-step="-1" aria-label="Menos infraestrutura">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em infraestrutura"><button data-step="1" aria-label="Mais infraestrutura">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="infraBar" style="background:var(--green)"></span></div><div class="small muted" id="infraForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="purple">✦ Tecnologia</strong><span class="small muted">longo prazo · rende para sempre</span></div><div class="inv-ctrl" data-area="tech"><button data-step="-1" aria-label="Menos tecnologia">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em tecnologia"><button data-step="1" aria-label="Mais tecnologia">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="techBar" style="background:var(--purple)"></span></div><div class="small muted" id="techForecast"></div></div>
    <div class="status" id="allocationStatus"></div>
   </section>
   <section class="card"><div class="section-title"><h2>Condições de vitória</h2><span class="pill" id="victoryPill"></span></div><div id="victoryPanel"></div></section>
@@ -390,8 +392,15 @@ const DEV_MODE=typeof document!=="undefined"&&!document.documentElement.classLis
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 // Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.
 const cssColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:"#888888";
-const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-PT",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
+const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-BR",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
 const money=n=>fmt(n,2)+" u.";
+// Textos gerados pelas regras (registo, ações, relatórios) mantêm a formatação original: entram no estado
+// guardado e na "impressão digital" das simulações (tests/fingerprint.js), que não pode mudar.
+const fmtCore=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-PT",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
+const moneyCore=n=>fmtCore(n,2)+" u.";
+// Campos de investimento: mostram vírgula decimal (formato do Brasil) e aceitam "12,5", "12.5" e "1.250" (milhar).
+const fmtInput=v=>String(Math.round(v*100)/100).replace(".",",");
+function parseAmount(raw){let t=String(raw??"").trim().replace(/\s/g,"");if(t.includes(","))t=t.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");const v=Number(t);return Number.isFinite(v)?v:0}
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function safeNum(v,min=0,max=1e100){let n=Number(v);if(!Number.isFinite(n)||n<min||n>max)throw Error("Valor inválido: "+v);return n}
 function rand(seed){let x=seed>>>0;return()=>{x+=0x6D2B79F5;let t=x;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
@@ -546,7 +555,7 @@ function attackTerritory(s,idx,owner,cfg,automatic=false){
  const civ=getCiv(s,owner);if(!civ||!civ.active)return {ok:false,reason:"Civilização inexistente ou inativa."};
  if(idx<0||idx>=s.owners.length||s.owners[idx]===owner||!adjacentOwned(s,idx,owner))return {ok:false,reason:"Alvo não é adjacente ou já pertence ao atacante."};
  const targetOwner=s.owners[idx],def=territoryDefense(s,idx,cfg),need=cfg.military.conquestCost+def;
- if(civ.military+1e-9<need)return {ok:false,reason:`Poder insuficiente: precisa de ${fmt(need)} pontos.`};
+ if(civ.military+1e-9<need)return {ok:false,reason:`Poder insuficiente: precisa de ${fmtCore(need)} pontos.`};
  // Mesma regra de consumo para sucesso e falha; defesa + custo de conquista são comprometidos.
  // A semente inclui o índice do atacante para que duas civilizações não partilhem o mesmo sorteio.
  const r=rand(s.rngSeed+idx+s.era*37+civ.index*7919)();let win=r<0.82;
@@ -558,11 +567,11 @@ function attackTerritory(s,idx,owner,cfg,automatic=false){
   const loot=targetOwner!=="neutral"?pillage(s,targetOwner,owner,cfg):null;
   s.owners[idx]=owner;civ.attacks.wins++;if(targetOwner==="neutral")civ.attacks.neutralConquests++;else civ.attacks.enemyConquests++;
   if(isPlayer){s.attacks.playerWins++;if(targetOwner==="neutral")s.attacks.neutralConquests++;else s.attacks.enemyConquests++}else s.attacks.aiWins++;
-  addLog(s,`${isPlayer?"✅ Ataque bem-sucedido":"⚔️ "+civ.name+" conquistou"}: território ${idx+1} (${targetOwner==="neutral"?"neutro":"de "+ownerLabel(s,targetOwner).replace(/^Seu$/,"Jogador")})${loot&&(loot.gold+loot.infra+loot.tech)>0?` — saque: ${fmt(loot.gold)} u. de tesouro, ${fmt(loot.infra)} u. de infraestrutura`+(loot.tech>0?`, ${fmt(loot.tech)} de progresso tecnológico`:""):""}.`);
+  addLog(s,`${isPlayer?"✅ Ataque bem-sucedido":"⚔️ "+civ.name+" conquistou"}: território ${idx+1} (${targetOwner==="neutral"?"neutro":"de "+ownerLabel(s,targetOwner).replace(/^Seu$/,"Jogador")})${loot&&(loot.gold+loot.infra+loot.tech)>0?` — saque: ${fmtCore(loot.gold)} u. de tesouro, ${fmtCore(loot.infra)} u. de infraestrutura`+(loot.tech>0?`, ${fmtCore(loot.tech)} de progresso tecnológico`:""):""}.`);
   return {ok:true,win:true,spent:need};
  }
  civ.attacks.losses++;if(isPlayer)s.attacks.playerLosses++;else s.attacks.aiLosses++;
- addLog(s,`${isPlayer?"❌ Ataque malsucedido":"🛡️ Ataque de "+civ.name+" repelido"}: território ${idx+1}; ${fmt(need)} pontos comprometidos.`);return {ok:true,win:false,spent:need};
+ addLog(s,`${isPlayer?"❌ Ataque malsucedido":"🛡️ Ataque de "+civ.name+" repelido"}: território ${idx+1}; ${fmtCore(need)} pontos comprometidos.`);return {ok:true,win:false,spent:need};
 }
 /* Ordens simultâneas: durante a era cada civilização dá no máximo UMA ordem de ataque; o poder militar
    necessário fica reservado. No fim da era as ordens resolvem-se juntas, por território, numa ordem sorteada:
@@ -582,7 +591,7 @@ function orderAttack(s,idx,owner,cfg){
  const undo=()=>{if(replaced){civ.military-=replaced.need;s.orders.push(replaced)}};
  if(idx<0||idx>=s.owners.length||s.owners[idx]===owner||!adjacentOwned(s,idx,owner)){undo();return {ok:false,reason:"Alvo não é adjacente ou já pertence ao atacante."}}
  const base=cfg.military.conquestCost+territoryDefense(s,idx,cfg),mult=orderCostMultiplier(cfg,mine.length),need=base*mult;
- if(civ.military+1e-9<need){undo();return {ok:false,reason:`Poder insuficiente: precisa de ${fmt(need)} pontos${mult>1?` (${mine.length+1}.º ataque da era, custo ×${fmt(mult,1)})`:""}.`}}
+ if(civ.military+1e-9<need){undo();return {ok:false,reason:`Poder insuficiente: precisa de ${fmtCore(need)} pontos${mult>1?` (${mine.length+1}.º ataque da era, custo ×${fmtCore(mult,1)})`:""}.`}}
  const power=civ.military+(cfg.military.battleTechWeight||0)*(civ.techProgress||0);
  civ.military-=need;s.orders.push({idx,owner,need,base,mult,step:cfg.military.extraOrderCostStep||0,power,era:s.era,target:s.owners[idx]});
  return {ok:true,queued:true,need,mult};
@@ -607,11 +616,11 @@ function resolveOrders(s,cfg,era){
   if(!g.length)continue;
   if(g.length>1){
    g.sort((a,b)=>b.power-a.power||(rng()-.5));
-   for(const l of g.slice(1)){const c=getCiv(s,l.owner);c.military=Math.max(0,c.military-l.need*cfg.military.lossCost);addLog(s,`⚔️ Batalha pelo território ${idx+1}: ${name(g[0].owner)} venceu ${name(l.owner)} (força ${fmt(g[0].power,0)} × ${fmt(l.power,0)}); ${name(l.owner)} perdeu ${fmt(l.need)} pontos.`);events.push({type:"battleLost",owner:l.owner,winner:g[0].owner,idx})}
+   for(const l of g.slice(1)){const c=getCiv(s,l.owner);c.military=Math.max(0,c.military-l.need*cfg.military.lossCost);addLog(s,`⚔️ Batalha pelo território ${idx+1}: ${name(g[0].owner)} venceu ${name(l.owner)} (força ${fmtCore(g[0].power,0)} × ${fmtCore(l.power,0)}); ${name(l.owner)} perdeu ${fmtCore(l.need)} pontos.`);events.push({type:"battleLost",owner:l.owner,winner:g[0].owner,idx})}
    g=[g[0]];
   }
   const o=g[0],c=getCiv(s,o.owner),base=cfg.military.conquestCost+territoryDefense(s,idx,cfg),need=base*(o.mult||1),now=s.owners[idx];
-  if(c.military+1e-9<need){addLog(s,`↩️ Ordem de ${name(o.owner)} contra o território ${idx+1} cancelada: o alvo mudou de dono e a defesa subiu para ${fmt(need)}; poder devolvido.`);events.push({type:"cancel",owner:o.owner,idx});continue}
+  if(c.military+1e-9<need){addLog(s,`↩️ Ordem de ${name(o.owner)} contra o território ${idx+1} cancelada: o alvo mudou de dono e a defesa subiu para ${fmtCore(need)}; poder devolvido.`);events.push({type:"cancel",owner:o.owner,idx});continue}
   if(now!==o.target)events.push({type:"retarget",owner:o.owner,idx,from:o.target,to:now});
   const r=attackTerritory(s,idx,o.owner,cfg,true);
   // Ataque adicional da era: paga também o custo extra (ganhe ou perca).
@@ -726,7 +735,7 @@ function aiDecide(s,civ,cfg,era){
   });
   const t=targets[0],targetDefense=territoryDefense(s,t.i,cfg),required=cfg.military.conquestCost+targetDefense;
   if(civ.military+1e-9>=required){const result=cfg.military.simultaneousOrders?orderAttack(s,t.i,civ.id,cfg):attackTerritory(s,t.i,civ.id,cfg,true);action=result.ok?(result.queued?`${civ.name} ordenou ataque ao território ${t.i+1}`:result.win?`${civ.name} conquistou território ${t.i+1}`:`${civ.name} atacou território ${t.i+1} e foi repelida`):`${civ.name}: ${result.reason}`;}
-  else action=`${civ.name} acumulando poder militar (precisa ${fmt(required)} para alvo ${t.i+1})`;
+  else action=`${civ.name} acumulando poder militar (precisa ${fmtCore(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.
   if(cfg.military.simultaneousOrders&&cfg.military.maxOrdersPerEra!==1){let n=(s.orders||[]).filter(o=>o.owner===civ.id).length;const max=cfg.military.maxOrdersPerEra||Infinity;
    if(n>0)for(const t2 of targets.slice(1)){if(n>=max)break;const req=(cfg.military.conquestCost+territoryDefense(s,t2.i,cfg))*orderCostMultiplier(cfg,n);if(civ.military+1e-9<req)continue;if(orderAttack(s,t2.i,civ.id,cfg).ok){n++;action+=` + território ${t2.i+1}`}}}
@@ -1178,7 +1187,7 @@ const civLabel=c=>c.id==="player"?"Você":escapeHtml(c.name);
 function stat(k,v,f,color=""){return `<div class="stat"><div class="k">${k}</div><div class="v ${color}">${v}</div><div class="f">${f||""}</div></div>`}
 function renderMetrics(){
  const r=state.pending?.revenue?.player||state.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(state),g.territoryPct);
- $("metrics").innerHTML=[stat("Era",`${escapeHtml(state.era)}<span class="small muted"> / ${escapeHtml(state.maxEras)}</span>`,`${state.mode==="fast"?"rápido":"lento"} · ${DIFFICULTIES[state.difficulty]?.name||"Médio"}${configApplied.endgame.supremacyEnabled===false?" · Conquista":""}`,"gold"),stat("Orçamento",money(P(state).treasury),"inclui a receita da era","green"),stat("Receita da era",money(r.total),`territórios ${fmt(r.normal,0)} · infra ${fmt(r.infra,0)} · tec ${fmt(r.tech,0)}`,"blue"),stat("Poder militar",fmt(P(state).military,1),"para ataques","gold"),stat("Territórios",`${countTerritories(state,"player")}<span class="small muted"> / ${min}</span>`,countTerritories(state,"player")>=min?"maioria atingida":`faltam ${min-countTerritories(state,"player")}`),(()=>{const lv=liveScores();if(!lv)return stat("Placar","—","calculado no fim da 1.ª era");const me=lv.find(x=>x.id==="player"),pos=lv.indexOf(me)+1,lead=lv[0];
+ $("metrics").innerHTML=[stat("Era",`${escapeHtml(state.era)}<span class="small muted"> / ${escapeHtml(state.maxEras)}</span>`,`${state.mode==="fast"?"rápido":"lento"} · ${DIFFICULTIES[state.difficulty]?.name||"Médio"}${configApplied.endgame.supremacyEnabled===false?" · Conquista":""}`,"gold"),stat("Orçamento",money(P(state).treasury),"já com a receita","green"),stat("Receita da era",money(r.total),`terr. ${fmt(r.normal,0)} · infra ${fmt(r.infra,0)} · tec ${fmt(r.tech,0)}`,"blue"),stat("Poder militar",fmt(P(state).military,1),"para ataques","gold"),stat("Territórios",`${countTerritories(state,"player")}<span class="small muted"> / ${min}</span>`,countTerritories(state,"player")>=min?"maioria atingida":`faltam ${min-countTerritories(state,"player")}`),(()=>{const lv=liveScores();if(!lv)return stat("Placar","—","após a 1.ª era");const me=lv.find(x=>x.id==="player"),pos=lv.indexOf(me)+1,lead=lv[0];
   if(!me)return stat("Placar","—","você foi eliminado","red");
   return stat("Seus pontos",`${PTS(me.score)}<span class="small muted"> · ${pos}.º</span>`,pos===1?(lv[1]?`você lidera por ${PTS(me.score)-PTS(lv[1].score)}`:"você lidera"):`${escapeHtml(lead.name)} lidera por ${PTS(lead.score)-PTS(me.score)}`,pos===1?"green":"red")})()].join("");
  $("budgetPill").textContent="Orçamento "+money(P(state).treasury);
@@ -1218,8 +1227,8 @@ const PLANS={balanced:[34,33,33],attack:[65,25,10],economy:[20,65,15],tech:[20,2
 const round2=v=>Math.floor(v*100+1e-6)/100;
 // Resto: o que falta, arredondado ao cêntimo mais próximo sem passar do disponível.
 const restOf=avail=>{const r=Math.round(avail*100)/100;return r>avail+1e-9?r-0.01:r};
-function readAlloc(){return AREAS.map(([k])=>Math.max(0,Number($(k+"Spend").value)||0))}
-function setAlloc(vals){AREAS.forEach(([k],i)=>{$(k+"Spend").value=String(Math.round(vals[i]*100)/100)});renderAllocation()}
+function readAlloc(){return AREAS.map(([k])=>Math.max(0,parseAmount($(k+"Spend").value)))}
+function setAlloc(vals){AREAS.forEach(([k],i)=>{$(k+"Spend").value=fmtInput(vals[i])});renderAllocation()}
 function applyPlan(name){const b=P(state).treasury,w=PLANS[name];const a=round2(b*w[0]/100),i=round2(b*w[1]/100),t=name==="clear"?0:Math.max(0,restOf(b-a-i));setAlloc([a,i,t])}
 function stepArea(idx,dir){const b=P(state).treasury,v=readAlloc(),others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),step=Math.max(1,round2(b*0.1));v[idx]=clamp(round2(v[idx]+dir*step),0,round2(Math.max(0,b-others)));setAlloc(v)}
 function restArea(idx){const b=P(state).treasury,v=readAlloc(),others=v.reduce((s,x,j)=>s+(j===idx?0:x),0);v[idx]=restOf(Math.max(0,b-others));setAlloc(v)}
@@ -1266,7 +1275,7 @@ function renderHistory(){
 function renderForecast(){
  const era=state.era;let infra=[],tech=[];
  for(let t=1;t<=12;t++){let e=era+t,ir=0,tr=0;for(const inv of state.investments){if(inv.owner!=="player")continue;if(inv.type==="infrastructure")ir+=infraReturn(inv,e-inv.origin);if(inv.type==="technology")tr+=techReturn(state,inv,e)}infra.push(ir);tech.push(tr)}
- $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Poder disponível: ${fmt(P(state).military,1)}. Perde 20% por era se não for usado.</p></div><div class="log-item"><strong class="green">Infraestrutura</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}.</p></div><div class="log-item"><strong class="purple">Tecnologia</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bónus sobre a receita).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
+ $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Poder disponível: ${fmt(P(state).military,1)}. Perde 20% por era se não for usado.</p></div><div class="log-item"><strong class="green">Infraestrutura</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}</p></div><div class="log-item"><strong class="purple">Tecnologia</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bónus sobre a receita).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
 }
 function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${escapeHtml(e.era)}</strong> · ${escapeHtml(e.text)}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
 
@@ -1931,7 +1940,7 @@ function renderFtLab(){
  $("ftCategories").innerHTML=perCat.map(x=>`<div class="card metric"><div class="label">${x.c} · ${x.n}</div><div class="value ${!x.ran?"":x.pass===x.ran?"green":"red"}" style="font-size:20px">${x.ran?`${x.pass}/${x.ran}`:`— /${x.total}`}</div><div class="foot"><button class="small" data-ft-cat="${x.c}" style="padding:4px 8px">Executar categoria</button></div></div>`).join("");
  const rows=reg.filter(t=>{const r=ftResults.get(t.id);if(onlyFail&&!(r&&!r.ok))return false;return !q||t.name.toLowerCase().includes(q)||t.id.toLowerCase().includes(q)});
  $("testResults").innerHTML=TEST_CATS.map(([c,n])=>{const ts=rows.filter(t=>t.cat===c);if(!ts.length)return "";return `<h3>${n}</h3>`+ts.map(t=>{const r=ftResults.get(t.id);return `<div class="test"><div style="min-width:0"><strong>${t.name}</strong> <span class="pill">${t.id}</span><div class="small muted">${r?(r.ok?r.msg:`<span class="red">Falha:</span> ${r.msg}`):"Ainda não executado."}${r?` · ${fmt(r.ms,1)} ms`:""}</div></div><div class="row" style="flex-wrap:nowrap"><span class="${r?(r.ok?"pass":"fail"):"muted"}">${r?(r.ok?"APROVADO":"REPROVADO"):"—"}</span><button class="small" data-ft-run="${t.id}" style="padding:4px 8px">${r?"Repetir":"Executar"}</button></div></div>`}).join("")}).join("")||'<div class="small muted">Nenhum teste corresponde ao filtro.</div>';
- $("ftHistory").innerHTML=ftHistory.length?`<div class="tablewrap"><table><thead><tr><th>Quando</th><th>Execução</th><th>Aprovados</th><th>Reprovados</th><th>Tempo</th><th>Falhas</th></tr></thead><tbody>${ftHistory.map(h=>`<tr><td>${new Date(h.at).toLocaleString("pt-PT")}</td><td>${h.label}</td><td>${h.pass}/${h.total}</td><td class="${h.fail?"red":""}">${h.fail}</td><td>${fmt(h.ms,0)} ms</td><td>${h.failed.join(", ")||"—"}</td></tr>`).join("")}</tbody></table></div>`:"Sem execuções registadas.";
+ $("ftHistory").innerHTML=ftHistory.length?`<div class="tablewrap"><table><thead><tr><th>Quando</th><th>Execução</th><th>Aprovados</th><th>Reprovados</th><th>Tempo</th><th>Falhas</th></tr></thead><tbody>${ftHistory.map(h=>`<tr><td>${new Date(h.at).toLocaleString("pt-BR")}</td><td>${h.label}</td><td>${h.pass}/${h.total}</td><td class="${h.fail?"red":""}">${h.fail}</td><td>${fmt(h.ms,0)} ms</td><td>${h.failed.join(", ")||"—"}</td></tr>`).join("")}</tbody></table></div>`:"Sem execuções registadas.";
  document.querySelectorAll("[data-ft-run]").forEach(b=>b.onclick=()=>{const id=b.dataset.ftRun;executeTests(t=>t.id===id,"Teste "+id)});
  document.querySelectorAll("[data-ft-cat]").forEach(b=>b.onclick=()=>{const c=b.dataset.ftCat;executeTests(t=>t.cat===c,"Categoria "+c)});
 }
@@ -2158,8 +2167,8 @@ function init(){
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
   const input=$(k+"Spend");
-  input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=String(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
-  input.addEventListener("focus",()=>{if(Number(input.value)===0)input.select()});
+  input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
+  input.addEventListener("focus",()=>{if(parseAmount(input.value)===0)input.select()});
   const ctrl=input.parentElement;
   ctrl.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>stepArea(idx,Number(b.dataset.step)));
   ctrl.querySelector("[data-rest]").onclick=()=>restArea(idx);ctrl.querySelector("[data-zero]").onclick=()=>{const v=readAlloc();v[idx]=0;setAlloc(v)};
