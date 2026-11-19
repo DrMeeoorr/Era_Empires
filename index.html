@@ -102,10 +102,29 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 /* ===== UX Fase 1: painel do alvo curto e botão de ataque legível ===== */
 .target-panel{scroll-margin-bottom:96px}
 .tgt-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 2px;font-size:13px;color:var(--muted)}.tgt-nums b{color:var(--text);font-size:15px}.tgt-nums b.red{color:var(--red)}
-.tgt-info{margin-top:4px;font-size:12.5px;color:var(--muted)}.tgt-info summary{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:4px;color:#b9c8dc;text-decoration:underline;text-underline-offset:3px;list-style:none}.tgt-info summary::-webkit-details-marker{display:none}.tgt-info[open] summary{margin-bottom:2px}
+.tgt-info{margin-top:4px;font-size:12.5px;color:var(--muted)}.tgt-info summary{cursor:pointer;min-height:48px;display:inline-flex;align-items:center;gap:4px;color:#b9c8dc;text-decoration:underline;text-underline-offset:3px;list-style:none}.tgt-info summary::-webkit-details-marker{display:none}.tgt-info[open] summary{margin-bottom:2px}
 .target-panel button#attack{min-height:48px;min-width:132px}
 .target-panel button#attack:disabled{opacity:1;background:#162236;border:1px dashed #4a6283;color:#c3d1e3;filter:none;cursor:not-allowed}
 @media(max-width:480px){.target-panel{flex-direction:column;align-items:stretch}.target-panel .txt{flex:0 0 auto}.target-panel button#attack{width:100%}}
+/* ===== UX Fase 1: alvos de toque com pelo menos 48 px ===== */
+.top .actions button,.top .actions button.ghost{min-height:48px}
+@media(max-width:620px){.top .actions button{min-height:48px}}
+button.ghost{background:transparent;border-color:var(--line);color:var(--muted);font-weight:500}
+button.ghost:hover{color:var(--text)}
+.home-link{min-height:48px;padding:10px 12px;display:inline-flex;align-items:center}
+.home-primary,.home-secondary{min-height:48px}
+.chip{min-height:48px;min-width:48px}
+.home-actions button,.home-screen .home-primary,.home-screen .home-secondary{min-height:48px}
+.profile-row select{min-height:48px}
+.plans button{min-height:48px}
+.inv-ctrl{grid-template-columns:48px minmax(0,1fr) 48px auto minmax(48px,auto)}
+.inv-ctrl button{min-height:48px;min-width:48px}.inv-ctrl input{min-height:48px}
+details.card summary{min-height:48px}
+.modal .actions button{min-height:48px}
+.territory{min-height:clamp(48px,11vw,72px)}
+.tut-link{min-height:48px;padding:4px 8px}
+.save-warning button{min-width:48px;min-height:48px}
+.tabs .tab{min-height:48px}
 </style>
 </head>
 <body>
@@ -163,14 +182,14 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
           <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip selected" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button><button type="button" class="chip dev-only" data-diff="config">⚙ Configurações</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
           <div><label>Adversários (IA)</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de adversários"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
           <div><label>Estilo de cada adversário</label><div id="homeProfiles" class="profile-rows"></div></div>
-          <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:42px" aria-label="Limite de eras"></div></div>
+          <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:48px" aria-label="Limite de eras"></div></div>
           <div><label>Vitória</label><div class="chips" id="homeVictoryMode" role="group" aria-label="Modo de vitória"><button type="button" class="chip selected" id="homeClassic" aria-pressed="true">Clássico</button><button type="button" class="chip" id="homeConquest" aria-pressed="false">⚔ Conquista</button></div><div class="small muted" id="homeVictoryDesc" style="margin-top:4px"></div></div>
         </div>
     <div class="setup-footer"><div class="setup-summary" id="setupSummary"></div><button type="button" class="home-primary" id="setupStart">Começar <span aria-hidden="true">→</span></button></div>
   </div>
 </section>
 <div class="wrap">
-<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions"><button id="returnHome" type="button">⌂ Início</button><button id="exportHistory" class="dev-only" title="Guarda um ficheiro com a partida para enviar como feedback">Exportar</button><button id="restart" class="danger">Reiniciar</button></div></header>
+<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions"><button id="returnHome" type="button">⌂ Início</button><button id="exportHistory" class="dev-only" title="Guarda um ficheiro com a partida para enviar como feedback">Exportar</button><button id="restart" class="ghost" type="button" aria-label="Reiniciar a partida">↺ Reiniciar</button></div></header>
 <div class="tabs dev-only">
 <button class="tab active" data-view="game">Jogo</button><button class="tab" data-view="lab">Configurações</button><button class="tab" data-view="tests">Testes funcionais</button><button class="tab" data-view="balanceLab">Balanceamento</button><button class="tab" data-view="aiLab">Validação das IAs</button>
 </div>
@@ -190,9 +209,9 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
    <div class="section-title"><h2>Investir nesta era</h2><span class="pill" id="budgetPill"></span></div>
    <div class="small muted">Planos rápidos (usam todo o orçamento):</div>
    <div class="plans" id="plans"><button data-plan="balanced">Equilibrado</button><button data-plan="attack">Ataque</button><button data-plan="economy">Economia</button><button data-plan="tech">Tecnologia</button><button data-plan="clear">Limpar</button></div>
-   <div class="inv-row"><div class="inv-head"><strong class="gold">⚔ Militar</strong><span class="small muted">curto prazo · poder na era seguinte</span></div><div class="inv-ctrl" data-area="mil"><button data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar"><button data-step="1" aria-label="Mais militar">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="milBar" style="background:var(--gold)"></span></div><div class="small muted" id="milForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="green">▰ Infraestrutura</strong><span class="small muted">médio prazo · cresce e depois termina</span></div><div class="inv-ctrl" data-area="infra"><button data-step="-1" aria-label="Menos infraestrutura">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em infraestrutura"><button data-step="1" aria-label="Mais infraestrutura">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="infraBar" style="background:var(--green)"></span></div><div class="small muted" id="infraForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="purple">✦ Tecnologia</strong><span class="small muted">longo prazo · rende para sempre</span></div><div class="inv-ctrl" data-area="tech"><button data-step="-1" aria-label="Menos tecnologia">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em tecnologia"><button data-step="1" aria-label="Mais tecnologia">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero>0</button></div><div class="bar"><span id="techBar" style="background:var(--purple)"></span></div><div class="small muted" id="techForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="gold">⚔ Militar</strong><span class="small muted">curto prazo · poder na era seguinte</span></div><div class="inv-ctrl" data-area="mil"><button data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar"><button data-step="1" aria-label="Mais militar">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar militar" title="Zerar">0</button></div><div class="bar"><span id="milBar" style="background:var(--gold)"></span></div><div class="small muted" id="milForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="green">▰ Infraestrutura</strong><span class="small muted">médio prazo · cresce e depois termina</span></div><div class="inv-ctrl" data-area="infra"><button data-step="-1" aria-label="Menos infraestrutura">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em infraestrutura"><button data-step="1" aria-label="Mais infraestrutura">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar infraestrutura" title="Zerar">0</button></div><div class="bar"><span id="infraBar" style="background:var(--green)"></span></div><div class="small muted" id="infraForecast"></div></div>
+   <div class="inv-row"><div class="inv-head"><strong class="purple">✦ Tecnologia</strong><span class="small muted">longo prazo · rende para sempre</span></div><div class="inv-ctrl" data-area="tech"><button data-step="-1" aria-label="Menos tecnologia">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em tecnologia"><button data-step="1" aria-label="Mais tecnologia">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar tecnologia" title="Zerar">0</button></div><div class="bar"><span id="techBar" style="background:var(--purple)"></span></div><div class="small muted" id="techForecast"></div></div>
    <div class="status" id="allocationStatus"></div>
   </section>
   <section class="card"><div class="section-title"><h2>Condições de vitória</h2><span class="pill" id="victoryPill"></span></div><div id="victoryPanel"></div></section>

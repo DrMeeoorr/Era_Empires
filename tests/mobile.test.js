@@ -4,18 +4,19 @@ const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS } = require("./helpers");
 
-// Altura mínima aceite para os botões principais (as diretrizes Android recomendam 48 dp;
-// abaixo de 36 px o toque fica difícil). Botões abaixo de 40 px são listados como aviso.
-const MIN_TAP = 36, WARN_TAP = 40;
+// Alvos de toque: as diretrizes Android pedem 48 dp. Os botões marcados como principais têm de ter
+// pelo menos 48 px de altura e de largura; os restantes abaixo disso são listados como aviso.
+const MIN_TAP = 48, WARN_TAP = 48;
 
 let browser;
 before(async () => (browser = await launch()));
 after(async () => browser && browser.close());
 
 async function checkButtons(page, list, where, smalls) {
-  for (const [sel, label, primary] of list) {
+  for (const [sel, label, primary, minWidth = MIN_TAP] of list) {
     const box = await assertClickable(page, sel, `${where} › ${label}`);
-    if (primary) assert.ok(box.height >= MIN_TAP, `${where} › ${label}: altura ${Math.round(box.height)} px < ${MIN_TAP} px`);
+    if (primary) assert.ok(box.height >= MIN_TAP - 0.5, `${where} › ${label}: altura ${Math.round(box.height)} px < ${MIN_TAP} px`);
+    if (primary) assert.ok(box.width >= minWidth - 0.5, `${where} › ${label}: largura ${Math.round(box.width)} px < ${minWidth} px`);
     if (box.height < WARN_TAP || box.width < WARN_TAP) smalls.push(`${where} › ${label} ${Math.round(box.width)}×${Math.round(box.height)}`);
   }
 }
@@ -43,9 +44,9 @@ for (const [name, opts] of MOBILE_SCREENS) {
     await page.locator("#setupScreen").waitFor({ state: "visible" });
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal na configuração");
     await checkButtons(page, [
-      ["#setupBack", "Voltar", false], ["#modeSlow", "Modo lento", true], ["#modeFast", "Modo rápido", true],
+      ["#setupBack", "Voltar", true], ["#modeSlow", "Modo lento", true], ["#modeFast", "Modo rápido", true],
       ['#homeDifficulty [data-diff="medio"]', "Dificuldade Médio", true], ['#homeDifficulty [data-diff="hardcore"]', "Dificuldade Hardcore", true],
-      ['#homeOpponents [data-ai="3"]', "3 adversários", true], ['#homeEraPresets [data-eras="15"]', "15 eras", true],
+      ['#homeOpponents [data-ai="1"]', "1 adversário", true], ['#homeOpponents [data-ai="3"]', "3 adversários", true], ["#homeProfiles select", "estilo do rival", true], ['#homeEraPresets [data-eras="15"]', "15 eras", true],
       ["#homeConquest", "Conquista", true], ["#setupStart", "Começar", true],
     ], "configuração", smalls);
     // 3 adversários: a configuração tem de continuar sem rolagem horizontal.
@@ -65,11 +66,17 @@ for (const [name, opts] of MOBILE_SCREENS) {
     const target = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
     await checkButtons(page, [
       ["#returnHome", "Início", true], ["#restart", "Reiniciar", true],
-      [`[data-territory="${target}"]`, "território vizinho", true],
+      // O mapa tem 6 colunas: no Galaxy S9+ (320 px de largura) cada território fica com ~42 px de largura.
+      [`[data-territory="${target}"]`, "território vizinho", true, 40],
       ['[data-plan="balanced"]', "plano Equilibrado", true], ['[data-plan="attack"]', "plano Ataque", true], ['[data-plan="clear"]', "Limpar", true],
-      ['[data-area="mil"] [data-step="1"]', "+ militar", true], ['[data-area="infra"] [data-step="1"]', "+ infraestrutura", true], ['[data-area="tech"] [data-step="1"]', "+ tecnologia", true],
+      ['[data-area="mil"] [data-step="1"]', "+ militar", true], ['[data-area="mil"] [data-zero]', "0 (zerar) militar", true], ['[data-area="mil"] [data-rest]', "Resto militar", true], ['#howTo summary', "Como jogar", true], ['#details summary', "Detalhes da partida", true], ['[data-area="infra"] [data-step="1"]', "+ infraestrutura", true], ['[data-area="tech"] [data-step="1"]', "+ tecnologia", true],
       ["#advance", "Concluir a era", true],
     ], "jogo", smalls);
+    // "Reiniciar" fica discreto (não vermelho) e pede confirmação antes de apagar a partida.
+    assert.equal(await page.locator("#restart").evaluate((e) => e.classList.contains("danger")), false, "Reiniciar em vermelho no topo");
+    await page.locator("#restart").click();
+    await page.locator('#modalRoot button:has-text("Cancelar")').click();
+    assert.equal(await page.evaluate(() => state.era), 1);
     // Investir com os botões +/- e concluir duas eras (com relatório e aviso de saldo).
     await page.locator('[data-area="mil"] [data-step="1"]').click();
     const alloc = await page.evaluate(() => readAlloc());
