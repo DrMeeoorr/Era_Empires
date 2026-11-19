@@ -1,0 +1,43 @@
+// Formatação para o jogador (pt-BR: 1.234,5 · "de ouro"), texto seguro em HTML e conversão dos textos do motor.
+import {regionName} from "../core/names.js";
+
+// Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
+export const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+// Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.
+export const cssColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:"#888888";
+export const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-BR",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
+// Ouro: "142,5 de ouro" em frases; "142,5 🪙" onde o espaço é curto (cartões, barra de baixo).
+export const money=n=>fmt(n,2)+" de ouro";
+export const goldShort=n=>fmt(n,2)+" 🪙";
+// Exibição (pt-BR) dos textos guardados pelo motor (registo de eventos, motivos de recusa, resultado):
+// o texto guardado não muda — só a forma como aparece ao jogador. Números passam a 1.234,5;
+// "u." vira ouro, "pontos"/"poder" militar vira Força, infraestrutura → obras, tecnologia → ciência.
+export const UI_TEXT_RULES=[
+ [/(\d)[   ](?=\d{3}(?!\d))/g,"$1."],
+ [/\b(\d)(\d{3})(?=(?:,\d+)?\s(?:u\.|pontos))/g,"$1.$2"],
+ [/Poder insuficiente: precisa de ([\d.,]+) pontos/g,"Força insuficiente: você precisa de $1 de Força"],
+ [/([\d.,]+) u\. de tesouro/g,"$1 de ouro"],
+ [/([\d.,]+) u\. de infraestrutura/g,"$1 de ouro em Obras"],
+ [/([\d.,]+) de progresso tecnológico/g,"$1 de Ciência"],
+ [/([\d.,]+) u\./g,"$1 de ouro"],
+ [/([\d.,]+) pontos comprometidos/g,"$1 de Força gastos"],
+ [/perdeu ([\d.,]+) pontos/g,"perdeu $1 de Força"],
+ [/\(força ([\d.,]+) × ([\d.,]+)\)/g,"(Força $1 × $2)"],
+ [/já não é possível atacar/g,"não é mais possível atacar"],
+ [/poder devolvido/g,"Força devolvida"],
+ [/acumulando poder militar/g,"acumulando Força"],
+ [/Alvo não é adjacente ou já pertence ao atacante\./g,"Esse território não faz fronteira com o seu ou já é seu."],
+ [/\(de Jogador\)/g,"(seu)"],[/\(neutro\)/g,"(livre)"],
+ [/vitória de Jogador por/g,"você venceu por"],[/\bJogador\b/g,"você"],
+ [/Ordem de Você contra/g,"Sua ordem contra"],[/venceu Você/g,"venceu você"],[/pontuação final por recursos/g,"pontuação final"],
+ [/eliminação dos adversários/g,"eliminação dos rivais"],
+ // "território 9" → nome da região (Ivara). Os rivais têm nomes masculinos (o Rubro, o Ocre...).
+ [/\bpelo território (\d+)/g,(m,n)=>"por "+regionName(n-1)],
+ [/\b(ao|o) território (\d+)/g,(m,p,n)=>(p==="ao"?"a ":"")+regionName(n-1)],
+ [/\b[Tt]erritório (\d+)/g,(m,n)=>regionName(n-1)],
+ [/e foi eliminada\./g,"e foi eliminado."]
+];
+export const uiText=t=>UI_TEXT_RULES.reduce((s,[re,to])=>s.replace(re,to),String(t??""));
+// Campos de investimento: mostram vírgula decimal (formato do Brasil) e aceitam "12,5", "12.5" e "1.250" (milhar).
+export const fmtInput=v=>String(Math.round(v*100)/100).replace(".",",");
+export function parseAmount(raw){let t=String(raw??"").trim().replace(/\s/g,"");if(t.includes(","))t=t.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");const v=Number(t);return Number.isFinite(v)?v:0}

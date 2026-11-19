@@ -1,89 +1,51 @@
-// Impérios — código do jogo que ainda não foi dividido em módulos (interface, sessão, gravação e laboratórios).
-// Os passos 9 e 10 da reorganização dividem este ficheiro em src/ui, src/app, src/platform e src/labs.
-import * as legacyNs from "./legacy.js";
-import * as coreNs from "./core/index.js";
-import * as aiNs from "./ai/index.js";
+// Impérios — código do jogo que ainda não foi dividido em módulos (interface, gravação e laboratórios).
+// Os passos 9 e 10 da reorganização dividem este ficheiro em src/ui, src/app e src/labs.
+import * as ns_core_index from "./core/index.js";
+import * as ns_ai_index from "./ai/index.js";
+import * as ns_app_session from "./app/session.js";
+import * as ns_app_save from "./app/save.js";
+import * as ns_app_hooks from "./app/hooks.js";
+import * as ns_platform_storage from "./platform/storage.js";
+import * as ns_platform_files from "./platform/files.js";
+import * as ns_ui_format from "./ui/format.js";
+import * as ns_ui_dom from "./ui/dom.js";
+import * as ns_labs_settings from "./labs/settings.js";
+import * as ns_labs_ai_checks from "./labs/ai-checks.js";
+import * as ns_labs_engine from "./labs/engine.js";
+import * as ns_labs_experiment from "./labs/experiment.js";
+import * as ns_labs_validation from "./labs/validation.js";
+import * as ns_labs_tests_def from "./labs/tests-def.js";
+import * as ns_legacy from "./legacy.js";
 import {exposeGlobals} from "./app/debug.js";
-import {aiDecide} from "./ai/decide.js";
-import {LAB_PROFILES,LAB_PROFILE_NAME,AI_PROFILE_NAMES} from "./ai/profiles.js";
-import {DEFAULTS,pickAiDifficulty,DIFFICULTIES,AI_DIFF_FIELDS,SUPPORTED_VERSIONS,MAX_AI,normalizeConfig,validAiBase,effectiveDelay,VERSION,SCORE_WEIGHT_KEYS,CIV_COLORS} from "./core/config.js";
-import {infraReturn,techReturn,invest,makeInvestment} from "./core/economy.js";
-import {territorialMinimum,territoryBase,finalScores,describeResult,evaluateEndOfEra,evaluateSupremacy,computeICE,scoreWinners,END_REASON_NAMES} from "./core/endgame.js";
-import {beginEra,finishEra,simulate,processEra} from "./core/era.js";
+import {LAB_PROFILE_NAME,AI_PROFILE_NAMES,LAB_PROFILES} from "./ai/profiles.js";
+import {hooks,runHook,onHook} from "./app/hooks.js";
+import {quarantineSave,saveGame,readSavedGame} from "./app/save.js";
+import {configApplied,state,profileOf,setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,currentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,selectedTerritory,busy,playEra,gameMode,rememberAiBase,setBusy,setCancelRequested,cancelRequested,DEV_MODE,opponentChoices,visibleOpponentOptions} from "./app/session.js";
+import {pickAiDifficulty,DIFFICULTIES,effectiveDelay,normalizeConfig,VERSION,SUPPORTED_VERSIONS,DEFAULTS,MAX_AI,CIV_COLORS} from "./core/config.js";
+import {infraReturn,techReturn} from "./core/economy.js";
+import {territorialMinimum,territoryBase,finalScores,describeResult,END_REASON_NAMES} from "./core/endgame.js";
+import {simulate,processEra} from "./core/era.js";
 import {countTerritories,eligibleTargets,adjacentOwned} from "./core/map.js";
-import {runFixedGame,fixedGameSeed,seatProfiles,runMatch} from "./core/match.js";
-import {territoryDefense,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack,pillage,resolveOrders} from "./core/military.js";
-import {regionName,RIVAL_NAMES,civSym,civName} from "./core/names.js";
-import {REF_DIMS,calibrateReferences,REF_SETS,validateReferences,refAt,DEFAULT_REFERENCE_VALUES,quantile} from "./core/references.js";
-import {rand} from "./core/rng.js";
-import {newState,P,aiCivs,getCiv,addLog,A} from "./core/state.js";
+import {runFixedGame,fixedGameSeed} from "./core/match.js";
+import {territoryDefense,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack} from "./core/military.js";
+import {civSym,civName,regionName,RIVAL_NAMES} from "./core/names.js";
+import {REF_DIMS,calibrateReferences,REF_SETS,validateReferences} from "./core/references.js";
+import {P,aiCivs,getCiv,addLog,newState,A} from "./core/state.js";
 import {clone,clamp,safeNum} from "./core/util.js";
-export let configDefault=clone(DEFAULTS), configEdited=clone(DEFAULTS), configApplied=clone(DEFAULTS);
-export let state, busy=false,cancelRequested=false, selectedTerritory=null, compareResults=[],lastStrategyResult=null,scenarioLoaded=null;
-// Modo escolhido na interface para a PRÓXIMA partida. O motor nunca lê esta variável:
-// cada estado guarda o seu próprio modo (state.mode) e cada investimento guarda inv.mode.
-export let gameMode="slow";
+import {profileExpectedWeights,pct,runAiControlProbe,aiProbe} from "./labs/ai-checks.js";
+import {estimateRows,ROW_WARN,buildJobs,runGameJobs,summarizeRecords,profileStats,mean,median,profileName,consolidateProfiles,OUTCOME_KEYS,RC} from "./labs/engine.js";
+import {paramCatalog,expState,SCENARIO_COLORS,getParam,parseParamValue,setExpCancel,expCancel,scenarioConfig,exportExp} from "./labs/experiment.js";
+import {setConfigEdited,PARAM_GROUPS,paramInput,configEdited,PARAM_OPTIONS} from "./labs/settings.js";
+import {executeTests,testRegistry,ftHistory,TEST_CATS,ftResults,ftLastRun,loadFtHistory} from "./labs/tests-def.js";
+import {setValCancel,valCancel,valState,profileDiagnostics,PROFILE_EXPECTATIONS} from "./labs/validation.js";
+import {download,csvDownload} from "./platform/files.js";
+import {storage} from "./platform/storage.js";
+import {$,setStatus} from "./ui/dom.js";
+import {cssColor,escapeHtml,fmt,money,uiText,parseAmount,fmtInput} from "./ui/format.js";
+export let compareResults=[];
+export let lastStrategyResult=null;
+export let scenarioLoaded=null;
 export const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];
-export const $=id=>document.getElementById(id);
-/* ── Ganchos: avisam outras partes da interface (relatório, tutorial) sem substituir funções ──
-   afterEra(era,row): depois de cada era jogada pelo jogador · afterRender(): depois de renderAll ·
-   beforeConclude(): antes de concluir a era (devolver false impede) · continueGame / returnHome: tela inicial ·
-   configChanged(): a configuração aplicada mudou (os laboratórios atualizam o editor) · viewShown(view): aba mostrada. */
-export const hooks={afterEra:[],afterRender:[],beforeConclude:[],continueGame:[],returnHome:[],configChanged:[],viewShown:[]};
-export const onHook=(name,fn)=>{hooks[name].push(fn)};
-export const runHook=(name,...args)=>{for(const fn of hooks[name])fn(...args)};
-/* ── Armazenamento (único lugar que usa localStorage) ──
-   Interface assíncrona: get(key) → texto ou null, set(key,texto), remove(key); todas devolvem promessas.
-   Hoje usa o localStorage do navegador; no app Android basta trocar por @capacitor/preferences
-   (Preferences.get/set/remove) sem mexer no resto do jogo. Com o localStorage a gravação acontece já na
-   chamada (antes de a promessa resolver), por isso a ordem das gravações é sempre a das chamadas. */
-export const storage={
- async get(key){return localStorage.getItem(key)},
- async set(key,value){localStorage.setItem(key,String(value))},
- async remove(key){localStorage.removeItem(key)},
-};
-// true com ?dev=1: mostra laboratórios, testes e exportação (ver o <script> no <head>).
-export const DEV_MODE=typeof document!=="undefined"&&!document.documentElement.classList.contains("player-build");
-// Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
-export const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
-// Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.
-export const cssColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:"#888888";
-export const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-BR",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
-// Ouro: "142,5 de ouro" em frases; "142,5 🪙" onde o espaço é curto (cartões, barra de baixo).
-export const money=n=>fmt(n,2)+" de ouro";
-export const goldShort=n=>fmt(n,2)+" 🪙";
-// Exibição (pt-BR) dos textos guardados pelo motor (registo de eventos, motivos de recusa, resultado):
-// o texto guardado não muda — só a forma como aparece ao jogador. Números passam a 1.234,5;
-// "u." vira ouro, "pontos"/"poder" militar vira Força, infraestrutura → obras, tecnologia → ciência.
-export const UI_TEXT_RULES=[
- [/(\d)[   ](?=\d{3}(?!\d))/g,"$1."],
- [/\b(\d)(\d{3})(?=(?:,\d+)?\s(?:u\.|pontos))/g,"$1.$2"],
- [/Poder insuficiente: precisa de ([\d.,]+) pontos/g,"Força insuficiente: você precisa de $1 de Força"],
- [/([\d.,]+) u\. de tesouro/g,"$1 de ouro"],
- [/([\d.,]+) u\. de infraestrutura/g,"$1 de ouro em Obras"],
- [/([\d.,]+) de progresso tecnológico/g,"$1 de Ciência"],
- [/([\d.,]+) u\./g,"$1 de ouro"],
- [/([\d.,]+) pontos comprometidos/g,"$1 de Força gastos"],
- [/perdeu ([\d.,]+) pontos/g,"perdeu $1 de Força"],
- [/\(força ([\d.,]+) × ([\d.,]+)\)/g,"(Força $1 × $2)"],
- [/já não é possível atacar/g,"não é mais possível atacar"],
- [/poder devolvido/g,"Força devolvida"],
- [/acumulando poder militar/g,"acumulando Força"],
- [/Alvo não é adjacente ou já pertence ao atacante\./g,"Esse território não faz fronteira com o seu ou já é seu."],
- [/\(de Jogador\)/g,"(seu)"],[/\(neutro\)/g,"(livre)"],
- [/vitória de Jogador por/g,"você venceu por"],[/\bJogador\b/g,"você"],
- [/Ordem de Você contra/g,"Sua ordem contra"],[/venceu Você/g,"venceu você"],[/pontuação final por recursos/g,"pontuação final"],
- [/eliminação dos adversários/g,"eliminação dos rivais"],
- // "território 9" → nome da região (Ivara). Os rivais têm nomes masculinos (o Rubro, o Ocre...).
- [/\bpelo território (\d+)/g,(m,n)=>"por "+regionName(n-1)],
- [/\b(ao|o) território (\d+)/g,(m,p,n)=>(p==="ao"?"a ":"")+regionName(n-1)],
- [/\b[Tt]erritório (\d+)/g,(m,n)=>regionName(n-1)],
- [/e foi eliminada\./g,"e foi eliminado."]
-];
-export const uiText=t=>UI_TEXT_RULES.reduce((s,[re,to])=>s.replace(re,to),String(t??""));
-// Campos de investimento: mostram vírgula decimal (formato do Brasil) e aceitam "12,5", "12.5" e "1.250" (milhar).
-export const fmtInput=v=>String(Math.round(v*100)/100).replace(".",",");
-export function parseAmount(raw){let t=String(raw??"").trim().replace(/\s/g,"");if(t.includes(","))t=t.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");const v=Number(t);return Number.isFinite(v)?v:0}
 export function makeSnapshot(){return {config:clone(configApplied),state:clone(state)}}
 // Gera as partidas em lotes (async) para não bloquear a interface; pode ser cancelado
 // e preserva as partidas já concluídas.
@@ -101,45 +63,10 @@ export function fixedProfileSummary(games){
  const acc={};for(const g of games){const last=g.timeline.at(-1);if(!last)continue;for(const r of last.civs){const a=acc[r.profile]??={n:0,territories:0,military:0,infrastructure:0,technology:0,treasury:0,revenue:0};a.n++;a.territories+=r.territories;for(const [d] of REF_DIMS)a[d]+=r.dims[d]}}
  return Object.entries(acc).map(([profile,a])=>({profile,n:a.n,territories:a.territories/a.n,...Object.fromEntries(REF_DIMS.map(([d])=>[d,a[d]/a.n]))}));
 }
-// Versão do jogador: começa no "Médio"; "Configurações" (valores dos laboratórios) só existe com ?dev=1.
-// Saves antigos com dificuldade "config" continuam a abrir e a jogar normalmente.
-export const DEFAULT_DIFFICULTY=DEV_MODE?"config":"medio";
-export let currentDifficulty=DEFAULT_DIFFICULTY;
-export let aiConfigBase=pickAiDifficulty(DEFAULTS);
-// Chamada quando a configuração é aplicada nos laboratórios: com a dificuldade "Configurações" ativa, os valores aplicados passam a ser a base.
-export function rememberAiBase(cfg){if(currentDifficulty==="config")aiConfigBase=pickAiDifficulty(cfg)}
-export function applyDifficulty(key){const d=DIFFICULTIES[key];if(!d)return;
- if(key==="config"){for(const [g,k] of AI_DIFF_FIELDS)configApplied[g][k]=aiConfigBase[g+"."+k];return}
- configApplied.economy.aiIncomeMultiplier=d.aiIncomeMultiplier;configApplied.economy.aiIncomeMultiplier1v1=d.aiIncomeMultiplier1v1??-1;configApplied.military.aiAggression=d.aiAggression;configApplied.military.aiTarget=d.aiTarget}
-/* ── Adversários: estilo escolhido por IA ou sorteado ── */
-export const OPPONENT_OPTIONS=[["random","🎲 Aleatório (revelado no fim)"],["config","⚙ Definido nas Configurações"],["reference","Equilibrado — divide igualmente"],["military","Militar — exército forte"],["aggressive","Agressivo — expande e ataca muito"],["technologist","Científico — aposta na Ciência, longo prazo"],["economist","Construtor — aposta em Obras"],["adaptive","Adaptativo — reage à situação"]];
-// Na versão completa o padrão segue o perfil definido nas Configurações (comportamento anterior).
-// Na versão do jogador o padrão é "Adaptativa" (o mesmo estilo que "Definido nas Configurações" usa por padrão).
-export const DEFAULT_OPPONENT=DEV_MODE?"config":"adaptive";
-export let opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];
-// Opções mostradas ao jogador: sem "Definido nas Configurações" fora do ?dev=1.
-export const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
-// Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
-export function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}
-// Uma partida começa já com a era 1 aberta: receitas recebidas, à espera da decisão do jogador.
-export function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)]});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
-export function profileOf(c){return c.profile||configApplied.military.aiStyle||"adaptive"}
 // Nomes de estilo mostrados ao jogador (os laboratórios continuam a usar LAB_PROFILE_NAME).
 export const PLAYER_PROFILE_NAME={reference:"Equilibrado",military:"Militar",aggressive:"Agressivo",technologist:"Científico",economist:"Construtor",adaptive:"Adaptativo"};
 export const playerProfileName=p=>PLAYER_PROFILE_NAME[p]||LAB_PROFILE_NAME[p]||p;
 export function profileLabel(c,reveal=false){if(c.id==="player")return "";if(c.hiddenProfile&&!reveal&&!state.result)return "estilo oculto";return playerProfileName(profileOf(c))}
-// Conclui a era aberta e, se a partida continuar, abre a seguinte.
-export function playEra(allocation){const era=state.era,row=finishEra(state,configApplied,{playerAllocation:allocation});if(!state.result)beginEra(state,configApplied);saveGame();runHook("afterEra",era,row);return row}
-/* ── Guardar a partida no navegador ── */
-export const SAVE_KEY="imperios-completo-partida", SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";
-// Grava a partida. Se o navegador recusar (espaço cheio, armazenamento bloqueado), avisa o jogador
-// com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
-// Devolve uma promessa: true se gravou, false se falhou (o aviso já foi mostrado).
-export let saveFailed=false;
-export function saveGame(){
- let w;try{w=storage.set(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase}))}catch(e){w=Promise.reject(e)}
- return w.then(()=>{if(saveFailed){saveFailed=false;showSaveWarning(null)}return true},e=>{saveFailed=true;showSaveWarning(e);return false});
-}
 export function showSaveWarning(err){
  if(typeof document==="undefined")return;let el=document.getElementById("saveWarning");
  if(!err){if(el)el.hidden=true;return}
@@ -148,64 +75,6 @@ export function showSaveWarning(err){
  el.innerHTML=`<span>⚠ <strong>Não foi possível salvar a partida.</strong> ${full?"O espaço de armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se você fechar o jogo agora, pode perder o progresso desde o último salvamento.</span><button type="button" aria-label="Fechar aviso">✕</button>`;
  el.querySelector("button").onclick=()=>{el.hidden=true};el.hidden=false;
 }
-// Valida a estrutura de um estado salvo antes de o usar. Devolve null se estiver bem, ou o motivo.
-export function validateSavedState(st){
- const isInt=Number.isInteger,fin=Number.isFinite,obj=v=>!!v&&typeof v==="object"&&!Array.isArray(v),arr=Array.isArray;
- if(!obj(st))return "estado ausente";
- if(st.formatVersion!==undefined&&!SUPPORTED_VERSIONS.includes(st.formatVersion))return "versão do formato não suportada: "+st.formatVersion;
- if(!arr(st.civs)||st.civs.length<2||st.civs.length>MAX_AI+1)return "lista de civilizações inválida";
- const ids=new Set();
- for(const c of st.civs){
-  if(!obj(c)||typeof c.id!=="string"||!c.id||c.id==="neutral"||ids.has(c.id))return "civilização sem identificador válido";ids.add(c.id);
-  if(typeof c.name!=="string")return "civilização sem nome";
-  if(!fin(c.treasury)||!fin(c.military))return "tesouro/poder militar inválido ("+c.id+")";
-  for(const k of ["color","chartColor"])if(c[k]!==undefined&&typeof c[k]!=="string")return "cor inválida";
-  for(const k of ["invested","attacks","lastRevenue"])if(c[k]!==undefined&&!obj(c[k]))return "dados da civilização inválidos";
- }
- if(st.civs[0].id!=="player")return "o jogador não é a primeira civilização";
- if(!arr(st.owners)||st.owners.length<4||st.owners.length>30)return "mapa inválido";
- if(st.owners.some(o=>o!=="neutral"&&!ids.has(o)))return "território com dono desconhecido";
- if(!isInt(st.era)||st.era<0||!isInt(st.maxEras)||st.maxEras<1)return "era inválida";
- for(const k of ["investments","history","timeline","log"])if(!arr(st[k]))return "lista "+k+" ausente";
- if(st.orders!==undefined&&!arr(st.orders))return "ordens inválidas";
- for(const inv of st.investments)if(!obj(inv)||!["military","infrastructure","technology"].includes(inv.type)||!ids.has(inv.owner)||!isInt(inv.origin)||!fin(inv.amount)||!obj(inv.params))return "investimento inválido";
- for(const o of st.orders||[])if(!obj(o)||!ids.has(o.owner)||!isInt(o.idx)||o.idx<0||o.idx>=st.owners.length)return "ordem inválida";
- for(const e of st.log)if(!obj(e)||!fin(e.era)||typeof e.text!=="string")return "registo de eventos inválido";
- for(const r of st.history)if(!obj(r)||!fin(r.era))return "histórico inválido";
- for(const e of st.timeline)if(!obj(e)||!fin(e.era)||!arr(e.civs))return "linha do tempo inválida";
- if(st.result!=null&&(!obj(st.result)||!arr(st.result.winners)))return "resultado inválido";
- if(st.pending!=null&&!obj(st.pending))return "era em curso inválida";
- if(st.tutorial!=null&&!obj(st.tutorial))return "tutorial inválido";
- return null;
-}
-// Converte um estado salvo de formatos antigos (3, 4) para o atual. Não muda nenhum valor usado pelas regras.
-export function migrateSavedState(st){
- if(!st||typeof st!=="object"||!Array.isArray(st.investments))return st;
- const v=st.formatVersion;if(v!==undefined&&!SUPPORTED_VERSIONS.includes(v))return st;
- if(v===undefined||v<5){
-  for(const inv of st.investments){if(!inv||typeof inv!=="object")continue;delete inv.returns;
-   if(inv.type==="military"&&inv.params&&typeof inv.params==="object")inv.params={delay:inv.params.delay}}
-  st.formatVersion=5;
- }
- return st;
-}
-// Lê o save: {status:"none"} (não há), {status:"ok",raw,game} ou {status:"invalid",raw,reason}.
-export async function readSavedGame(){
- let raw=null;try{raw=await storage.get(SAVE_KEY)}catch(e){return {status:"none"}}
- if(!raw)return {status:"none"};
- try{const o=JSON.parse(raw);
-  if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
-  const why=validateSavedState(migrateSavedState(o.state));if(why)return {status:"invalid",raw,reason:why};
-  const config=normalizeConfig(o.config),difficulty=DIFFICULTIES[o.difficulty]?o.difficulty:null;
-  // Saves antigos não têm aiBase: com "Configurações" os valores salvos são a base; com outra dificuldade, os padrões.
-  const aiBase=validAiBase(o.aiBase)||(difficulty===null||difficulty==="config"?pickAiDifficulty(config):pickAiDifficulty(DEFAULTS));
-  return {status:"ok",raw,game:{config,state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty,aiBase}};
- }catch(e){return {status:"invalid",raw,reason:e.message||String(e)}}
-}
-export async function loadSavedGame(){const r=await readSavedGame();return r.status==="ok"?r.game:null}
-// Save que não pode ser usado: guarda uma cópia noutra chave (para análise) e tira-o do caminho,
-// para o jogo não voltar a quebrar sempre que for aberto.
-export function quarantineSave(raw){storage.set(SAVE_CORRUPT_KEY,raw).catch(()=>{});storage.remove(SAVE_KEY).catch(()=>{})}
 // savedRaw: o texto do save carregado ao abrir o jogo (para pôr de lado se falhar ao desenhar).
 export let savedGameLoaded=false,saveProblem=null,savedRaw=null;
 export function noticeBrokenSave(){setTimeout(()=>showModal(`<h2>Não foi possível continuar a partida salva</h2><p class="small muted">Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.</p>`,[{label:"Entendi",cls:"primary"}]),350)}
@@ -214,7 +83,7 @@ export function renderSavedSafely(render){
  try{render()}catch(e){
   if(!savedGameLoaded)throw e;
   savedGameLoaded=false;try{quarantineSave(savedRaw||JSON.stringify({v:1,state}))}catch(_){}
-  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];selectedTerritory=null;state=newGame();
+  setConfigApplied(clone(configDefault));setConfigEdited(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setSelectedTerritory(null);setState(newGame());
   if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
   render();
  }
@@ -272,7 +141,7 @@ export function renderMap(){
  $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
   return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
  $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
- document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=i;renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
+ document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);setSelectedTerritory(i);renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
  fitRegionNames();markLegend();
  renderAttack();renderEvents();
  if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
@@ -326,14 +195,14 @@ export function renderAttack(){
 export function attackSelected(){
  if(simOrders())return orderSelected();
  if(selectedTerritory===null)return;
- const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);selectedTerritory=null;closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))
+ const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))
 }
 // Botão do painel com ordens simultâneas: dá ou cancela a ordem contra o território escolhido.
 export function orderSelected(){
  if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg,bad=false;
  if(ord){cancelOrder(state,"player",t);msg=`Ordem contra ${escapeHtml(regionName(t))} cancelada; Força devolvida.`}
  else{const r=orderAttack(state,t,"player",configApplied);bad=!r.ok;msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
- selectedTerritory=null;closeSheet({focus:false});saveGame();renderAll();$("mapStatus").innerHTML=msg;showToast(msg,bad)}
+ setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();$("mapStatus").innerHTML=msg;showToast(msg,bad)}
 export function renderEvents(){
  if(!$("lastEvents"))return;
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
@@ -460,7 +329,7 @@ export function concludeEra(){
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);selectedTerritory=null;renderAll();window.scrollTo({top:0,behavior:"smooth"})};
+ const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"})};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
   showModal(`<h2>Você ainda tem ${money(left)} para investir</h2><p class="small muted">O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.</p><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
    [{label:"Voltar e investir",cls:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}]);
@@ -475,37 +344,12 @@ export function restoreSetupAfterTutorial(){
  const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
  try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
   c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;const n=normalizeConfig(c);
-  configApplied=n;gameMode=p.mode==="fast"?"fast":"slow";currentDifficulty=diff;applyDifficulty(diff);runHook("configChanged");
+  setConfigApplied(n);setGameMode(p.mode==="fast"?"fast":"slow");setCurrentDifficulty(diff);applyDifficulty(diff);runHook("configChanged");
  }catch(e){}
 }
-export function startNewGame(){restoreSetupAfterTutorial();state=newGame();selectedTerritory=null;saveGame();renderAll();window.scrollTo({top:0})}
+export function startNewGame(){restoreSetupAfterTutorial();setState(newGame());setSelectedTerritory(null);saveGame();renderAll();window.scrollTo({top:0})}
 export function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts();runHook("afterRender")}
-export function setStatus(id,msg,cls=""){const el=$(id);el.className="status "+cls;el.textContent=msg}
-// captureDownloads(fn): os próximos download(...) vão para fn(name,text,type) em vez de gerar um ficheiro
-// (usado pelos testes internos); devolve a função que desliga a captura.
-export let downloadCapture=null;
-export function captureDownloads(fn){downloadCapture=fn;return ()=>{if(downloadCapture===fn)downloadCapture=null}}
-export function download(name,text,type="application/json"){if(downloadCapture)return downloadCapture(name,text,type);const blob=new Blob([text],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 export function exportHistory(){download(`imperios-partida-era${state.era}.json`,JSON.stringify({formatVersion:VERSION,exportedAt:new Date().toISOString(),gameMode,config:configApplied,state},null,2))}
-export const PARAM_OPTIONS={aiTarget:[["neutralFirst","Priorizar neutros"],["cheapest","Alvo mais barato (estratega)"],["playerFirst","Atacar o jogador primeiro"],["weakest","Menor índice do mapa"],["strongest","Maior índice do mapa"]],aiStyle:[["adaptive","Adaptativa"],["reference","Equilibrado"],["aggressive","Agressivo"],["military","Militar"],["economist","Infraestrutura"],["technologist","Tecnológico"],["custom","Percentuais personalizados"]],accumulation:[["total","Progresso total acumulado"],["individual","Investimentos individuais"]],scoreNormalization:[["log","Logarítmica"],["linear","Linear"]]};
-export function paramInput(group,key,label,unit,desc){
- const val=configEdited[group][key],isBool=typeof val==="boolean",isString=typeof val==="string";
- return `<div class="param"><label>${label} <span class="muted">(${unit})</span><br><span class="small">${desc}</span></label>${isBool?`<input type="checkbox" data-param="${group}.${key}" ${val?"checked":""}>`:isString?`<select data-param="${group}.${key}">${(PARAM_OPTIONS[key]||[]).map(([v,t])=>`<option value="${v}" ${val===v?"selected":""}>${t}</option>`).join("")}</select>`:`<input type="number" data-param="${group}.${key}" value="${val}" step="${["precision","delay","duration","peakEra","territories","initialPlayer","initialAI","aiCount","blockSize","seed","maxEras","supremacyEras"].includes(key)?1:"any"}" min="0">`}</div>`;
-}
-export const PARAM_GROUPS=[
- ["Economia geral","economy",[
- ["initialBudget","Orçamento inicial","unidades","Saldo no início de uma partida."],["baseIncome","Receita base por território","u./era","Receita normal de cada território."],["incomeGrowth","Crescimento da receita normal","fração/era","0 = receita constante; 0,02 = +2% por era."],["precision","Precisão dos cálculos","casas decimais","Arredondamento usado na alocação, não na receita."],["carry","Acumular saldo entre eras","sim/não","O saldo não gasto permanece disponível."],["fastModeReturnMultiplier","Multiplicador de retorno no modo rápido","×","Escala proporcionalmente os retornos de novos investimentos do jogador e da IA no modo rápido; 1 = mesmos valores do modo lento, 0,5 = metade, 2 = dobro. Aplica-se a militar, infraestrutura e tecnologia. Não altera o modo lento."],["aiIncomeMultiplier","Multiplicador de receita das IAs","×","Dificuldade: 0,7 = Muito fácil, 0,9 = Fácil, 1 = Médio/Difícil, 1,05 = Hardcore. Só em partidas com jogador humano; os laboratórios ignoram-no."],["adminCostPerTerritory","Custo administrativo por território","u./era","Cada território além do primeiro reduz a receita de todos os territórios neste valor (0 desliga)."]]],
- ["Militar","military",[["pointsPerInvestment","Pontos por unidade investida","pontos/u.","Poder militar gerado."],["delay","Atraso militar","eras","Mínimo 1: pontos disponíveis na era seguinte."],["conquestCost","Custo de conquista","pontos","Custo adicional por ataque."],["defenseNeutral","Defesa de território neutro","pontos","Defesa aplicada ao conquistar territórios sem domínio; somada ao custo de conquista."],["defenseOwned","Defesa de território dominado","pontos","Defesa aplicada ao atacar territórios controlados pelo jogador ou pela IA."],["winCost","Consumo em ataque bem-sucedido","multiplicador","Fração do custo comprometido consumida."],["lossCost","Consumo em ataque malsucedido","multiplicador","Fração do custo comprometido consumida."],["aiMilitary","Orçamento IA para militar","%","Percentual relativo à soma dos pesos."],["aiInfrastructure","Orçamento IA para infraestrutura","%","Percentual relativo à soma dos pesos."],["aiTechnology","Orçamento IA para tecnologia","%","Percentual relativo à soma dos pesos; usado no perfil personalizado."],["aiStyle","Perfil de decisão da IA","perfil","Militar: prioriza força; Agressivo: militar + economia; Infraestrutura: economia; Tecnológico: tecnologia; Equilibrado: política estável e conservadora; Adaptativa: reage a ameaças e maturidade; Personalizada: usa os pesos abaixo."],["aiAggression","Agressividade militar da IA","%","Chance de tentar atacar em cada era quando possui poder e alvo."],["aiReserve","Reserva de tesouro da IA","%","Percentual da receita/tesouro que a IA guarda sem investir nesta era."],["aiEnabled","Ativar adversário IA","sim/não","Desative para testar economia isolada."],["aiTarget","Critério de alvo da IA","regra","Ordem determinística de escolha de alvos."],["decayRate","Desgaste do exército","fração/era","Pontos militares não usados perdem esta fração no início da era seguinte (0 desliga)."],["defensePerInfraRevenue","Fortificações por infraestrutura","defesa por u.","Defesa extra de cada território próprio por unidade de receita de infraestrutura do dono (0,1 = +1 por cada 10 u.)."],["defensePerTechProgress","Defesa por tecnologia","defesa por progresso","Defesa extra de cada território próprio por ponto de progresso tecnológico do dono (0,05 = +1 por cada 20)."],["defenseSplitExponent","Repartição da defesa econômica","expoente","A defesa vinda da infraestrutura e da tecnologia divide-se por (territórios ^ expoente). 0 = sem repartição; 0,5 = raiz quadrada; 1 = divisão total."],["simultaneousOrders","Ordens simultâneas","sim/não","Ligado: cada civilização dá uma ordem de ataque por era e todas se resolvem juntas no fim da era (disputas viram batalhas). Desligado: ataques imediatos."],["maxOrdersPerEra","Ordens de ataque por era","ordens (0 = sem limite)","Quantas ordens de ataque cada civilização pode dar na mesma era."],["extraOrderCostStep","Custo das ordens adicionais","+ por ordem","Cada ordem adicional na mesma era custa ×(1 + este valor × n): com 1, a 2.ª custa o dobro e a 3.ª o triplo."],["battleTechWeight","Tecnologia na força de batalha","por ponto de progresso","Força numa disputa pelo mesmo território = poder militar + este peso × progresso tecnológico."],["pillageInvestShare","Saque de investimentos","× parte do território","Ao conquistar um território de outra civilização, o vencedor leva esta multiplicação de 1/territórios do derrotado (até 50%) da infraestrutura ativa e da tecnologia dele. 0 = sem saque."],["pillageRevenueEras","Espólio em tesouro","eras de receita","O vencedor recebe em tesouro esta quantidade de eras da receita do território conquistado."]]],
- ["Infraestrutura","infrastructure",[["delay","Atraso de retorno","eras","Primeira era em que o retorno pode ocorrer."],["initialReturn","Retorno inicial por unidade","fração/era","Multiplicado pelo investimento."],["peakEra","Idade até o pico","eras","Cresce até essa idade; 1 desativa a fase de crescimento."],["growthRate","Crescimento até o pico","fração/era","Crescimento composto por idade."],["declineRate","Redução após o pico","fração/era","Redução geométrica por era."],["duration","Duração do retorno","eras","Após essa idade, o retorno termina."],["residual","Retorno residual mínimo","fração/era","0 desativa piso residual; aplica-se durante a duração."]]],
- ["Tecnologia","technology",[["progressPerInvestment","Progresso por unidade","progresso/u.","Converte investimento em progresso."],["delay","Atraso tecnológico","eras","Primeiro benefício após o atraso."],["benefitPerProgress","Benefício por progresso","u./era/progresso","Benefício recorrente de cada investimento."],["maxBenefit","Limite de benefício","u./era","0 significa sem limite."],["accumulation","Acumulação","regra","Os investimentos ativados somam benefícios individuais."],["revenueBonusPerProgress","Bônus de receita por progresso","fração/progresso","Bônus permanente sobre toda a receita por ponto de progresso já ativo (0,001 = +1% por cada 10)."],["revenueBonusCap","Teto do bônus tecnológico","fração","Bônus máximo sobre a receita (1 = +100%). Evita crescimento explosivo."]]],
- ["Mapa e simulação","map",[["territories","Número de territórios","territórios","Mapa retangular simplificado, máximo 30."],["initialPlayer","Territórios iniciais do jogador","territórios","MVP começa com um território do jogador."],["initialAI","Territórios iniciais da IA","territórios","MVP começa com um território da IA."],["aiCount","Número de civilizações IA","IAs (1–5)","Quantidade de adversários controlados por IA. Requer reiniciar a partida."]]],
- ["Fim de partida","endgame",[["enabled","Ativar condições de fim no jogo","sim/não","Vitória territorial, eliminação, supremacia e limite de eras. Vale para novas partidas."],["supremacyEnabled","Vitória por supremacia","sim/não","Desligada no modo Conquista: só a maioria territorial, a eliminação ou a pontuação na última era decidem."],["maxEras","Limite máximo de eras","eras (10–150)","Ao atingir o limite sem outra vitória, decide a pontuação final por recursos."],["territoryPct","Maioria territorial","fração","0,8 = 80% de todos os territórios existentes, arredondado para cima."],
-  ["supremacyRelative","Limite relativo da supremacia","fração","O 2º maior ICE tem de ser ≤ esta fração do ICE do líder (0,1 = 10%)."],["supremacyEras","Eras consecutivas","eras","Duração da condição de supremacia para vencer."],["supremacyMinEraShare","Supremacia: fração mínima do limite de eras","fração","A sequência só conta a partir desta fração do limite (0,5 = metade; 0 desliga)."],["supremacyMaxNeutralShare","Supremacia: territórios livres máximos","fração","A sequência só conta com no máximo esta fração do mapa neutra (0,25 = 6 de 24; 1 desliga)."],["leaderTieMargin","Margem de empate na liderança","fração","Diferença relativa abaixo da qual não há líder único."],["iceMinAbsolute","ICE absoluto mínimo","ICE","O líder precisa de ICE ≥ este valor (lista por era opcional via JSON: iceMinByEra)."],["iceFloor","Piso mínimo do ICE","normalizado","Aplicado a cada dimensão depois da normalização."],
-  ["iceWMilitary","Peso militar no ICE","fração","Os cinco pesos do ICE somam 1."],["iceWInfrastructure","Peso infraestrutura no ICE","fração",""],["iceWTechnology","Peso tecnologia no ICE","fração",""],["iceWFinance","Peso financeiro no ICE","fração",""],["iceWTerritory","Peso territorial no ICE","fração","Territórios controlados (normalizados pela referência da era)."],["financeTreasuryWeight","Tesouraria na dimensão financeira","fração","O restante é a receita média das últimas 3 eras."],
-  ["scoreTerritoryProportional","Territórios proporcionais na pontuação","sim/não","Ligado: o dobro de territórios dá o dobro dos pontos nessa área. Desligado: escala logarítmica, como as outras áreas."],["scoreWMilitary","Peso militar na pontuação final","fração","Os cinco pesos da pontuação somam 1."],["scoreWInfrastructure","Peso infraestrutura na pontuação","fração",""],["scoreWTechnology","Peso tecnologia na pontuação","fração",""],["scoreWTreasury","Peso tesouraria na pontuação","fração",""],["scoreWTerritory","Peso territórios na pontuação","fração",""],["scoreNormalization","Normalização da pontuação","método","Logarítmica (padrão) ou linear."],
-  ["scoreCapMilitary","Limite militar","normalizado","1,5 = 150% da referência."],["scoreCapInfrastructure","Limite infraestrutura","normalizado",""],["scoreCapTechnology","Limite tecnologia","normalizado",""],["scoreCapTreasury","Limite tesouraria","normalizado",""],["scoreCapTerritory","Limite territórios","normalizado",""],["scoreTieMargin","Margem de empate na pontuação","fração","0,01 = empate até 1% abaixo da maior pontuação."],["extendForSupremacy","Prolongar para completar supremacia (experimental)","sim/não","Se houver sequência ativa no limite, a partida continua até completá-la ou interrompê-la."]]],
- ["Desempenho","simulation",[["blockSize","Tamanho do bloco","eras/bloco","Parâmetro de processamento em blocos."],["seed","Semente aleatória","inteiro","Mantém os testes reprodutíveis."]]]
-];
 export function renderParams(){
  const groups=PARAM_GROUPS;
  $("params").innerHTML=groups.map(([title,g,items])=>`<h3>${title}</h3><div class="param-grid">${items.map(p=>paramInput(g,...p)).join("")}</div>`).join("");
@@ -520,14 +364,14 @@ export function paramValue(el){
  return n;
 }
 // Lê todos os campos; se algum for inválido, lança erro sem alterar configEdited.
-export function readParams(){const next=clone(configEdited);document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");next[g][k]=paramValue(el)});const c=normalizeConfig(next);configEdited=next;return c}
+export function readParams(){const next=clone(configEdited);document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");next[g][k]=paramValue(el)});const c=normalizeConfig(next);setConfigEdited(next);return c}
 export function applyConfig(){
- const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){configApplied=clone(c);state=newGame();selectedTerritory=null;addLog(state,"Partida reiniciada com recálculo explícito.");}
- else configApplied=clone(c);
- configEdited=clone(c);renderParams();renderAll();$("configState").textContent="Configuração aplicada";setStatus("labStatus",$("recalcExisting").checked?"Configuração aplicada e partida reiniciada.":"Configuração aplicada. Investimentos existentes mantêm seus parâmetros originais.","success");
+ const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){setConfigApplied(clone(c));setState(newGame());setSelectedTerritory(null);addLog(state,"Partida reiniciada com recálculo explícito.");}
+ else setConfigApplied(clone(c));
+ setConfigEdited(clone(c));renderParams();renderAll();$("configState").textContent="Configuração aplicada";setStatus("labStatus",$("recalcExisting").checked?"Configuração aplicada e partida reiniciada.":"Configuração aplicada. Investimentos existentes mantêm seus parâmetros originais.","success");
 }
 export function loadJsonFile(file,kind){
- const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);if(kind==="config"){const c=normalizeConfig(obj.config||obj);configEdited=clone(c);renderParams();setStatus("labStatus","Configuração validada e carregada na área de edição. Clique em Aplicar configurações para usar.","success")}else{if(!SUPPORTED_VERSIONS.includes(obj.formatVersion))throw Error("Versão de cenário não suportada.");const c=normalizeConfig(obj.config);if(!obj.initial||!Number.isInteger(obj.eras)||obj.eras<1)throw Error("Cenário incompleto.");scenarioLoaded=obj;configEdited=clone(c);renderParams();$("scenarioName").value=obj.name||"Cenário importado";$("scenarioEras").value=obj.eras;setStatus("scenarioStatus","Cenário validado. Execute-o ou salve-o novamente.","success")}}catch(e){setStatus(kind==="config"?"labStatus":"scenarioStatus","Importação recusada: "+e.message,"error")}};reader.readAsText(file)}
+ const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);if(kind==="config"){const c=normalizeConfig(obj.config||obj);setConfigEdited(clone(c));renderParams();setStatus("labStatus","Configuração validada e carregada na área de edição. Clique em Aplicar configurações para usar.","success")}else{if(!SUPPORTED_VERSIONS.includes(obj.formatVersion))throw Error("Versão de cenário não suportada.");const c=normalizeConfig(obj.config);if(!obj.initial||!Number.isInteger(obj.eras)||obj.eras<1)throw Error("Cenário incompleto.");scenarioLoaded=obj;setConfigEdited(clone(c));renderParams();$("scenarioName").value=obj.name||"Cenário importado";$("scenarioEras").value=obj.eras;setStatus("scenarioStatus","Cenário validado. Execute-o ou salve-o novamente.","success")}}catch(e){setStatus(kind==="config"?"labStatus":"scenarioStatus","Importação recusada: "+e.message,"error")}};reader.readAsText(file)}
 export function strategyName(s){return ({military:"Militar",aggressive:"Militar agressiva",infrastructure:"Infraestrutura",technology:"Tecnologia",techFirst:"Tecnologia primeiro",growth:"Crescimento",balanced:"Equilibrada",custom:"Personalizada"})[s]||s}
 export function runStrategy(strategy,eras){
  eras=safeNum(eras,1,1e7);if(!Number.isSafeInteger(eras))throw Error("Informe um número inteiro de eras.");
@@ -537,10 +381,10 @@ export function runStrategy(strategy,eras){
  setStatus("strategyStatus","Simulação concluída sem alterar a partida atual.","success");return s;
 }
 export async function runLong(n,opts={}){
- if(busy)return;busy=true;cancelRequested=false;$("cancelAdvance").disabled=false;$("advance").disabled=true;let done=0;const start=performance.now();
+ if(busy)return;setBusy(true);setCancelRequested(false);$("cancelAdvance").disabled=false;$("advance").disabled=true;let done=0;const start=performance.now();
  try{while(done<n&&!cancelRequested&&!state.result){const batch=Math.min(configApplied.simulation.blockSize,n-done);for(let i=0;i<batch&&!state.result;i++){playEra({military:0,infrastructure:0,technology:0});done++}$("advanceProgress").style.width=(100*done/n)+"%";setStatus("advanceStatus",`Processadas ${fmt(done,0)} de ${fmt(n,0)} eras · era atual ${state.era} · ${fmt(performance.now()-start,0)} ms`);renderMetrics();await new Promise(r=>setTimeout(r,0))}
  renderAll();setStatus("advanceStatus",cancelRequested?`Cancelado após ${done} eras concluídas. O histórico foi preservado.`:state.result?`Partida encerrada após ${done} eras: ${describeResult(state,state.result)}`:`Concluído: ${done} eras processadas. Era atual: ${state.era}.`,"success");
- }catch(e){renderAll();setStatus("advanceStatus","Simulação interrompida: "+e.message,"error")}finally{busy=false;$("cancelAdvance").disabled=true;$("advance").disabled=false}
+ }catch(e){renderAll();setStatus("advanceStatus","Simulação interrompida: "+e.message,"error")}finally{setBusy(false);$("cancelAdvance").disabled=true;$("advance").disabled=false}
 }
 export async function compareStrategies(){
  const selected=[...document.querySelectorAll('#compareChecks input:checked')].map(x=>x.value);if(selected.length<2){setStatus("compareStatus","Selecione pelo menos duas estratégias.","error");return}
@@ -565,33 +409,17 @@ export function scenarioPreset(kind){
  if(kind==="fast"){c.military.pointsPerInvestment=.22;c.military.conquestCost=3;c.military.defenseNeutral=2;c.military.defenseOwned=5;c.military.delay=1;c.infrastructure.delay=1;c.infrastructure.duration=6;c.technology.delay=6}
  if(kind==="balanced"){c.military.pointsPerInvestment=.12;c.military.conquestCost=8;c.military.defenseNeutral=3;c.military.defenseOwned=8;c.infrastructure.initialReturn=.12;c.infrastructure.peakEra=3;c.infrastructure.declineRate=.16;c.technology.delay=4}
  if(kind==="long"){c.military.pointsPerInvestment=.08;c.infrastructure.delay=3;c.infrastructure.duration=30;c.infrastructure.peakEra=8;c.infrastructure.growthRate=.12;c.infrastructure.declineRate=.08;c.technology.delay=7;c.technology.benefitPerProgress=.13}
- configEdited=clone(c);renderParams();setStatus("scenarioStatus",`Cenário "${kind}" carregado na edição. Aplique a configuração ou exporte como cenário.`,"success");
+ setConfigEdited(clone(c));renderParams();setStatus("scenarioStatus",`Cenário "${kind}" carregado na edição. Aplique a configuração ou exporte como cenário.`,"success");
  scenarioLoaded={formatVersion:VERSION,name:kind,config:c,initial:newState(c),eras:Number($("scenarioEras").value)||50,strategy:"balanced"};
 }
 export function scenarioObject(){return {formatVersion:VERSION,name:$("scenarioName").value||"Meu cenário",config:normalizeConfig(configEdited),initial:newState(normalizeConfig(configEdited)),eras:safeNum($("scenarioEras").value,1,1e7),strategy:"balanced"}}
 export function renderScenarioResult(s,name){const r=s.history[s.history.length-1]||{};$("scenarioResult").innerHTML=`<div class="notice success">${escapeHtml(name)}: ${s.era} eras, saldo ${money(P(s).treasury)}, receita acumulada ${money(r.cumRevenue||0)}, ${s.owners.filter(o=>o==="player").length} territórios e poder militar ${fmt(P(s).military,1)}.</div>`}
-export let aiValidationResults=[],balanceLabResults=[];
-export function profileExpectedWeights(profile,cfg){
- if(profile==="reference")return [34,33,33];if(profile==="military")return [65,25,10];if(profile==="aggressive")return [68,22,10];if(profile==="economist")return [20,65,15];if(profile==="technologist")return [20,20,60];if(profile==="custom")return [cfg.military.aiMilitary,cfg.military.aiInfrastructure,cfg.military.aiTechnology];return null;
-}
-export function aiProbe(profile,threatened,seed){
- const cfg=clone(configApplied);cfg.simulation.seed=seed;cfg.military.aiStyle=profile;cfg.military.aiAggression=0;cfg.military.aiReserve=0;cfg.military.aiEnabled=true;
- const s=newState(cfg,{mode:gameMode});s.owners=Array(cfg.map.territories).fill("neutral");s.owners[0]="player";s.owners[22]="ai";s.owners[23]="ai";if(threatened)s.owners[16]="player";
- processEra(s,cfg,{playerAllocation:{military:0,infrastructure:0,technology:0}});
- const r=s.history.at(-1),sum=r.aiBudgetInvested||0;
- return {military:sum?r.aiInvestment.military/sum:0,infrastructure:sum?r.aiInvestment.infrastructure/sum:0,technology:sum?r.aiInvestment.technology/sum:0,investment:sum};
-}
-export function runAiControlProbe(profile,aggression,seed){
- const cfg=clone(configApplied);cfg.simulation.seed=seed;cfg.military.aiStyle=profile;cfg.military.aiAggression=aggression;cfg.military.aiReserve=0;cfg.military.aiEnabled=true;cfg.military.aiTarget="neutralFirst";
- const s=newState(cfg,{mode:gameMode});s.owners[22]="ai";A(s).military=100;
- processEra(s,cfg,{playerAllocation:{military:0,infrastructure:0,technology:0}});
- return {attacks:s.attacks.aiWins+s.attacks.aiLosses,action:s.history.at(-1).aiAction,valid:Number.isFinite(A(s).treasury)&&A(s).treasury>=0};
-}
-export function pct(pass,total){return total?100*pass/total:0}
+export let aiValidationResults=[];
+export let balanceLabResults=[];
 export async function runAiValidation(){
  if(busy)return;const profiles=[...document.querySelectorAll('#aiValidationProfiles input:checked')].map(x=>x.value);if(!profiles.length)throw Error("Selecione ao menos um perfil.");
  const runs=safeNum($("aiValidationRuns").value,3,100),eras=safeNum($("aiValidationEras").value,5,100);if(!Number.isInteger(runs)||!Number.isInteger(eras))throw Error("Sementes e eras devem ser números inteiros.");
- busy=true;$("runAiValidation").disabled=true;aiValidationResults=[];$("aiValidationTable").innerHTML="";$("aiValidationDetails").innerHTML="";$("aiValidationProgress").style.width="0%";
+ setBusy(true);$("runAiValidation").disabled=true;aiValidationResults=[];$("aiValidationTable").innerHTML="";$("aiValidationDetails").innerHTML="";$("aiValidationProgress").style.width="0%";
  const total=profiles.length,details=[];
  try{
   for(let pi=0;pi<profiles.length;pi++){
@@ -614,7 +442,7 @@ export async function runAiValidation(){
   $("aiValidationSummary").innerHTML=`<div class="notice ${avg>=80?'success':'notice'}"><strong>Conformidade média: ${fmt(avg,1)}%</strong> · ${aiValidationResults.reduce((a,r)=>a+r.completed,0)} execuções completas · ${aiValidationResults.reduce((a,r)=>a+r.invalid,0)} execuções com erro. Esta nota resume apenas os benchmarks implementados.</div>`;
   $("aiValidationDetails").innerHTML=details.length?`<div class="notice">${details.map(x=>`<div>${x}</div>`).join("")}</div>`:'<div class="notice success">Nenhuma anomalia adicional detectada pelos benchmarks executados.</div>';
   setStatus("aiValidationStatus","Validação concluída. Examine as dimensões individualmente; uma média alta não substitui revisão de decisões reais.","success");
- }finally{busy=false;$("runAiValidation").disabled=false}
+ }finally{setBusy(false);$("runAiValidation").disabled=false}
 }
 export function exportAiValidation(){if(!aiValidationResults.length){setStatus("aiValidationStatus","Execute a validação antes de exportar.","error");return}const rows=[["profile","finance_pct","profile_alignment_pct","adaptation_pct","attack_control_pct","overall_pct","completed","invalid","military_share","infrastructure_share","technology_share"],...aiValidationResults.map(r=>[r.profile,r.finance,r.profileScore??"",r.adaptation??"",r.attack,r.overall,r.completed,r.invalid,...r.shares])];download("imperios-validacao-ias.csv",rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n"),"text/csv;charset=utf-8")}
 export function sideMetrics(s){const last=s.history.at(-1)||{},aiRevenue=s.history.reduce((a,r)=>a+(r.aiRevenue?.total||0),0),playerRevenue=s.history.reduce((a,r)=>a+(r.total||0),0);return {pTerr:s.owners.filter(o=>o==="player").length,aTerr:s.owners.filter(o=>o==="ai").length,pBudget:P(s).treasury,aBudget:A(s).treasury,pMil:P(s).military,aMil:A(s).military,pRevenue:playerRevenue,aRevenue:aiRevenue,pInvest:s.investments.filter(i=>i.owner==="player").reduce((a,i)=>a+i.amount,0),aInvest:s.investments.filter(i=>i.owner==="ai").reduce((a,i)=>a+i.amount,0),eras:s.era,valid:Number.isFinite(P(s).treasury)&&Number.isFinite(A(s).treasury)&&P(s).treasury>=-1e-8&&A(s).treasury>=-1e-8}}
@@ -623,7 +451,7 @@ export function matchupIndex(m){return 100*(share(m.pTerr,m.aTerr)+share(m.pBudg
 export async function runBalanceLab(){
  if(busy)return;const strategies=[...document.querySelectorAll('#balanceStrategies input:checked')].map(x=>x.value),profiles=[...document.querySelectorAll('#balanceProfiles input:checked')].map(x=>x.value);if(!strategies.length||!profiles.length)throw Error("Selecione ao menos uma estratégia e um perfil adversário.");
  const seeds=safeNum($("balanceSeeds").value,3,100),eras=safeNum($("balanceEras").value,5,300);if(!Number.isInteger(seeds)||!Number.isInteger(eras))throw Error("Sementes e eras devem ser inteiros.");
- const total=strategies.length*profiles.length*seeds;let done=0;busy=true;$("runBalanceLab").disabled=true;balanceLabResults=[];$("balanceTable").innerHTML="";$("balanceProgress").style.width="0%";
+ const total=strategies.length*profiles.length*seeds;let done=0;setBusy(true);$("runBalanceLab").disabled=true;balanceLabResults=[];$("balanceTable").innerHTML="";$("balanceProgress").style.width="0%";
  try{
   for(const strategy of strategies)for(const profile of profiles){let aggregate={pTerr:0,aTerr:0,pBudget:0,aBudget:0,pMil:0,aMil:0,pRevenue:0,aRevenue:0,pInvest:0,aInvest:0},valid=0;
    for(let k=0;k<seeds;k++){
@@ -638,7 +466,7 @@ export async function runBalanceLab(){
   const avgAdv=balanceLabResults.reduce((a,r)=>a+r.advantage,0)/balanceLabResults.length,invalid=balanceLabResults.reduce((a,r)=>a+r.total-r.valid,0);
   $("balanceSummary").innerHTML=`<div class="notice ${invalid===0?'success':'error'}"><strong>Índice médio de vantagem do jogador: ${fmt(avgAdv,1)}%</strong> · ${done} partidas executadas · ${invalid} partidas inválidas. 50% representa paridade nas quatro dimensões avaliadas.</div>`;
   setStatus("balanceStatus","Torneio concluído. Compare os confrontos e métricas individuais; o índice não representa taxa de vitória.","success");
- }finally{busy=false;$("runBalanceLab").disabled=false}
+ }finally{setBusy(false);$("runBalanceLab").disabled=false}
 }
 export function exportBalanceLab(){if(!balanceLabResults.length){setStatus("balanceStatus","Execute o torneio antes de exportar.","error");return}const rows=[["strategy","ai_profile","player_advantage_index","player_territories_avg","ai_territories_avg","player_treasury_avg","ai_treasury_avg","player_military_avg","ai_military_avg","player_cumulative_revenue_avg","ai_cumulative_revenue_avg","player_investment_avg","ai_investment_avg","valid_matches","requested_matches"],...balanceLabResults.map(r=>[r.strategy,r.profile,r.advantage,r.pTerr,r.aTerr,r.pBudget,r.aBudget,r.pMil,r.aMil,r.pRevenue,r.aRevenue,r.pInvest,r.aInvest,r.valid,r.total])];download("imperios-laboratorio-balanceamento.csv",rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n"),"text/csv;charset=utf-8")}
 /* ── Interface: duração fixa e referências ── */
@@ -651,7 +479,7 @@ export function readFixedOpts(){
  return {games,eras,civCount,baseSeed,profiles,mode:$("fixedMode").value==="fast"?"fast":"slow"};
 }
 export async function runFixedLab(){
- if(busy)return;const opts=readFixedOpts();busy=true;fixedCancel=false;fixedRun={games:[],calibration:null,opts};
+ if(busy)return;const opts=readFixedOpts();setBusy(true);fixedCancel=false;fixedRun={games:[],calibration:null,opts};
  $("runFixed").disabled=true;$("cancelFixed").disabled=false;$("applyCalibration").disabled=true;$("fixedSummary").innerHTML="";$("fixedProgress").style.width="0%";
  try{
   const cfg=clone(configApplied);
@@ -660,7 +488,7 @@ export async function runFixedLab(){
   fixedRun.calibration=calibrateReferences(fixedRun.games,{seedBase:opts.baseSeed,mode:opts.mode,profiles:opts.profiles,civCount:opts.civCount,requestedGames:opts.games,date:new Date().toISOString()});
   renderFixedResults();$("applyCalibration").disabled=false;
   setStatus("fixedStatus",fixedCancel?`Cancelado: ${fixedRun.games.length} de ${opts.games} partidas concluídas e preservadas. A calibração usa apenas as concluídas.`:`Concluído: ${fixedRun.games.length} partidas × ${opts.eras} eras. Reveja as referências e clique em Aplicar.`,"success");
- }finally{busy=false;$("runFixed").disabled=false;$("cancelFixed").disabled=true}
+ }finally{setBusy(false);$("runFixed").disabled=false;$("cancelFixed").disabled=true}
 }
 export function renderFixedResults(){
  const cal=fixedRun.calibration;if(!cal)return;
@@ -682,7 +510,7 @@ export function renderRefEditor(){
 }
 export function applyCalibration(){
  const cal=fixedRun.calibration;if(!cal)throw Error("Execute as simulações primeiro.");
- configApplied.references={ice:clone(cal),score:clone(cal)};configApplied=normalizeConfig(configApplied);configEdited.references=clone(configApplied.references);
+ configApplied.references={ice:clone(cal),score:clone(cal)};setConfigApplied(normalizeConfig(configApplied));configEdited.references=clone(configApplied.references);
  renderRefEditor();setStatus("refStatus","Calibração aplicada aos dois conjuntos (ICE e pontuação final). Ajuste cada conjunto separadamente, se necessário.","success");
 }
 export function exportFixedCsv(){
@@ -696,332 +524,13 @@ export function importRefs(file){const reader=new FileReader();reader.onload=()=
 export function setupFixedLab(){
  $("fixedProfiles").innerHTML=LAB_PROFILES.map(([v,n])=>`<label><input type="checkbox" value="${v}" checked> ${n}</label>`).join("");
  $("fixedCivs").value=1+configApplied.map.aiCount;$("fixedSeed").value=configApplied.simulation.seed;
- $("runFixed").onclick=()=>runFixedLab().catch(e=>{busy=false;setStatus("fixedStatus",e.message,"error")});
+ $("runFixed").onclick=()=>runFixedLab().catch(e=>{setBusy(false);setStatus("fixedStatus",e.message,"error")});
  $("cancelFixed").onclick=()=>{fixedCancel=true;setStatus("fixedStatus","Cancelamento pedido; a concluir a partida em curso...")};
  $("applyCalibration").onclick=()=>{try{applyCalibration()}catch(e){setStatus("refStatus",e.message,"error")}};
  $("exportFixedCsv").onclick=exportFixedCsv;$("exportRefs").onclick=exportRefs;
  $("importRefsBtn").onclick=()=>$("refsFile").click();$("refsFile").onchange=e=>{if(e.target.files[0])importRefs(e.target.files[0]);e.target.value=""};
  $("refSet").onchange=renderRefEditor;renderRefEditor();
 }
-export function defineTests(){
- const list=[];const test=(name,fn,cat)=>list.push({name,fn,cat});
- test("Uma era gera valores finitos",()=>{let c=clone(DEFAULTS),s=newState(c);processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(!s.history[0]||!Number.isFinite(s.history[0].total))throw Error("Receita inválida")});
- test("Investimento inicial gera retorno no calendário previsto",()=>{let c=clone(DEFAULTS),s=newState(c);c.military.aiEnabled=false;processEra(s,c,{playerAllocation:{military:40,infrastructure:40,technology:40},ai:false});const row=s.history[0];if(row.infra<=0)throw Error("Infraestrutura inicial não gerou retorno na primeira era");if(P(s).military<=0)throw Error("Poder militar inicial não ficou disponível na primeira era");if(row.tech!==0)throw Error("Tecnologia gerou retorno antes do atraso");processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0},ai:false});if(s.history[1].infra<=0)throw Error("Retorno de infraestrutura não continuou após a primeira era")});
- test("Investimentos respeitam orçamento",()=>{let c=clone(DEFAULTS),s=newState(c);let failed=false;try{invest(s,"military",P(s).treasury+1,c)}catch(e){failed=true}if(!failed)throw Error("Investimento acima do saldo foi aceito")});
- test("Pontos militares têm atraso",()=>{let c=clone(DEFAULTS),s=newState(c);invest(s,"military",100,c);if(P(s).military>0)throw Error("Pontos liberados imediatamente");processEra(s,c,{ai:false});if(P(s).military<=0)throw Error("Pontos não foram liberados na era prevista")});
- test("Ataque impossível é recusado",()=>{let c=clone(DEFAULTS),s=newState(c);let res=attackTerritory(s,1,"player",c);if(res.ok)throw Error("Ataque inválido aceito")});
- test("Defesa muda conforme território neutro ou dominado",()=>{let c=clone(DEFAULTS);c.military.conquestCost=1;c.military.defenseNeutral=2;c.military.defenseOwned=9;let a=newState(c);P(a).military=3;let nt=eligibleTargets(a,"player").find(t=>t.o==="neutral");if(!nt)throw Error("Sem território neutro adjacente");let nr=attackTerritory(a,nt.i,"player",c);if(!nr.ok)throw Error("Território neutro deveria exigir 3 pontos");let b=newState(c);P(b).military=3;let et=eligibleTargets(b,"player")[0];if(!et)throw Error("Sem alvo adjacente");b.owners[et.i]="ai";let er=attackTerritory(b,et.i,"player",c);if(er.ok)throw Error("Território dominado aceitou ataque com defesa insuficiente")});
- test("Conquista respeita adjacência e aumenta territórios",()=>{let c=clone(DEFAULTS),s=newState(c);P(s).military=100;let before=s.owners.filter(o=>o==="player").length;let t=eligibleTargets(s,"player")[0];if(!t)throw Error("Sem alvo adjacente");let res=attackTerritory(s,t.i,"player",c);if(!res.ok)throw Error("Ataque não processado");if(res.win&&s.owners.filter(o=>o==="player").length!==before+1)throw Error("Propriedade não atualizada")});
- test("Investimento da IA não contamina métricas do jogador",()=>{let c=clone(DEFAULTS),s=newState(c);let before=P(s).invested.military;invest(s,"military",10,c,"ai");if(P(s).invested.military!==before)throw Error("Investimento da IA foi contabilizado como investimento do jogador")});
- test("Ataque bem-sucedido ou falho gera métricas de expansão",()=>{let c=clone(DEFAULTS),s=newState(c);P(s).military=100;let t=eligibleTargets(s,"player")[0];let r=attackTerritory(s,t.i,"player",c);if(!r.ok)throw Error("Ataque não foi processado");let total=s.attacks.playerWins+s.attacks.playerLosses;if(total!==1)throw Error("Ataque não contabilizado");if(r.win&&s.attacks.neutralConquests!==1)throw Error("Conquista neutra não contabilizada")});
- test("Simulação militar expande território e mede ataques",()=>{let c=clone(DEFAULTS);c.military.pointsPerInvestment=2;c.military.conquestCost=1;c.military.defenseNeutral=0;c.military.defenseOwned=0;c.military.aiEnabled=false;let s=simulate("aggressive",8,c);if(!s.attacks||typeof s.attacks.playerWins!=="number")throw Error("Métricas de ataque ausentes");if(s.history.some(h=>!Number.isFinite(h.territories)))throw Error("Histórico territorial inválido")});
- test("Infraestrutura respeita atraso e duração",()=>{let inv=makeInvestment("infrastructure",100,1,DEFAULTS);if(infraReturn(inv,0)!==0)throw Error("Retorno antes do atraso");if(infraReturn(inv,1)<=0)throw Error("Retorno não começou");inv.params.duration=2;if(infraReturn(inv,3)!==0)throw Error("Retorno após duração")});
- test("Tecnologia ativa na era correta sem duplicação",()=>{{let c=clone(DEFAULTS);c.technology.delay=4;let s=newState(c,{mode:"slow"}),inv=makeInvestment("technology",100,1,c,"player","slow");s.investments.push(inv);if(techReturn(s,inv,4)!==0)throw Error("Tecnologia ativou cedo");if(techReturn(s,inv,5)<=0)throw Error("Tecnologia não ativou na era 5 do modo lento");if(techReturn(s,inv,5)!==techReturn(s,inv,5))throw Error("Retorno inconsistente")}});
- test("Simulações independentes",()=>{let c=clone(DEFAULTS),cfg0=JSON.stringify(c),a=simulate("military",3,c);P(a).treasury=-1;a.history[0].total=-1;const b=simulate("military",3,c);if(JSON.stringify(c)!==cfg0)throw Error("Simulação alterou a configuração");if(P(b).treasury<0||b.history[0].total<0)throw Error("Estados compartilhados")});
- test("Exportação/importação preserva configuração",()=>{let c=normalizeConfig(JSON.parse(JSON.stringify(DEFAULTS)));if(JSON.stringify(c)!==JSON.stringify(DEFAULTS))throw Error("Parâmetro alterado")});
- test("Avanço múltiplo equivale ao individual",()=>{let c=clone(DEFAULTS),a=simulate("balanced",5,c),b=newState(c);for(let i=0;i<5;i++)processEra(b,c,{autoStrategy:"balanced"});if(Math.abs(P(a).treasury-P(b).treasury)>1e-6)throw Error("Saldos diferentes")});
- test("Reinício restaura estado",()=>{let c=clone(DEFAULTS),s=newState(c);processEra(s,c,{ai:false});s=newState(c);if(s.era!==0||P(s).treasury!==c.economy.initialBudget)throw Error("Estado inicial incorreto")});
- test("Simulação prolongada sem valores inválidos",()=>{let c=clone(DEFAULTS);c.military.aiEnabled=false;let s=simulate("balanced",100,c);if(!Number.isFinite(P(s).treasury)||P(s).treasury<0)throw Error("Saldo inválido")});
-
- test("Perfis da IA produzem decisões de investimento distintas",()=>{const profiles=["military","aggressive","economist","technologist","custom"];const allocations=profiles.map(style=>{let c=clone(DEFAULTS);c.military.aiStyle=style;c.military.aiMilitary=20;c.military.aiInfrastructure=30;c.military.aiTechnology=50;let s=newState(c);processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});const r=s.history.at(-1).aiInvestment;return [r.military,r.infrastructure,r.technology].map(v=>Math.round(v*1000)/1000).join("|")});if(new Set(allocations).size<4)throw Error("Os perfis não estão gerando distribuições suficientemente distintas: "+allocations.join("; "))});
- test("IA aproveita o tesouro sem ultrapassar o orçamento",()=>{let c=clone(DEFAULTS),s=newState(c);c.military.aiReserve=0;processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});const r=s.history.at(-1);if(!(r.aiBudgetInvested>0))throw Error("IA não investiu o tesouro disponível");if(r.aiBudgetInvested>r.aiRevenue.total+s.initialBudget+1e-8)throw Error("IA investiu acima dos recursos disponíveis")});
- test("JSON inválido não é aceito",()=>{let failed=false;try{normalizeConfig({economy:{}})}catch(e){failed=true}if(!failed)throw Error("Configuração inválida aceita")});
- test("Cancelamento preserva eras concluídas (primitiva)",()=>{let c=clone(DEFAULTS),s=newState(c);processEra(s,c,{ai:false});if(s.history.length!==1)throw Error("Histórico concluído perdido")});
- test("Fontes de receita somam total",()=>{let c=clone(DEFAULTS),s=simulate("balanced",4,c);for(const r of s.history)if(Math.abs(r.normal+r.infra+r.tech-r.total)>1e-7)throw Error("Soma de receita divergente")});
- test("IA mantém tesouro independente e recebe receita",()=>{let c=clone(DEFAULTS),s=newState(c);const before=A(s).treasury;processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(!Number.isFinite(A(s).treasury)||A(s).treasury<0||A(s).treasury===before)throw Error("Tesouro da IA não evoluiu independentemente")});
- test("Perfil de IA afeta alocação de investimento",()=>{let c=clone(DEFAULTS),a=newState(c),b=newState(c);c.military.aiStyle="military";processEra(a,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});c.military.aiStyle="technologist";processEra(b,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});let ma=a.investments.filter(x=>x.owner==="ai"&&x.type==="military").reduce((z,x)=>z+x.amount,0),mb=b.investments.filter(x=>x.owner==="ai"&&x.type==="military").reduce((z,x)=>z+x.amount,0);if(!(ma>mb))throw Error("Perfis não alteraram a alocação militar")});
- test("Modo rápido aplica multiplicador de retorno também à IA",()=>{{let c=clone(DEFAULTS);c.economy.fastModeReturnMultiplier=0.5;const slowM=makeInvestment("military",100,1,c,"ai","slow"),slowI=makeInvestment("infrastructure",100,1,c,"ai","slow"),slowT=makeInvestment("technology",100,1,c,"ai","slow");const fastM=makeInvestment("military",100,1,c,"ai","fast"),fastI=makeInvestment("infrastructure",100,1,c,"ai","fast"),fastT=makeInvestment("technology",100,1,c,"ai","fast");if(Math.abs(fastM.points/slowM.points-0.5)>1e-9)throw Error("Multiplicador militar não aplicado à IA");if(Math.abs(fastI.params.initialReturn/slowI.params.initialReturn-0.5)>1e-9||Math.abs(fastI.params.residual/slowI.params.residual-0.5)>1e-9)throw Error("Multiplicador de infraestrutura não aplicado à IA");if(Math.abs(fastT.params.benefitPerProgress/slowT.params.benefitPerProgress-0.5)>1e-9)throw Error("Multiplicador tecnológico não aplicado à IA")}});
- test("IA recebe multiplicador rápido nos investimentos reais",()=>{{const c=clone(DEFAULTS);c.economy.fastModeReturnMultiplier=0.4;c.military.aiEnabled=true;c.military.aiStyle="technologist";const slow=newState(c,{mode:"slow"}),fast=newState(c,{mode:"fast"});processEra(slow,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});processEra(fast,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});for(const type of ["military","infrastructure","technology"]){const a=slow.investments.find(i=>i.owner==="ai"&&i.type===type),b=fast.investments.find(i=>i.owner==="ai"&&i.type===type);if(!a||!b)throw Error("IA não criou investimento de "+type);const av=type==="military"?a.points:type==="infrastructure"?a.params.initialReturn:a.params.benefitPerProgress;const bv=type==="military"?b.points:type==="infrastructure"?b.params.initialReturn:b.params.benefitPerProgress;if(Math.abs(bv/av-0.4)>1e-9)throw Error("Multiplicador rápido não aplicado à IA em "+type)}}});
- test("Equilibrado mantém a divisão 34/33/33 com e sem ameaça",()=>{for(const th of [false,true]){const r=aiProbe("reference",th,12345);if(Math.abs(r.military-.34)>.005||Math.abs(r.infrastructure-.33)>.005||Math.abs(r.technology-.33)>.005)throw Error("Divisão "+[r.military,r.infrastructure,r.technology].map(v=>fmt(100*v,1)).join("/"))}});
- test("IA adaptativa reage à pressão territorial",()=>{const safe=aiProbe("adaptive",false,23456),threat=aiProbe("adaptive",true,23456);if(!(threat.military>safe.military+0.05))throw Error("A política adaptativa não aumentou o peso militar")});
- test("Decisões militares respeitam agressividade zero e cem",()=>{const quiet=runAiControlProbe("military",0,34567),active=runAiControlProbe("military",100,45678);if(quiet.attacks!==0)throw Error("A IA atacou com agressividade zero");if(active.attacks<1)throw Error("A IA não aproveitou uma oportunidade garantida")});
-
- // ── Etapa 1: infraestrutura comum (N civilizações, modo como parâmetro, histórico por era) ──
- const silent={playerAllocation:{military:0,infrastructure:0,technology:0}};
- test("Estado suporta várias civilizações com posições distintas",()=>{for(let n=1;n<=MAX_AI;n++){const c=clone(DEFAULTS);c.map.aiCount=n;const s=newState(c);if(s.civs.length!==n+1)throw Error(`aiCount=${n} gerou ${s.civs.length} civilizações`);const ids=new Set(s.civs.map(x=>x.id));if(ids.size!==n+1)throw Error("Ids repetidos");for(const civ of s.civs)if(countTerritories(s,civ.id)!==1)throw Error(`${civ.name} não começou com exatamente 1 território`);if(s.owners.some(o=>o!=="neutral"&&!ids.has(o)))throw Error("Território com dono desconhecido")}});
- test("Configuração 1×1 mantém posições do MVP original",()=>{const s=newState(clone(DEFAULTS));if(s.owners[0]!=="player"||s.owners[DEFAULTS.map.territories-1]!=="ai")throw Error("Posições iniciais alteradas")});
- test("Partida com 5 IAs corre sem valores inválidos",()=>{const c=clone(DEFAULTS);c.map.aiCount=5;const s=simulate("balanced",40,c);for(const civ of s.civs){if(!Number.isFinite(civ.treasury)||civ.treasury<0||!Number.isFinite(civ.military)||civ.military<0)throw Error(civ.name+" com valores inválidos")}if(s.owners.length!==c.map.territories)throw Error("Mapa corrompido")});
- test("Cada IA mantém tesouro e investimentos próprios",()=>{const c=clone(DEFAULTS);c.map.aiCount=3;const s=newState(c);processEra(s,c,silent);for(const civ of aiCivs(s)){const own=s.investments.filter(i=>i.owner===civ.id).reduce((a,i)=>a+i.amount,0);if(!(own>0))throw Error(civ.name+" não investiu");if(Math.abs(own-(civ.invested.military+civ.invested.infrastructure+civ.invested.technology))>1e-8)throw Error(civ.name+": investimento acumulado divergente")}if(P(s).invested.military!==0)throw Error("Investimentos das IAs contaminaram o jogador")});
- test("Todas as IAs recebem a mesma regra de receita",()=>{const c=clone(DEFAULTS);c.map.aiCount=3;const s=newState(c);processEra(s,c,silent);const rows=s.timeline[0].civs.slice(1);if(!rows.every(r=>Math.abs(r.revenue.normal-c.economy.baseIncome)<1e-9))throw Error("Receita territorial diferente entre IAs com 1 território")});
- test("IAs podem atacar outras IAs",()=>{const c=clone(DEFAULTS);c.map.aiCount=2;c.military.aiTarget="playerFirst";const s=newState(c);s.owners.fill("neutral");s.owners[0]="player";s.owners[12]="ai";s.owners[13]="ai2";A(s).military=100;let r={ok:false};for(let k=0;k<5&&!r.win;k++){s.era=k;r=attackTerritory(s,13,"ai",c)}if(!r.ok)throw Error("Ataque entre IAs recusado");if(r.win&&s.owners[13]!=="ai")throw Error("Conquista entre IAs não alterou o dono")});
- test("Ataques de civilizações diferentes usam sorteios diferentes",()=>{const c=clone(DEFAULTS);c.map.aiCount=2;let differ=false;for(let era=0;era<30&&!differ;era++){const rolls=[0,1,2].map(k=>rand(c.simulation.seed+5+era*37+k*7919)());if(new Set(rolls.map(r=>r<0.82)).size>1)differ=true}if(!differ)throw Error("Sorteios idênticos para todos os atacantes")});
- test("Modo é parâmetro do estado, não variável global",()=>{const saved=gameMode;try{gameMode="fast";const c=clone(DEFAULTS);c.military.aiEnabled=false;c.technology.delay=4;const slow=newState(c,{mode:"slow"});processEra(slow,c,{playerAllocation:{military:0,infrastructure:0,technology:50},ai:false});for(let i=0;i<2;i++)processEra(slow,c,{ai:false});if(slow.history.at(-1).tech!==0)throw Error("Estado lento usou atraso do modo rápido");gameMode="slow";const fast=newState(c,{mode:"fast"});processEra(fast,c,{playerAllocation:{military:0,infrastructure:0,technology:50},ai:false});for(let i=0;i<2;i++)processEra(fast,c,{ai:false});if(!(fast.history.at(-1).tech>0))throw Error("Estado rápido não usou o seu próprio atraso")}finally{gameMode=saved}});
- test("Simulações lenta e rápida podem correr lado a lado",()=>{const c=clone(DEFAULTS);c.economy.fastModeReturnMultiplier=1;const a=simulate("technology",10,c,null,undefined,null,"slow"),b=simulate("technology",10,c,null,undefined,null,"fast");if(a.mode!=="slow"||b.mode!=="fast")throw Error("Modo não registado no estado");if(!(b.history.reduce((z,r)=>z+r.tech,0)>a.history.reduce((z,r)=>z+r.tech,0)))throw Error("Modo rápido não antecipou retornos tecnológicos")});
- test("Histórico por era regista todas as civilizações",()=>{const c=clone(DEFAULTS);c.map.aiCount=3;const s=simulate("balanced",6,c);if(s.timeline.length!==6)throw Error("Número de eras no histórico incorreto");for(const e of s.timeline){if(e.civs.length!==4)throw Error("Era "+e.era+" sem todas as civilizações");for(const r of e.civs){for(const k of ["military","infrastructure","technology","treasury"])if(!Number.isFinite(r.dims[k]))throw Error(`Dimensão ${k} inválida`);if(Math.abs(r.revenue.normal+r.revenue.infrastructure+r.revenue.technology-r.revenue.total)>1e-7)throw Error("Receita por civilização não soma o total")}}const sumTerr=s.timeline.at(-1).civs.reduce((a,r)=>a+r.territories,0)+countTerritories(s,"neutral");if(sumTerr!==c.map.territories)throw Error("Territórios no histórico não somam o mapa")});
- test("Dimensões seguem as definições acordadas",()=>{const c=clone(DEFAULTS);const s=simulate("balanced",8,c);const e=s.timeline.at(-1),r=e.civs[0];if(r.dims.military!==P(s).military)throw Error("Militar ≠ pontos disponíveis");if(Math.abs(r.dims.infrastructure-s.history.at(-1).infra)>1e-9)throw Error("Infraestrutura ≠ receita de infraestrutura da era");if(Math.abs(r.dims.technology-P(s).techProgress)>1e-9)throw Error("Tecnologia ≠ progresso acumulado");if(r.dims.treasury!==P(s).treasury)throw Error("Tesouraria ≠ saldo")});
- test("Progresso tecnológico do jogador não inclui a IA",()=>{const c=clone(DEFAULTS);c.military.aiStyle="technologist";const s=newState(c);processEra(s,c,silent);if(P(s).techProgress!==0)throw Error("Progresso da IA contado para o jogador");if(!(A(s).techProgress>0))throw Error("IA tecnológica sem progresso")});
- test("Mesma semente e configuração reproduzem a partida",()=>{const c=clone(DEFAULTS);c.map.aiCount=3;const a=simulate("aggressive",25,c),b=simulate("aggressive",25,c);if(JSON.stringify(a.timeline)!==JSON.stringify(b.timeline)||JSON.stringify(a.investments)!==JSON.stringify(b.investments))throw Error("Resultados diferentes com a mesma semente")});
- test("Configuração v3 sem parâmetros novos é aceite",()=>{const old=clone(DEFAULTS);delete old.map.aiCount;const c=normalizeConfig(old);if(c.map.aiCount!==1)throw Error("aiCount não recebeu o valor padrão")});
- test("Número de IAs fora do limite é recusado",()=>{for(const v of [0,MAX_AI+1,1.5]){const c=clone(DEFAULTS);c.map.aiCount=v;let failed=false;try{normalizeConfig(c)}catch(e){failed=true}if(!failed)throw Error("aiCount="+v+" aceite")}});
-
- // ── Etapa 2: duração fixa e calibração de referências ──
- const allProfiles=LAB_PROFILES.map(x=>x[0]);
- test("Lugar do jogador pode ser controlado por IA",()=>{const c=clone(DEFAULTS);const s=newState(c,{allAI:true,profiles:["economist","military"]});processEra(s,c,{});if(P(s).controller!=="ai")throw Error("Jogador não ficou sob controlo da IA");if(!(P(s).invested.infrastructure>P(s).invested.military))throw Error("Perfil Infraestrutura não aplicado ao lugar do jogador");if(!s.timeline[0].civs[0].driver.startsWith("ai:economist"))throw Error("Histórico não regista o perfil do lugar do jogador")});
- test("Partida de duração fixa corre todas as eras",()=>{const g=runFixedGame(clone(DEFAULTS),{eras:25,mode:"slow",profiles:allProfiles,civCount:3,seed:99,game:0});if(g.kind!=="fixed")throw Error("Tipo de simulação não identificado");if(g.timeline.length!==25||g.eras!==25)throw Error("A partida não correu as 25 eras");if(g.timeline.some(e=>e.civs.length!==3))throw Error("Civilizações em falta no histórico")});
- test("Duração fixa é reprodutível pela semente",()=>{const o={eras:15,mode:"fast",profiles:allProfiles,civCount:4,seed:1234,game:2},a=runFixedGame(clone(DEFAULTS),o),b=runFixedGame(clone(DEFAULTS),o);if(JSON.stringify(a)!==JSON.stringify(b))throw Error("Mesma semente produziu resultados diferentes")});
- test("Duração fixa não altera a configuração nem a partida atual",()=>{const before=JSON.stringify(configApplied),era=state.era;runFixedGame(configApplied,{eras:5,mode:"slow",profiles:allProfiles,civCount:2,seed:7,game:0});if(JSON.stringify(configApplied)!==before||state.era!==era)throw Error("Simulação isolada alterou o estado global")});
- test("Perfis rodam de forma equilibrada pelos lugares",()=>{const civs=3,n=allProfiles.length,count={};for(let g=0;g<n*2;g++)seatProfiles(allProfiles,civs,g).forEach((p,k)=>{count[p+"@"+k]=(count[p+"@"+k]||0)+1});const vals=Object.values(count);if(Object.keys(count).length!==n*civs||vals.some(v=>v!==2))throw Error("Rotação desequilibrada: "+JSON.stringify(count))});
- test("Receita média usa as últimas 3 eras disponíveis",()=>{const s=simulate("balanced",5,clone(DEFAULTS));const tot=k=>s.timeline[k].civs[0].revenue.total;if(Math.abs(s.timeline[0].civs[0].dims.revenue-tot(0))>1e-9)throw Error("Era 1 deveria usar só a própria receita");if(Math.abs(s.timeline[1].civs[0].dims.revenue-(tot(0)+tot(1))/2)>1e-9)throw Error("Era 2 deveria usar duas eras");if(Math.abs(s.timeline[4].civs[0].dims.revenue-(tot(2)+tot(3)+tot(4))/3)>1e-9)throw Error("Era 5 deveria usar as eras 3 a 5")});
- test("Calibração usa a mediana por era e dimensão",()=>{const mk=v=>({id:"x",profile:"reference",territories:1,dims:{military:v,infrastructure:v*2,technology:v*3,treasury:v,revenue:v}});const games=[[1,4],[2,5],[9,6]].map((vs,g)=>({timeline:vs.map((v,e)=>({era:e+1,civs:[mk(v)]}))}));const cal=calibrateReferences(games);if(cal.values.military[0]!==2||cal.values.military[1]!==5||cal.values.technology[0]!==6)throw Error("Mediana incorreta: "+JSON.stringify(cal.values.military))});
- test("Mediana zero recebe referência de recurso positiva e marcada",()=>{const mk=v=>({id:"x",profile:"reference",territories:1,dims:{military:v,infrastructure:1,technology:1,treasury:0,revenue:40}});const games=[0,0,6].map(v=>({timeline:[{era:1,civs:[mk(v)]}]}));const cal=calibrateReferences(games);if(cal.values.military[0]!==2||cal.fallback.military[0]!=="mean")throw Error("Recurso pela média não aplicado");if(cal.values.treasury[0]!==40||cal.fallback.treasury[0]!=="revenue")throw Error("Tesouraria com mediana zero não usou a receita de referência");const g2=[0,0].map(v=>({timeline:[{era:1,civs:[mk(v)]}]}));if(calibrateReferences(g2).values.military[0]!==1)throw Error("Recurso 1 não aplicado quando tudo é zero")});
- test("Calibração real gera referências válidas para todas as eras",()=>{const games=Array.from({length:6},(_,g)=>runFixedGame(clone(DEFAULTS),{eras:12,mode:"slow",profiles:allProfiles,civCount:2,seed:fixedGameSeed(5,g),game:g}));const cal=calibrateReferences(games);if(cal.eras!==12)throw Error("Número de eras calibradas incorreto");if(!validateReferences({ice:cal,score:cal}))throw Error("Calibração não passou na validação")});
- test("Referência depois da última era usa o último valor",()=>{const t={values:{military:[1,2,3]}};if(refAt(t,"military",1)!==1||refAt(t,"military",3)!==3||refAt(t,"military",40)!==3)throw Error("refAt incorreto")});
- test("Configuração guarda e valida referências",()=>{const t={values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[1,2]]))};const c=clone(DEFAULTS);c.references={ice:t,score:t};const n=normalizeConfig(JSON.parse(JSON.stringify(c)));if(n.references?.score?.values.revenue[1]!==2)throw Error("Referências perdidas na exportação/importação");for(const bad of [[0,1],[-1,1],["x",1]]){const b=clone(c);b.references.ice={values:{...t.values,military:bad}};let failed=false;try{normalizeConfig(b)}catch(e){failed=true}if(!failed)throw Error("Referência inválida aceite: "+bad)}const u=clone(c);u.references.ice={values:{...t.values,military:[1,2,3]}};let f2=false;try{normalizeConfig(u)}catch(e){f2=true}if(!f2)throw Error("Dimensões com tamanhos diferentes aceites")});
-
- // ── Etapa 3: fim de partida (secção 11 da especificação) ──
- // Os testes da secção 11 fixam os valores da especificação original (80%, 10%, 4 dimensões a 25%) para não
- // dependerem dos padrões ajustados; os padrões atuais têm um teste próprio.
- const EG=(over={},terr=24,civs=2)=>{const c=clone(DEFAULTS);Object.assign(c.endgame,{territoryPct:.8,supremacyRelative:.1,iceMinAbsolute:1,supremacyMinEraShare:0,supremacyMaxNeutralShare:1,iceWMilitary:.25,iceWInfrastructure:.25,iceWTechnology:.25,iceWFinance:.25,iceWTerritory:0,scoreWMilitary:.25,scoreWInfrastructure:.25,scoreWTechnology:.25,scoreWTreasury:.25,scoreWTerritory:0},over);c.map.territories=terr;c.map.aiCount=civs-1;const t={values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10,10,10,10,10]]))};c.references={ice:t,score:t};return c};
- const ST=(c,owners)=>{const s=newState(c,{endRules:true});if(owners)s.owners=owners;return s};
- const OW=(n,spec)=>{const o=Array(n).fill("neutral");let i=0;for(const [id,k] of spec)for(let j=0;j<k;j++)o[i++]=id;return o};
- const D=v=>({military:v,infrastructure:v,technology:v,treasury:v,revenue:v});
- const EN=(s,era,dims={})=>({era,civs:s.civs.map(c=>({id:c.id,dims:dims[c.id]||D(3)}))});
- const END=(s,c,era=1,dims)=>{s.era=era;return evaluateEndOfEra(s,c,era,EN(s,era,dims),true)};
- const SUP=(prev,ices,c,era=3)=>evaluateSupremacy(prev,ices.map((v,i)=>({id:"c"+i,ice:v})),era,c);
- // 11.1 Vitória territorial
- test("[T1] Vitória ao atingir exatamente o mínimo de territórios",()=>{const c=EG({},23),s=ST(c,OW(23,[["player",19],["ai",1]]));const o=END(s,c);if(o.result?.type!=="victory"||o.result.winners[0]!=="player"||!o.result.reasons.player.includes("territorial"))throw Error("19 de 23 deveria vencer")});
- test("[T2] Não vence abaixo do mínimo",()=>{const c=EG({},23),s=ST(c,OW(23,[["player",18],["ai",1]]));if(END(s,c).result)throw Error("18 de 23 não deveria vencer")});
- test("[T3] Arredondamento sempre para cima",()=>{if(territorialMinimum(23,.8)!==19||territorialMinimum(25,.8)!==20||territorialMinimum(10,.75)!==8||territorialMinimum(24,.6)!==15)throw Error("Mínimos incorretos")});
- test("[T4] Territórios neutros entram na base de cálculo",()=>{const c=EG({},24),s=ST(c,OW(24,[["player",19],["ai",1]]));const o=END(s,c);if(o.territorial.total!==24||o.territorial.min!==20||o.result)throw Error("A base deve incluir os 4 neutros (mínimo 20)")});
- test("[T5] Empate entre civilizações acima do percentual",()=>{const c=EG({territoryPct:.4},10),s=ST(c,OW(10,[["player",4],["ai",4]]));const o=END(s,c);if(o.result?.type!=="draw"||o.result.winners.length!==2)throw Error("Duas civilizações com 40% deveriam empatar")});
- test("[T6] Perda de território durante a era impede a vitória",()=>{let checked=false;for(let seed=1;seed<60&&!checked;seed++){const c=EG({},24);c.simulation.seed=seed;c.military.aiAggression=100;c.military.aiTarget="playerFirst";c.military.aiStyle="military";const o=OW(24,[["player",20]]);o[23]="ai";o[20]="neutral";o[19]="neutral";o[22]="neutral";o[17]="neutral";o[21]="ai";const s=ST(c,o);A(s).military=500;const before=countTerritories(s,"player");processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(countTerritories(s,"player")<before){checked=true;if(s.result)throw Error("Vitória com território perdido durante a era")}}if(!checked)throw Error("Cenário de perda não reproduzido")});
- test("[T7] Conquista durante a era conta na avaliação final",()=>{let checked=false;for(let seed=1;seed<60&&!checked;seed++){const c=EG({},24);c.simulation.seed=seed;c.military.aiAggression=0;const s=ST(c,OW(24,[["player",19]]));s.owners[23]="ai";P(s).military=200;processEra(s,c,{autoStrategy:"military"});if(countTerritories(s,"player")===20){checked=true;if(!s.result?.reasons?.player?.includes("territorial"))throw Error("Conquista na própria era não deu a vitória")}}if(!checked)throw Error("Cenário de conquista não reproduzido")});
- // 11.2 Eliminação
- test("[E1] Sem territórios = eliminação imediata no fim da era",()=>{const c=EG({},24,3),s=ST(c,OW(24,[["player",2],["ai",2]]));const o=END(s,c,4);const z=getCiv(s,"ai2");if(z.active||z.eliminatedEra!==4||!o.eliminated.includes("ai2"))throw Error("IA 2 sem territórios não foi eliminada")});
- test("[E2] Eliminação é definitiva",()=>{const c=EG({},24,3),s=ST(c,OW(24,[["player",2],["ai",2]]));END(s,c,1);s.owners[10]="ai2";END(s,c,2);if(getCiv(s,"ai2").active)throw Error("Civilização eliminada regressou");s.owners[10]="neutral";processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.timeline.at(-1).civs[2].revenue.total!==0||s.investments.some(i=>i.owner==="ai2"))throw Error("Eliminada continuou a receber ou investir")});
- test("[E3] Eliminar todos os adversários = vitória por eliminação",()=>{const c=EG({},24,3),s=ST(c,OW(24,[["player",3]]));const o=END(s,c);if(o.result?.type!=="victory"||!o.result.reasons.player.includes("elimination"))throw Error("Vitória por eliminação não registada")});
- test("[E4] Todas eliminadas na mesma era = empate geral",()=>{const c=EG({},24,3),s=ST(c,OW(24,[]));const o=END(s,c);if(o.result?.type!=="draw"||!o.result.allEliminated)throw Error("Empate geral não registado")});
- test("[E5] Eliminação + maioria = uma vitória com dois motivos",()=>{const c=EG({},24),s=ST(c,OW(24,[["player",24]]));const r=END(s,c).result;if(r.type!=="victory"||r.winners.length!==1||!["elimination","territorial"].every(x=>r.reasons.player.includes(x)))throw Error("Motivos incompletos: "+JSON.stringify(r.reasons))});
- // 11.3 Supremacia
- test("[S1] Vitória ao completar as eras consecutivas",()=>{const c=EG();let p=null;for(let e=1;e<=5;e++){p=SUP(p,[1,.05],c);if(e<5&&p.achieved)throw Error("Venceu antes da 5ª era");}if(!p.achieved||p.streak!==5)throw Error("Não venceu na 5ª era")});
- test("[S2] Relação acima do limite reinicia a sequência",()=>{const c=EG();let p=null;for(let e=0;e<3;e++)p=SUP(p,[1,.05],c);p=SUP(p,[1,.2],c);if(p.streak!==0||p.status!=="gapTooSmall")throw Error("Não reiniciou");p=SUP(p,[1,.05],c);if(p.streak!==1)throw Error("Não recomeçou do zero")});
- test("[S3] Mudança de líder reinicia a contagem",()=>{const c=EG();let p=null;for(let e=0;e<3;e++)p=SUP(p,[1,.05],c);p=SUP(p,[.05,1],c);if(p.leader!=="c1"||p.streak!==1)throw Error("Novo líder herdou a sequência")});
- test("[S4] Empate na liderança reinicia",()=>{const c=EG();let p=SUP(null,[1,.05],c);p=SUP(p,[1,.995],c);if(p.leader!==null||p.streak!==0||p.status!=="tiedLeadership")throw Error("Empate na liderança não tratado")});
- test("[S5] ICE não calculável suspende e preserva a sequência",()=>{const c=EG();let p=null;for(let e=0;e<3;e++)p=SUP(p,[1,.05],c);p=SUP(p,[1,null],c);if(p.status!=="suspended"||p.streak!==3)throw Error("Sequência não preservada na suspensão");p=SUP(p,[1,.05],c);if(p.streak!==4)throw Error("Não retomou a contagem")});
- test("[S6] ICE absoluto mínimo por era é aplicado",()=>{const c=EG({iceMinAbsolute:1});let p=SUP(null,[.8,.05],c);if(p.streak!==0||p.status!=="belowMinimum")throw Error("Mínimo absoluto ignorado");const c2=EG();c2.endgame.iceMinByEra=[0,0,5];const c3=normalizeConfig(c2);if(SUP(null,[.8,.05],c3,1).streak!==1||SUP(null,[.8,.05],c3,3).streak!==0)throw Error("Mínimo por era ignorado")});
- test("[S7] Compara com o segundo maior ICE entre todos",()=>{const c=EG();const p=SUP(null,[1,.05,.5],c);if(p.streak!==0||Math.abs(p.ratio-.5)>1e-12)throw Error("Não usou o segundo maior ICE")});
- test("[S8] Queda do ICE do líder não interrompe se a condição se mantém",()=>{const c=EG({iceMinAbsolute:.5});let p=SUP(null,[1,.05],c);p=SUP(p,[.7,.05],c);if(p.streak!==2)throw Error("Queda do ICE interrompeu")});
- test("[S9] Fórmula do ICE: média geométrica ponderada com piso",()=>{const c=EG(),t=c.references.ice;const a=computeICE(D(10),1,c,t);if(Math.abs(a.ice-1)>1e-12)throw Error("Valores iguais à referência deveriam dar ICE 1");const b=computeICE({...D(10),military:0},1,c,t);if(Math.abs(b.ice-Math.pow(.05,.25))>1e-12)throw Error("Piso não aplicado");if(computeICE({...D(10),technology:NaN},1,c,t)!==null)throw Error("Dados em falta deveriam tornar o ICE não calculável")});
- test("[S10] Supremacia é independente da vitória territorial",()=>{const c=EG(),s=ST(c,OW(24,[["player",20],["ai",1]]));s.supremacy={leader:"player",streak:4,status:"counting"};const r=END(s,c,6,{player:D(10),ai:D(0)}).result;if(r.type!=="victory"||!["territorial","supremacy"].every(x=>r.reasons.player.includes(x)))throw Error("Deveria registar os dois motivos para o mesmo vencedor")});
- // 11.4 Pontuação final
- test("[F1] Média aritmética ponderada",()=>{const c=EG(),sc=finalScores([{id:"a",dims:{military:10,infrastructure:0,technology:0,treasury:0}}],1,c);if(Math.abs(sc[0].score-.25)>1e-12)throw Error("Esperado 0,25")});
- test("[F2] Normalização linear",()=>{const c=EG({scoreNormalization:"linear"}),sc=finalScores([{id:"a",dims:{military:5,infrastructure:0,technology:0,treasury:0}}],1,c);if(Math.abs(sc[0].parts.military-.5)>1e-12)throw Error("Linear incorreta")});
- test("[F3] Normalização logarítmica",()=>{const c=EG(),sc=finalScores([{id:"a",dims:{military:5,infrastructure:0,technology:0,treasury:0}}],1,c);if(Math.abs(sc[0].parts.military-Math.log(6)/Math.log(11))>1e-12)throw Error("Logarítmica incorreta")});
- test("[F4] Limite máximo de 150% por dimensão",()=>{const c=EG({scoreNormalization:"linear"}),sc=finalScores([{id:"a",dims:{military:1000,infrastructure:0,technology:0,treasury:0}}],1,c);if(sc[0].parts.military!==1.5||Math.abs(sc[0].score-.375)>1e-12)throw Error("Limite não aplicado")});
- test("[F5] Dimensão zero vale zero e as outras contam",()=>{const c=EG(),sc=finalScores([{id:"a",dims:{military:0,infrastructure:10,technology:10,treasury:10}}],1,c);if(sc[0].parts.military!==0||Math.abs(sc[0].score-.75)>1e-12)throw Error("Zero tratado incorretamente")});
- test("[F6] Civilizações eliminadas ficam fora da classificação",()=>{const c=EG({maxEras:10},24,3),s=ST(c,OW(24,[["player",2],["ai",2]]));const r=END(s,c,10).result;if(!r?.scores||r.scores.some(x=>x.id==="ai2")||r.scores.length!==2)throw Error("Eliminada incluída na pontuação")});
- test("[F7] Usa só os valores da última era e só o saldo da tesouraria",()=>{const c=EG();c.references.score={values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10,100]]))};const a=finalScores([{id:"a",dims:{military:10,infrastructure:0,technology:0,treasury:0,revenue:1e9}}],2,c)[0];if(Math.abs(a.parts.military-Math.log(11)/Math.log(101))>1e-12)throw Error("Não usou a referência da última era");if(a.parts.treasury!==0)throw Error("Receita contaminou a tesouraria")});
- test("[F8] Empate dentro da margem de 1%",()=>{const w=scoreWinners([{id:"a",score:1},{id:"b",score:.995},{id:"c",score:.98}],.01);if(w.join()!=="a,b")throw Error("Margem incorreta: "+w)});
- test("[F9] Empate com três ou mais civilizações",()=>{const w=scoreWinners([{id:"a",score:1},{id:"b",score:.999},{id:"c",score:.991},{id:"d",score:.5}],.01);if(w.length!==3)throw Error("Empate triplo não detetado")});
- // 11.5 Encerramento geral
- test("[G1] Vitórias simultâneas de civilizações diferentes = empate",()=>{const c=EG({territoryPct:.4},10),s=ST(c,OW(10,[["player",4],["ai",1]]));s.supremacy={leader:"ai",streak:4,status:"counting"};const r=END(s,c,6,{player:D(0),ai:D(10)}).result;if(r.type!=="draw"||!r.reasons.player.includes("territorial")||!r.reasons.ai.includes("supremacy"))throw Error("Deveria ser empate com motivos distintos")});
- test("[G2] Encerramento obrigatório no limite de eras",()=>{const m=runMatch(EG({maxEras:10,territoryPct:1}),{mode:"slow",profiles:["economist"],civCount:2,seed:3});if(!m.result||m.result.era>10)throw Error("Não encerrou até à era 10");if(m.result.era===10&&!m.result.scores&&!Object.values(m.result.reasons).flat().some(x=>x!=="score"))throw Error("Encerramento sem pontuação")});
- test("[G3] Vitória na era-limite prevalece sobre a pontuação",()=>{const c=EG({maxEras:10}),s=ST(c,OW(24,[["player",20],["ai",1]]));s.maxEras=10;const r=END(s,c,10).result;if(r.reasons.player[0]!=="territorial"||r.scores)throw Error("A pontuação substituiu a vitória territorial")});
- test("[G4] Funciona nos modos lento e rápido",()=>{for(const mode of ["slow","fast"]){const m=runMatch(EG({maxEras:15}),{mode,profiles:["aggressive","adaptive"],civCount:2,seed:11});if(!m.result||m.state.mode!==mode)throw Error("Modo "+mode+" sem resultado")}});
- test("[G5] Duração fixa não encerra, mas regista as condições",()=>{const c=EG({maxEras:10});const s=simulate("military",20,c);if(s.era!==20||s.result)throw Error("Simulação fixa foi interrompida");if(!s.timeline.every(e=>e.end))throw Error("Condições não registadas");const g=runFixedGame(c,{eras:20,profiles:["military","economist"],civCount:2,seed:5});if(g.timeline.length!==20)throw Error("Partida fixa interrompida")});
- test("[G6] Partida encerrada não aceita novas eras",()=>{const c=EG(),s=ST(c,OW(24,[["player",24]]));END(s,c);let failed=false;try{processEra(s,c,{})}catch(e){failed=true}if(!failed)throw Error("processEra aceitou era depois do fim")});
- test("[G7] Configuração de fim de partida é validada",()=>{for(const bad of [{maxEras:9},{maxEras:151},{iceWMilitary:.5},{scoreWTreasury:0},{scoreNormalization:"x"}]){const c=clone(DEFAULTS);Object.assign(c.endgame,bad);let failed=false;try{normalizeConfig(c)}catch(e){failed=true}if(!failed)throw Error("Aceitou "+JSON.stringify(bad))}});
- test("[G8] Extensão experimental espera pela sequência de supremacia",()=>{const c=EG({maxEras:10,extendForSupremacy:true}),s=ST(c,OW(24,[["player",3],["ai",3]]));s.maxEras=10;s.supremacy={leader:"player",streak:2,status:"counting"};const o=END(s,c,10,{player:D(10),ai:D(0)});if(o.result||!o.extended)throw Error("Não prolongou com sequência ativa")});
- test("[E6] Jogador eliminado: a partida continua entre as restantes",()=>{const c=EG({},24,3),s=ST(c,OW(24,[["ai",2],["ai2",2]]));END(s,c,1);if(P(s).active)throw Error("Jogador sem territórios não foi eliminado");s.era=1;processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.result)throw Error("Partida terminou com 2 IAs ativas");if(s.history.at(-1).total!==0)throw Error("Jogador eliminado recebeu receita")});
- // ── Ajustes pós-etapa 3 ──
- test("[A1] Padrões ajustados: maioria 70%, supremacia 0,70 e ICE mínimo 0,5",()=>{if(DEFAULTS.endgame.territoryPct!==.7||DEFAULTS.endgame.supremacyRelative!==.7||DEFAULTS.endgame.iceMinAbsolute!==.5)throw Error("Padrões não atualizados");if(territorialMinimum(24,DEFAULTS.endgame.territoryPct)!==17)throw Error("Mínimo com 70% de 24 deveria ser 17")});
- test("[A2] Jogador vê a receita da era antes de decidir",()=>{const c=clone(DEFAULTS),s=newState(c,{endRules:true});const before=P(s).treasury;beginEra(s,c);if(Math.abs(P(s).treasury-(before+c.economy.baseIncome))>1e-9)throw Error("Receita da era não entrou no orçamento antes da decisão");finishEra(s,c,{playerAllocation:{military:P(s).treasury,infrastructure:0,technology:0}});if(P(s).treasury!==0)throw Error("Não conseguiu investir a receita da própria era")});
- test("[A3] Jogador e IA decidem com a mesma informação",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);const p=P(s).treasury,a=A(s).treasury;if(Math.abs(p-a)>1e-9)throw Error("Orçamentos diferentes na mesma posição: "+p+" vs "+a)});
- test("[A4] Era aberta + conclusão equivale a processEra",()=>{const c=clone(DEFAULTS),a=newState(c),b=newState(c);for(let i=0;i<8;i++){processEra(a,c,{autoStrategy:"balanced"});beginEra(b,c);finishEra(b,c,{autoStrategy:"balanced"})}if(JSON.stringify(a.timeline)!==JSON.stringify(b.timeline))throw Error("Fases separadas divergem de processEra")});
- test("[A5] Não é possível abrir a mesma era duas vezes",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);let failed=false;try{beginEra(s,c)}catch(e){failed=true}if(!failed)throw Error("Era aberta duas vezes (receita duplicada)")});
- test("[A6] Ataque do jogador durante a era aberta é resolvido nessa era",()=>{const c=clone(DEFAULTS),s=newState(c,{endRules:true});beginEra(s,c);P(s).military=100;const t=eligibleTargets(s,"player")[0];attackTerritory(s,t.i,"player",c);finishEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.timeline[0].civs[0].attacks.wins+s.timeline[0].civs[0].attacks.losses!==1)throw Error("Ataque não registado na era 1")});
-
- // ── Etapa 4: laboratórios ──
- const LP=LAB_PROFILES.map(x=>x[0]);
- test("Identificadores dos testes são únicos e estáveis",()=>{const reg=testRegistry(),ids=reg.map(t=>t.id);if(new Set(ids).size!==ids.length)throw Error("IDs repetidos");if(stableCode("abc")!==stableCode("abc")||stableCode("abc")===stableCode("abd"))throw Error("Código derivado do nome não é determinístico");if(reg.some(t=>!TEST_CATS.some(([c])=>c===t.cat)))throw Error("Teste sem categoria válida")},"INF");
- test("Partida do Modo B termina com resultado e Modo A corre as eras pedidas",()=>{const c=clone(DEFAULTS);c.endgame.maxEras=12;const b=runGame(c,{kind:"auto",profiles:LP,civCount:2,seed:3});if(!b.result||b.eras>12)throw Error("Modo B sem resultado até ao limite");const a=runGame(c,{kind:"fixed",eras:20,profiles:LP,civCount:2,seed:3});if(a.result||a.rows.length!==20)throw Error("Modo A interrompido ou com resultado")},"INF");
- test("Cenários iguais com as mesmas sementes dão partidas idênticas",()=>{const c=clone(DEFAULTS),o={kind:"auto",profiles:LP,civCount:3,seed:fixedGameSeed(5,2),game:2};const a=runGame(c,o),b=runGame(scenarioConfig(c,{}),o);if(JSON.stringify(a.rows)!==JSON.stringify(b.rows)||JSON.stringify(a.result)!==JSON.stringify(b.result))throw Error("Mesmas condições produziram partidas diferentes")},"INF");
- test("Modo A identifica a primeira condição que teria ocorrido",()=>{const mk=(t,streak)=>({era:0,sup:{leader:"ai",streak},tmin:17,civs:[[t[0],1],[t[1],1]]});const rec={kind:"fixed",ids:["player","ai"],seats:["military","economist"],supremacyEras:5,rows:[mk([3,3],0),mk([10,4],0),mk([17,2],0),mk([18,1],0)].map((r,i)=>({...r,era:i+1}))};const o=gameOutcome(rec);if(!o.would||o.era!==3||o.winners.join()!=="0"||!o.reasons[0].includes("territorial"))throw Error("Desfecho hipotético incorreto: "+JSON.stringify(o))},"INF");
- test("Indicadores contam cada partida uma vez, mesmo com vários motivos",()=>{const c=clone(DEFAULTS),recs=[1,2,3,4,5,6].map(g=>runGame(c,{kind:"auto",profiles:LP,civCount:2,seed:fixedGameSeed(11,g),game:g}));recs[0].result={era:9,type:"victory",winners:["player"],reasons:{player:["territorial","elimination"]}};const m=summarizeRecords(recs);const total=Object.values(m.outcomes).reduce((a,b)=>a+b,0);if(total!==recs.length)throw Error(`Desfechos somam ${total} em vez de ${recs.length}`);if(m.reasonMentions.elimination<1||m.reasonMentions.territorial<1)throw Error("Motivos múltiplos não registados")},"INF");
- test("Consolidado é a média simples entre perfis",()=>{const st=[{winRate:.6},{winRate:.2},{winRate:.1}];if(Math.abs(consolidateProfiles(st,["winRate"]).winRate-.3)>1e-12)throw Error("Consolidado não é a média simples")},"INF");
- test("Resultados por perfil somam os lugares jogados",()=>{const c=clone(DEFAULTS),recs=[0,1,2,3,4,5].map(g=>runGame(c,{kind:"auto",profiles:LP,civCount:2,seed:fixedGameSeed(13,g),game:g}));const st=profileStats(recs);if(st.reduce((a,s)=>a+s.seats,0)!==12)throw Error("Lugares não somam 12");for(const s of st){if(s.wins+s.draws+s.losses!==s.seats)throw Error(s.profile+": vitórias+empates+derrotas ≠ lugares");if(Math.abs(s.shares.reduce((a,b)=>a+b,0)-1)>1e-9)throw Error("Parcelas de investimento não somam 100%")}},"INF");
- test("Cenários com parâmetros inválidos são recusados",()=>{let failed=false;try{scenarioConfig(DEFAULTS,{"endgame.iceWMilitary":.9})}catch(e){failed=true}if(!failed)throw Error("Pesos do ICE a somar ≠ 1 aceites");const d=paramCatalog().find(x=>x.id==="endgame.territoryPct");if(parseParamValue(d,"0,65")!==.65)throw Error("Vírgula decimal não aceite")},"INF");
- test("Diagnóstico deteta perfis com comportamento semelhante",()=>{const base={seats:10,winRate:.5,shares:[.4,.4,.2],combatsPerGame:5,conquestsPerGame:3,successRate:.8,infraConversion:2,idleRate:0,eliminatedRate:0,milShareStd:.1};const d=profileDiagnostics([{...base,profile:"military"},{...base,profile:"aggressive",shares:[.42,.39,.19]}],{kind:"auto",mode:"slow"});if(!d.some(([w])=>w.includes("×")))throw Error("Semelhança não detetada")},"INF");
-
- // ── Etapa 5: integração e validação ──
- test("Lento e rápido dão resultados idênticos com regras equivalentes",()=>{const slow=clone(DEFAULTS),fast=clone(DEFAULTS);fast.economy.fastModeReturnMultiplier=1;slow.economy.fastModeReturnMultiplier=1;fast.military.delay=slow.military.delay+1;fast.infrastructure.delay=slow.infrastructure.delay+1;fast.technology.delay=slow.technology.delay+2;const o={kind:"auto",profiles:LAB_PROFILES.map(x=>x[0]),civCount:3,seed:4242,game:1};const a=runGame(slow,{...o,mode:"slow"}),b=runGame(fast,{...o,mode:"fast"});if(JSON.stringify(a.rows)!==JSON.stringify(b.rows))throw Error("Com atrasos equivalentes (rápido = lento + redução do modo) as partidas divergem");if(JSON.stringify(a.result)!==JSON.stringify(b.result))throw Error("Resultados finais diferentes")},"INF");
-
- test("Infraestrutura no modo rápido usa o atraso reduzido",()=>{const c=clone(DEFAULTS);c.infrastructure.delay=2;const s=makeInvestment("infrastructure",100,0,c,"player","slow"),f=makeInvestment("infrastructure",100,0,c,"player","fast");if(infraReturn(s,1)!==0)throw Error("Lento devolveu antes do atraso de 2 eras");if(!(infraReturn(f,1)>0))throw Error("Rápido não antecipou o retorno (atraso efetivo 1)")},"ECO");
- test("Laboratórios 2 e 3 geram as mesmas partidas para as mesmas condições",()=>{const opts={kind:"auto",games:4,eras:30,civCount:3,baseSeed:77,mode:"slow",profiles:LAB_PROFILES.map(x=>x[0])};const a=buildJobs(clone(DEFAULTS),opts,{scenario:"Base"}).map(j=>runGame(j.cfg,j.opts)),b=buildJobs(clone(DEFAULTS),opts).map(j=>runGame(j.cfg,j.opts));a.forEach((r,i)=>{if(JSON.stringify(r.rows)!==JSON.stringify(b[i].rows)||JSON.stringify(r.result)!==JSON.stringify(b[i].result))throw Error("Partida "+i+" diferente entre laboratórios")})},"INF");
- test("Experiência completa é reproduzível",()=>{const opts={kind:"auto",games:6,eras:30,civCount:2,baseSeed:91,mode:"fast",profiles:LAB_PROFILES.map(x=>x[0])};const run=()=>{const recs=buildJobs(clone(DEFAULTS),opts).map(j=>runGame(j.cfg,j.opts)),m=summarizeRecords(recs);return JSON.stringify({m,p:profileStats(recs)})};if(run()!==run())throw Error("Mesma experiência produziu indicadores diferentes")},"INF");
- test("Exportações CSV têm o número esperado de linhas",()=>{const saved=expState.results;let out=null;const stop=captureDownloads((name,text)=>{out=text.split("\n")});try{const opts={kind:"auto",games:3,eras:30,civCount:3,baseSeed:5,mode:"slow",profiles:["military","economist","adaptive"]};const recs=buildJobs(clone(DEFAULTS),opts,{scenario:"X"}).map(j=>runGame(j.cfg,j.opts));expState.results={opts,scenarios:[{name:"X",values:{},cfg:clone(DEFAULTS),mode:"slow",recs,sum:summarizeRecords(recs)}]};
-  exportExp("games");if(out.length!==1+3*3)throw Error(`CSV de partidas com ${out.length} linhas (esperado 10)`);exportExp("eras");const exp=1+recs.reduce((a,r)=>a+r.rows.length*3,0);if(out.length!==exp)throw Error(`CSV por era com ${out.length} linhas (esperado ${exp})`);exportExp("summary");if(out.length!==2)throw Error("CSV de resumo deveria ter 2 linhas")}finally{expState.results=saved;stop()}},"INF");
- test("Desempenho: uma partida de 30 eras com 4 civilizações em menos de 200 ms",()=>{const t=performance.now();for(let g=0;g<5;g++)runGame(clone(DEFAULTS),{kind:"fixed",eras:30,profiles:LAB_PROFILES.map(x=>x[0]),civCount:4,seed:g});const ms=(performance.now()-t)/5;if(ms>200)throw Error(`Média de ${fmt(ms,0)} ms por partida`)},"INF");
-
- // ── Balanceamento: novas mecânicas ──
- test("Custo administrativo reduz a receita de todos os territórios",()=>{const c=clone(DEFAULTS);c.military.aiEnabled=false;c.economy.adminCostPerTerritory=1;const s=newState(c);for(let i=1;i<=4;i++)s.owners[i]="player";beginEra(s,c,{ai:false});const n=5;if(Math.abs(s.pending.revenue.player.normal-n*(22-(n-1)))>1e-9)throw Error("Receita territorial "+s.pending.revenue.player.normal+" ≠ "+n*(22-(n-1)));const c0=clone(c);c0.economy.adminCostPerTerritory=0;const s0=newState(c0);for(let i=1;i<=4;i++)s0.owners[i]="player";beginEra(s0,c0,{ai:false});if(s0.pending.revenue.player.normal!==n*22)throw Error("Com custo 0 deveria ser a regra antiga")},"ECO");
- test("Receita por território nunca fica negativa",()=>{const c=clone(DEFAULTS);c.military.aiEnabled=false;c.economy.adminCostPerTerritory=5;const s=newState(c);for(let i=1;i<10;i++)s.owners[i]="player";beginEra(s,c,{ai:false});if(s.pending.revenue.player.normal!==0)throw Error("Receita negativa ou incorreta")},"ECO");
- test("Exército não usado perde a fração configurada por era",()=>{const c=clone(DEFAULTS);c.military.aiEnabled=false;c.military.decayRate=.2;const s=newState(c);P(s).military=100;beginEra(s,c,{ai:false});if(Math.abs(P(s).military-80)>1e-9)throw Error("Esperado 80, obtido "+P(s).military);const c0=clone(c);c0.military.decayRate=0;const s0=newState(c0);P(s0).military=100;beginEra(s0,c0,{ai:false});if(P(s0).military!==100)throw Error("Com desgaste 0 os pontos deveriam manter-se")},"MIL");
- test("Pontos recém-libertados não sofrem desgaste na própria era",()=>{const c=clone(DEFAULTS);c.military.aiEnabled=false;const s=newState(c);beginEra(s,c,{ai:false});finishEra(s,c,{playerAllocation:{military:100,infrastructure:0,technology:0},ai:false});beginEra(s,c,{ai:false});if(Math.abs(P(s).military-100*c.military.pointsPerInvestment)>1e-9)throw Error("Pontos novos foram desgastados")},"MIL");
- test("Bônus tecnológico usa só o progresso ativo e respeita o teto",()=>{const c=clone(DEFAULTS);c.military.aiEnabled=false;const s=newState(c);s.investments.push({...makeInvestment("technology",1000,0,c,"player","slow"),id:99});beginEra(s,c,{ai:false});if(s.pending.revenue.player.tech!==0)throw Error("Bônus antes do atraso");for(let e=0;e<3;e++){finishEra(s,c,{ai:false});beginEra(s,c,{ai:false})}const r=s.pending.revenue.player,base=r.normal+r.infra+1000*.2*c.technology.benefitPerProgress,expected=1000*.2*c.technology.benefitPerProgress+Math.min(c.technology.revenueBonusCap,c.technology.revenueBonusPerProgress*200)*base;if(Math.abs(r.tech-expected)>1e-6)throw Error(`Tecnologia ${r.tech} ≠ ${expected}`)},"TEC");
- test("Simulação longa com bônus tecnológico não explode",()=>{const c=clone(DEFAULTS);c.military.aiStyle="technologist";const s=simulate("technology",150,c);if(s.stopped||!Number.isFinite(P(s).treasury))throw Error("Crescimento explosivo")},"TEC");
- test("Defesa cresce com a infraestrutura e a tecnologia do dono",()=>{const c=clone(DEFAULTS),s=newState(c);const ai=A(s),idx=s.owners.indexOf("ai"),base=territoryDefense(s,idx,c);ai.lastRevenue={...ai.lastRevenue,infrastructure:50};ai.techProgress=40;const d=territoryDefense(s,idx,c);if(Math.abs(d-(base+50*c.military.defensePerInfraRevenue+40*c.military.defensePerTechProgress))>1e-9)throw Error("Defesa "+d);if(territoryDefense(s,5,c)!==c.military.defenseNeutral)throw Error("Neutro não deve receber bónus")},"MIL");
- test("Defesa econômica reparte-se pela raiz quadrada dos territórios",()=>{const c=clone(DEFAULTS),s=newState(c);const ai=A(s);let added=0;for(let i=0;i<s.owners.length&&added<3;i++)if(s.owners[i]==="neutral"){s.owners[i]=ai.id;added++}
-  const T=countTerritories(s,ai.id),idx=s.owners.indexOf(ai.id);ai.lastRevenue={...ai.lastRevenue,infrastructure:100};ai.techProgress=0;const d=territoryDefense(s,idx,c),exp=c.military.defenseOwned+100*c.military.defensePerInfraRevenue/Math.sqrt(T);
-  if(T!==4||Math.abs(d-exp)>1e-9)throw Error("Defesa "+d+" esperada "+exp)},"MIL");
- test("Saque transfere infraestrutura, tecnologia e espólio em tesouro",()=>{const c=clone(DEFAULTS),s=newState(c);const ai=A(s),pl=P(s);ai.treasury=1000;invest(s,"infrastructure",100,c,ai.id);invest(s,"technology",60,c,ai.id);ai.lastRevenue={...ai.lastRevenue,total:40};
-  const T=countTerritories(s,ai.id),f=Math.min(.5,c.military.pillageInvestShare/T),tr0=pl.treasury,r=pillage(s,ai.id,pl.id,c);
-  const sum=(o,ty,k)=>s.investments.filter(i=>i.owner===o&&i.type===ty).reduce((a,i)=>a+i[k],0);
-  if(Math.abs(sum(pl.id,"infrastructure","amount")-100*f)>1e-9||Math.abs(sum(ai.id,"infrastructure","amount")-100*(1-f))>1e-9)throw Error("Infraestrutura mal transferida");
-  if(Math.abs(sum(pl.id,"technology","progress")+sum(ai.id,"technology","progress")-60*c.technology.progressPerInvestment)>1e-9||!(r.tech>0))throw Error("Progresso tecnológico não se conserva");
-  if(Math.abs(pl.treasury-tr0-c.military.pillageRevenueEras*40/T)>1e-9)throw Error("Espólio "+(pl.treasury-tr0))},"MIL");
- test("Ataque usa a defesa reforçada",()=>{const c=clone(DEFAULTS);c.military.conquestCost=0;const s=newState(c);s.owners[1]="ai";A(s).techProgress=100;P(s).military=c.military.defenseOwned+1;const r=attackTerritory(s,1,"player",c);if(r.ok)throw Error("Ataque passou ignorando a defesa tecnológica")},"MIL");
-
- test("Ordens simultâneas: a ordem reserva o poder e só se resolve no fim da era",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);const pl=P(s),idx=eligibleTargets(s,"player").find(x=>x.o==="neutral").i;pl.military=50;const r=orderAttack(s,idx,"player",c);
-  if(!r.ok||!r.queued||s.owners[idx]!=="neutral"||Math.abs(pl.military-(50-r.need))>1e-9)throw Error("Ordem não reservou o poder");s.forcedAttack={owner:"player",win:true};finishEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.owners[idx]!=="player")throw Error("Ordem não resolvida no fim da era")},"MIL");
- test("Ordens simultâneas: batalha pelo mesmo território e cancelamento devolvem o certo",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);s.owners=s.owners.map(()=>"neutral");s.owners[7]="player";s.owners[9]=A(s).id;const pl=P(s),ai=A(s);pl.military=50;ai.military=20;pl.techProgress=0;ai.techProgress=0;
-  const a=orderAttack(s,8,"player",c),b=orderAttack(s,8,ai.id,c);if(!a.ok||!b.ok)throw Error("Ordens recusadas");s.forcedAttack={owner:"player",win:true};const ev=resolveOrders(s,c,s.era);
-  if(s.owners[8]!=="player"||!ev.some(e=>e.type==="battleLost"&&e.owner===ai.id))throw Error("Batalha mal resolvida");if(Math.abs(ai.military-(20-b.need))>1e-9)throw Error("Perdedor deveria perder o poder reservado: "+ai.military);
-  pl.military=30;const o=orderAttack(s,6,"player",c);cancelOrder(s,"player",6);if(Math.abs(pl.military-30)>1e-9||s.orders.length)throw Error("Cancelamento não devolveu o poder")},"MIL");
- test("Ordens múltiplas: cada ataque adicional custa mais e cancelar recalcula",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);s.owners=s.owners.map(()=>"neutral");s.owners[7]="player";const pl=P(s);pl.military=100;
-  const a=orderAttack(s,6,"player",c),b=orderAttack(s,8,"player",c),d=orderAttack(s,13,"player",c);if(!a.ok||!b.ok||!d.ok)throw Error("Ordens recusadas");
-  const base=c.military.conquestCost+c.military.defenseNeutral;if(Math.abs(a.need-base)>1e-9||Math.abs(b.need-2*base)>1e-9||Math.abs(d.need-3*base)>1e-9)throw Error("Custos "+[a.need,b.need,d.need]);
-  if(Math.abs(pl.military-(100-6*base))>1e-9)throw Error("Reserva errada");cancelOrder(s,"player",6);const o=s.orders.filter(x=>x.owner==="player");
-  if(o.length!==2||Math.abs(o[0].need-base)>1e-9||Math.abs(o[1].need-2*base)>1e-9||Math.abs(pl.military-(100-3*base))>1e-9)throw Error("Cancelar não recalculou: "+o.map(x=>x.need)+" / "+pl.military);
-  for(const x of [8,13])s.forcedAttack=null;s.forcedAttack={owner:"player",win:true};const mil0=pl.military;resolveOrders(s,c,s.era);if(pl.military>mil0+3*base+1e-9)throw Error("Custo extra não cobrado")},"MIL");
- test("Tutorial: ataque com resultado fixado e IA que evita o jogador",()=>{const c=clone(DEFAULTS),s=newState(c);const pl=P(s),idx=eligibleTargets(s,"player")[0].i;pl.military=100;s.forcedAttack={owner:"player",win:false};const r=attackTerritory(s,idx,"player",c);if(!r.ok||r.win||s.forcedAttack)throw Error("Resultado não fixado");
-  const s2=newState(c);s2.owners=s2.owners.map(()=>"neutral");s2.owners[7]="player";s2.owners[8]=A(s2).id;A(s2).military=1e6;s2.aiAvoid={player:true,idx:[9,2,14]};beginEra(s2,c);aiDecide(s2,A(s2),c);if(s2.owners[7]!=="player"||s2.owners[9]!=="neutral")throw Error("A IA atacou um alvo protegido")},"IA");
- test("Territórios contam de forma proporcional na pontuação",()=>{const c=clone(DEFAULTS);const t={values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10]]))};const base={military:10,infrastructure:10,technology:10,treasury:10,revenue:10};const s=finalScores([{id:"a",dims:{...base,territories:10}},{id:"b",dims:{...base,territories:5}}],1,c,t);if(Math.abs(s[0].parts.territories-1)>1e-9||Math.abs(s[1].parts.territories-.5)>1e-9)throw Error("Partes "+s[0].parts.territories+" / "+s[1].parts.territories);c.endgame.scoreTerritoryProportional=false;const l=finalScores([{id:"b",dims:{...base,territories:5}}],1,c,t);if(!(l[0].parts.territories>.5))throw Error("Desligado deveria usar a escala logarítmica")},"PON");
- test("Territórios são a 5ª dimensão da pontuação e do ICE",()=>{const c=clone(DEFAULTS);if(Math.abs(SCORE_WEIGHT_KEYS.reduce((a,k)=>a+c.endgame[k],0)-1)>1e-9||c.endgame.scoreWTerritory!==.4||c.endgame.iceWTerritory!==.2)throw Error("Pesos padrão incorretos");const t={values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10]]))};const base={military:10,infrastructure:10,technology:10,treasury:10,revenue:10};const a=finalScores([{id:"a",dims:{...base,territories:10}},{id:"b",dims:{...base,territories:2}}],1,c,t);if(!(a[0].score>a[1].score))throw Error("Mais territórios não aumentou a pontuação");if(Math.abs(a[0].score-1)>1e-9)throw Error("Tudo na referência deveria dar 100%");const i1=computeICE({...base,territories:10},1,c,t),i2=computeICE({...base,territories:2},1,c,t);if(!(i1.ice>i2.ice))throw Error("Mais territórios não aumentou o ICE")},"PON");
- test("Configuração antiga de 4 pesos continua válida",()=>{const c=clone(DEFAULTS);for(const k of ["iceWMilitary","iceWInfrastructure","iceWTechnology","iceWFinance","scoreWMilitary","scoreWInfrastructure","scoreWTechnology","scoreWTreasury"])c.endgame[k]=.25;delete c.endgame.iceWTerritory;delete c.endgame.scoreWTerritory;const n=normalizeConfig(c);if(n.endgame.iceWTerritory!==0||n.endgame.scoreWTerritory!==0)throw Error("Peso territorial deveria ficar 0")},"INF");
- test("Referências antigas sem territórios são completadas",()=>{const old={values:Object.fromEntries(REF_DIMS.filter(([d])=>d!=="territories").map(([d])=>[d,[1,2,3]]))};const v=validateReferences({ice:old});if(!v.ice.values.territories||v.ice.values.territories.length!==3)throw Error("Dimensão territorial não completada")},"INF");
-
- test("Supremacia só conta na fase final e com poucos territórios livres",()=>{const c=clone(DEFAULTS);c.references={ice:{values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10]]))},score:{values:Object.fromEntries(REF_DIMS.map(([d])=>[d,[10]]))}};const mk=(owners,era)=>{const s=newState(c,{endRules:true});s.owners=owners;s.era=era;return s};const dims={player:{military:10,infrastructure:10,technology:10,treasury:10,revenue:10,territories:10},ai:{military:0,infrastructure:0,technology:0,treasury:0,revenue:0,territories:1}};const ent=(s,era)=>({era,civs:s.civs.map(x=>({id:x.id,dims:dims[x.id]}))});
-  const o1=Array(24).fill("neutral");o1[0]="player";o1[23]="ai";let s=mk(o1,6);let r=evaluateEndOfEra(s,c,6,ent(s,6),true);if(r.supremacy.status!=="notYet")throw Error("Contou cedo com o mapa livre");
-  const o2=Array(24).fill("player");o2[23]="ai";o2[22]="neutral";s=mk(o2,10);r=evaluateEndOfEra(s,c,10,ent(s,10),true);if(r.supremacy.status!=="notYet")throw Error("Contou antes da metade do limite");
-  s=mk(o2.slice(),15);r=evaluateEndOfEra(s,c,15,ent(s,15),true);if(r.supremacy.status!=="counting")throw Error("Não contou na fase final com o mapa ocupado: "+r.supremacy.status);
-  const o3=Array(24).fill("neutral");for(let i=0;i<15;i++)o3[i]="player";o3[23]="ai";s=mk(o3,20);r=evaluateEndOfEra(s,c,20,ent(s,20),true);if(r.supremacy.status!=="notYet")throw Error("Contou com 8 territórios livres")},"SUP");
-
- // ── Dificuldade ──
- test("Multiplicador de receita só afeta IAs em partidas com jogador humano",()=>{const c=clone(DEFAULTS);c.economy.aiIncomeMultiplier=1.5;const s=newState(c);beginEra(s,c);if(s.pending.revenue.player.total!==22)throw Error("Jogador afetado");if(Math.abs(s.pending.revenue.ai.total-33)>1e-9)throw Error("IA sem multiplicador: "+s.pending.revenue.ai.total);const l=newState(c,{allAI:true});beginEra(l,c);if(l.pending.revenue.ai.total!==22)throw Error("Laboratório (todas IA) não deveria aplicar o multiplicador")},"IA");
- test("IA estratega escolhe o alvo mais barato e prefere o jogador no empate",()=>{const c=clone(DEFAULTS);c.military.aiTarget="cheapest";c.military.aiAggression=100;c.military.aiStyle="military";const s=newState(c);s.owners.fill("neutral");s.owners[7]="ai";s.owners[13]="player";A(s).military=50;A(s).treasury=0;s.era=1;processEra(s,c,{ai:true,playerAllocation:{military:0,infrastructure:0,technology:0}});const conq=s.log.find(x=>/IA conquistou|IA atacou/.test(x.text));if(!conq)throw Error("IA não atacou");if(!/território (1|2|7|9|8|14) /.test(conq.text+" "))throw Error("Alvo inesperado: "+conq.text)},"IA");
- test("Modo Conquista: supremacia desligada nunca dá vitória",()=>{const c=clone(DEFAULTS);c.endgame.supremacyEnabled=false;c.endgame.maxEras=150;const n=normalizeConfig(c);if(n.endgame.maxEras!==150||n.endgame.supremacyEnabled!==false)throw Error("Configuração não aceite");
-  const r=runGame(n,{kind:"auto",profiles:LAB_PROFILES.map(x=>x[0]),civCount:4,seed:11});const o=gameOutcome(r);if(o.type==="supremacy"||(r.result&&r.result.reasons&&Object.values(r.result.reasons).flat().includes("supremacy")))throw Error("Houve supremacia");if(!o.ended)throw Error("Partida não terminou")},"SUP");
- test("Referências padrão cobrem 150 eras",()=>{for(const [d] of REF_DIMS){const a=DEFAULT_REFERENCE_VALUES[d];if(!a||a.length<150||!a.every(Number.isFinite))throw Error(d)}},"SUP");
- test("Predefinições de dificuldade aplicam os valores certos",()=>{const saved=clone(configApplied);try{for(const [k,v] of [["muitofacil",[.7,75,"neutralFirst"]],["facil",[.92,75,"neutralFirst"]],["medio",[1.03,75,"neutralFirst"]],["dificil",[1,100,"cheapest"]],["hardcore",[1.03,100,"cheapest"]]]){applyDifficulty(k);const got=[configApplied.economy.aiIncomeMultiplier,configApplied.military.aiAggression,configApplied.military.aiTarget];if(JSON.stringify(got)!==JSON.stringify(v))throw Error(k+": "+JSON.stringify(got))}normalizeConfig(configApplied)}finally{configApplied=saved}},"IA");
- return list;
-}
-export const TEST_CAT_BY_NAME={"Uma era gera valores finitos": "ECO", "Investimento inicial gera retorno no calendário previsto": "ECO", "Investimentos respeitam orçamento": "ECO", "Infraestrutura respeita atraso e duração": "ECO", "Avanço múltiplo equivale ao individual": "ECO", "Reinício restaura estado": "ECO", "Simulação prolongada sem valores inválidos": "ECO", "Fontes de receita somam total": "ECO", "IA mantém tesouro independente e recebe receita": "ECO", "Modo rápido aplica multiplicador de retorno também à IA": "ECO", "IA recebe multiplicador rápido nos investimentos reais": "ECO", "Cada IA mantém tesouro e investimentos próprios": "ECO", "Todas as IAs recebem a mesma regra de receita": "ECO", "[A2] Jogador vê a receita da era antes de decidir": "ECO", "[A3] Jogador e IA decidem com a mesma informação": "ECO", "[A4] Era aberta + conclusão equivale a processEra": "ECO", "[A5] Não é possível abrir a mesma era duas vezes": "ECO", "Tecnologia ativa na era correta sem duplicação": "TEC", "Progresso tecnológico do jogador não inclui a IA": "TEC", "Pontos militares têm atraso": "MIL", "Ataque impossível é recusado": "MIL", "Defesa muda conforme território neutro ou dominado": "MIL", "Conquista respeita adjacência e aumenta territórios": "MIL", "Ataque bem-sucedido ou falho gera métricas de expansão": "MIL", "Simulação militar expande território e mede ataques": "MIL", "IAs podem atacar outras IAs": "MIL", "Ataques de civilizações diferentes usam sorteios diferentes": "MIL", "[A6] Ataque do jogador durante a era aberta é resolvido nessa era": "MIL", "Investimento da IA não contamina métricas do jogador": "IA", "Perfis da IA produzem decisões de investimento distintas": "IA", "IA aproveita o tesouro sem ultrapassar o orçamento": "IA", "Perfil de IA afeta alocação de investimento": "IA", "IA de referência aumenta prioridade militar sob ameaça": "IA", "IA adaptativa reage à pressão territorial": "IA", "Decisões militares respeitam agressividade zero e cem": "IA", "Lugar do jogador pode ser controlado por IA": "IA", "Simulações independentes": "INF", "Exportação/importação preserva configuração": "INF", "JSON inválido não é aceito": "INF", "Cancelamento preserva eras concluídas (primitiva)": "INF", "Estado suporta várias civilizações com posições distintas": "INF", "Configuração 1×1 mantém posições do MVP original": "INF", "Partida com 5 IAs corre sem valores inválidos": "INF", "Modo é parâmetro do estado, não variável global": "INF", "Simulações lenta e rápida podem correr lado a lado": "INF", "Histórico por era regista todas as civilizações": "INF", "Dimensões seguem as definições acordadas": "INF", "Mesma semente e configuração reproduzem a partida": "INF", "Configuração v3 sem parâmetros novos é aceite": "INF", "Número de IAs fora do limite é recusado": "INF", "Partida de duração fixa corre todas as eras": "INF", "Duração fixa é reprodutível pela semente": "INF", "Duração fixa não altera a configuração nem a partida atual": "INF", "Perfis rodam de forma equilibrada pelos lugares": "INF", "Receita média usa as últimas 3 eras disponíveis": "INF", "Calibração usa a mediana por era e dimensão": "INF", "Mediana zero recebe referência de recurso positiva e marcada": "INF", "Calibração real gera referências válidas para todas as eras": "INF", "Referência depois da última era usa o último valor": "INF", "Configuração guarda e valida referências": "INF", "[T1] Vitória ao atingir exatamente o mínimo de territórios": "TER", "[T2] Não vence abaixo do mínimo": "TER", "[T3] Arredondamento sempre para cima": "TER", "[T4] Territórios neutros entram na base de cálculo": "TER", "[T5] Empate entre civilizações acima do percentual": "TER", "[T6] Perda de território durante a era impede a vitória": "TER", "[T7] Conquista durante a era conta na avaliação final": "TER", "[E1] Sem territórios = eliminação imediata no fim da era": "TER", "[E2] Eliminação é definitiva": "TER", "[E3] Eliminar todos os adversários = vitória por eliminação": "TER", "[E4] Todas eliminadas na mesma era = empate geral": "TER", "[E5] Eliminação + maioria = uma vitória com dois motivos": "TER", "[E6] Jogador eliminado: a partida continua entre as restantes": "TER", "[S1] Vitória ao completar as eras consecutivas": "SUP", "[S2] Relação acima do limite reinicia a sequência": "SUP", "[S3] Mudança de líder reinicia a contagem": "SUP", "[S4] Empate na liderança reinicia": "SUP", "[S5] ICE não calculável suspende e preserva a sequência": "SUP", "[S6] ICE absoluto mínimo por era é aplicado": "SUP", "[S7] Compara com o segundo maior ICE entre todos": "SUP", "[S8] Queda do ICE do líder não interrompe se a condição se mantém": "SUP", "[S9] Fórmula do ICE: média geométrica ponderada com piso": "SUP", "[S10] Supremacia é independente da vitória territorial": "SUP", "[F1] Média aritmética ponderada": "PON", "[F2] Normalização linear": "PON", "[F3] Normalização logarítmica": "PON", "[F4] Limite máximo de 150% por dimensão": "PON", "[F5] Dimensão zero vale zero e as outras contam": "PON", "[F6] Civilizações eliminadas ficam fora da classificação": "PON", "[F7] Usa só os valores da última era e só o saldo da tesouraria": "PON", "[F8] Empate dentro da margem de 1%": "PON", "[F9] Empate com três ou mais civilizações": "PON", "[G1] Vitórias simultâneas de civilizações diferentes = empate": "END", "[G2] Encerramento obrigatório no limite de eras": "END", "[G3] Vitória na era-limite prevalece sobre a pontuação": "END", "[G4] Funciona nos modos lento e rápido": "END", "[G5] Duração fixa não encerra, mas regista as condições": "END", "[G6] Partida encerrada não aceita novas eras": "END", "[G7] Configuração de fim de partida é validada": "END", "[G8] Extensão experimental espera pela sequência de supremacia": "END", "[A1] Padrões ajustados: maioria 70%, supremacia 0,70 e ICE mínimo 0,5": "END"};
-/* ═══════════════ Etapa 4: laboratórios ═══════════════ */
-
-/* ── Registo comum de partidas (usado pelos laboratórios 2 e 3) ──
-   Cada partida guarda: identificação (cenário, semente, modo, tipo), perfis por lugar,
-   resultado, pontuação final calculada na última era e, por era e por civilização, um
-   vetor compacto com territórios, estado, ICE, dimensões, receita, investimentos e combates. */
-export const RC={T:0,ACT:1,ICE:2,MIL:3,INF:4,TEC:5,TRE:6,RAVG:7,REV:8,IM:9,II:10,IT:11,W:12,L:13,NC:14,EC:15,RINF:16};
-export const RC_NAMES=["territories","active","ice","military","infrastructure","technology","treasury","revenue_avg3","revenue","invested_military","invested_infrastructure","invested_technology","attack_wins_total","attack_losses_total","neutral_conquests_total","enemy_conquests_total","infrastructure_revenue"];
-export function runGame(cfg,{kind="auto",eras=30,mode="slow",profiles,civCount,seed,game=0,scenario=null}){
- const c=clone(cfg);c.simulation.seed=seed;c.military.aiEnabled=true;c.map.aiCount=civCount-1;
- const seats=seatProfiles(profiles,civCount,game),s=newState(c,{mode,profiles:seats,allAI:true,endRules:kind==="auto"});
- const cap=kind==="auto"?c.endgame.maxEras+(c.endgame.extendForSupremacy?c.endgame.supremacyEras:0):eras;
- while(s.era<cap&&!s.result&&!s.stopped)processEra(s,c,{});
- const last=s.timeline.at(-1);
- const scores=last?finalScores(s.civs.map((civ,k)=>({id:civ.id,dims:last.civs[k].dims})),s.era,c):[];
- return {kind,scenario,game,seed,mode:s.mode,seats,ids:s.civs.map(x=>x.id),eras:s.era,territories:s.owners.length,
-  supremacyEras:c.endgame.supremacyEras,territoryPct:c.endgame.territoryPct,
-  result:s.result?clone(s.result):null,
-  finalScores:scores.map((x,k)=>s.civs[k].active?x.score:0),
-  rows:s.timeline.map(e=>({era:e.era,sup:e.end?.supremacy?{leader:e.end.supremacy.leader,streak:e.end.supremacy.streak,status:e.end.supremacy.status,ratio:e.end.supremacy.ratio}:null,
-   tmin:e.end?.territorialMin??null,civs:e.civs.map(r=>[r.territories,r.active?1:0,r.ice??null,r.dims.military,r.dims.infrastructure,r.dims.technology,r.dims.treasury,r.dims.revenue,r.revenue.total,r.invested.military,r.invested.infrastructure,r.invested.technology,r.attacks.wins,r.attacks.losses,r.attacks.neutralConquests,r.attacks.enemyConquests,r.revenue.infrastructure])}))};
-}
-// Desfecho de uma partida. No Modo B vem do resultado; no Modo A (duração fixa) é o desfecho
-// que teria ocorrido: primeira era em que alguma condição de vitória se verificou.
-export function gameOutcome(rec){
- if(rec.kind==="auto"){const r=rec.result;if(!r)return {ended:false};return {ended:true,era:r.era,type:r.type,winners:r.winners.map(id=>rec.ids.indexOf(id)),reasons:Object.fromEntries(Object.entries(r.reasons).map(([id,v])=>[rec.ids.indexOf(id),v])),allEliminated:!!r.allEliminated}}
- for(const row of rec.rows){
-  const reasons={},add=(k,w)=>((reasons[k]??=[]).push(w));
-  const alive=row.civs.map((c,k)=>c[RC.T]>0?k:-1).filter(k=>k>=0);
-  if(alive.length===1)add(alive[0],"elimination");
-  if(row.tmin)row.civs.forEach((c,k)=>{if(c[RC.T]>=row.tmin)add(k,"territorial")});
-  if(row.sup?.leader&&row.sup.streak>=rec.supremacyEras)add(rec.ids.indexOf(row.sup.leader),"supremacy");
-  const ws=Object.keys(reasons).map(Number);
-  if(ws.length)return {ended:true,would:true,era:row.era,type:ws.length===1?"victory":"draw",winners:ws,reasons};
- }
- return {ended:false};
-}
-export const OUTCOME_KEYS=[["supremacy","Supremacia","#b49aff"],["territorial","Maioria territorial","#56d6a1"],["elimination","Eliminação","#ff737b"],["score","Pontuação final","#62a8ff"],["draw","Empate","#9fb0c7"],["none","Sem encerramento","#3a4c66"]];
-export const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
-export const median=a=>{if(!a.length)return NaN;const s=[...a].sort((x,y)=>x-y);return quantile(s,.5)};
-// Indicadores de um conjunto de partidas (um cenário).
-export function summarizeRecords(recs){
- const n=recs.length,out={games:n,kind:recs[0]?.kind,outcomes:Object.fromEntries(OUTCOME_KEYS.map(([k])=>[k,0])),reasonMentions:{supremacy:0,territorial:0,elimination:0,score:0},
-  endEras:[],winnerTerrShare:[],thresholdEra:[],streaksStarted:0,streaksInterrupted:0,supremacyEra:[],ratioByEra:[],terrPerCiv:[],durationHist:{},unusedShare:[],maxEra:0};
- for(const rec of recs){
-  const o=gameOutcome(rec);out.maxEra=Math.max(out.maxEra,rec.eras);
-  if(!o.ended)out.outcomes.none++;
-  else{
-   if(o.type==="draw")out.outcomes.draw++;
-   else{const rs=o.reasons[o.winners[0]]||[];const key=["supremacy","territorial","elimination","score"].find(k=>rs.includes(k));out.outcomes[key]++;
-    const last=rec.rows.find(r=>r.era===o.era)||rec.rows.at(-1);out.winnerTerrShare.push(last.civs[o.winners[0]][RC.T]/rec.territories)}
-   const mentioned=new Set();for(const w of o.winners)for(const r of o.reasons[w]||[])mentioned.add(r);for(const r of mentioned)out.reasonMentions[r]=(out.reasonMentions[r]||0)+1;
-   out.endEras.push(o.era);out.durationHist[o.era]=(out.durationHist[o.era]||0)+1;
-   if(o.winners.some(w=>(o.reasons[w]||[]).includes("supremacy")))out.supremacyEra.push(o.era);
-  }
-  let prev=0,th=null;
-  for(const row of rec.rows){
-   const st=row.sup?.streak||0;if(st===1)out.streaksStarted++;if(prev>0&&st<=prev&&prev<rec.supremacyEras&&!(st===prev+1))out.streaksInterrupted++;prev=st;
-   if(row.sup?.ratio!=null){(out.ratioByEra[row.era]??=[]).push(row.sup.ratio)}
-   if(th===null&&row.tmin&&row.civs.some(c=>c[RC.T]>=row.tmin))th=row.era;
-   for(const c of row.civs){const avail=c[RC.TRE]+c[RC.IM]+c[RC.II]+c[RC.IT];if(c[RC.ACT]&&avail>0)out.unusedShare.push(c[RC.TRE]/avail)}
-  }
-  if(th!==null)out.thresholdEra.push(th);
-  const last=rec.rows.at(-1);if(last)for(const c of last.civs)out.terrPerCiv.push(c[RC.T]);
- }
- out.pct=k=>n?100*out.outcomes[k]/n:0;
- out.ratioMean=out.ratioByEra.map(a=>a?mean(a):null);
- return out;
-}
-// Resultados por perfil: cada lugar ocupado por um perfil conta como uma observação.
-export function profileStats(recs){
- const by={};
- for(const rec of recs){
-  const o=gameOutcome(rec),last=rec.rows.at(-1);if(!last)continue;
-  rec.seats.forEach((p,k)=>{
-   const a=by[p]??={profile:p,seats:0,wins:0,draws:0,losses:0,scores:[],winEras:[],types:{},inv:[0,0,0],combats:0,wonCombats:0,conquests:0,neutral:0,enemy:0,revenueCum:0,infraRevCum:0,infraInvCum:0,finalTreasury:[],finalIce:[],finalTerr:[],eliminated:0,idleSeats:0,milShareByEra:[],byEra:[]};
-   a.seats++;
-   if(o.ended&&o.winners.includes(k)){if(o.type==="victory"){a.wins++;a.winEras.push(o.era);for(const r of o.reasons[k]||[])a.types[r]=(a.types[r]||0)+1}else a.draws++}else a.losses++;
-   a.scores.push(rec.finalScores[k]??0);
-   let idleRun=0,idle=false;
-   rec.rows.forEach((row,ei)=>{const c=row.civs[k],inv=c[RC.IM]+c[RC.II]+c[RC.IT];a.inv[0]+=c[RC.IM];a.inv[1]+=c[RC.II];a.inv[2]+=c[RC.IT];a.revenueCum+=c[RC.REV];a.infraRevCum+=c[RC.RINF];a.infraInvCum+=c[RC.II];
-    if(inv>0)a.milShareByEra.push(c[RC.IM]/inv);
-    const avail=c[RC.TRE]+inv;if(c[RC.ACT]&&avail>0&&c[RC.TRE]/avail>.5){idleRun++;if(idleRun>=3)idle=true}else idleRun=0;
-    const b=a.byEra[ei]??={n:0,military:0,infrastructure:0,technology:0,treasury:0,revenue:0,territories:0,ice:0,iceN:0};b.n++;b.military+=c[RC.MIL];b.infrastructure+=c[RC.INF];b.technology+=c[RC.TEC];b.treasury+=c[RC.TRE];b.revenue+=c[RC.REV];b.territories+=c[RC.T];if(c[RC.ICE]!=null){b.ice+=c[RC.ICE];b.iceN++}});
-   const lc=last.civs[k];a.combats+=lc[RC.W]+lc[RC.L];a.wonCombats+=lc[RC.W];a.conquests+=lc[RC.W];a.neutral+=lc[RC.NC];a.enemy+=lc[RC.EC];
-   a.finalTreasury.push(lc[RC.TRE]);if(lc[RC.ICE]!=null)a.finalIce.push(lc[RC.ICE]);a.finalTerr.push(lc[RC.T]);if(!lc[RC.ACT])a.eliminated++;if(idle)a.idleSeats++;
-  });
- }
- return Object.values(by).map(a=>{const invT=a.inv[0]+a.inv[1]+a.inv[2]||1,erasN=a.byEra.reduce((x,b)=>x+b.n,0)||1;return {...a,
-  winRate:a.wins/a.seats,drawRate:a.draws/a.seats,meanScore:mean(a.scores),meanWinEra:mean(a.winEras),shares:a.inv.map(v=>v/invT),
-  combatsPerGame:a.combats/a.seats,successRate:a.combats?a.wonCombats/a.combats:NaN,conquestsPerGame:a.conquests/a.seats,
-  infraConversion:a.infraInvCum?a.infraRevCum/a.infraInvCum:NaN,meanFinalIce:mean(a.finalIce),meanFinalTerr:mean(a.finalTerr),meanFinalTreasury:mean(a.finalTreasury),
-  revenuePerGame:a.revenueCum/a.seats,eliminatedRate:a.eliminated/a.seats,idleRate:a.idleSeats/a.seats,
-  milShareStd:Math.sqrt(mean(a.milShareByEra.map(v=>(v-mean(a.milShareByEra))**2)))}});
-}
-// Consolidado = média simples entre perfis (cada perfil com o mesmo peso).
-export function consolidateProfiles(stats,keys){return Object.fromEntries(keys.map(k=>[k,mean(stats.map(s=>s[k]).filter(Number.isFinite))]))}
-export const profileName=p=>LAB_PROFILE_NAME[p]||AI_PROFILE_NAMES[p]||p;
-// Executa uma lista de tarefas de partidas em lotes assíncronos, com progresso e cancelamento.
-export async function runGameJobs(jobs,onProgress,shouldCancel,roundSize=1){
- const done=[],start=Date.now();
- for(let i=0;i<jobs.length;i+=roundSize){
-  if(shouldCancel())break;
-  const round=jobs.slice(i,i+roundSize).map(j=>runGame(j.cfg,j.opts));done.push(...round);
-  if(done.length%Math.max(roundSize,4)<roundSize||i+roundSize>=jobs.length){onProgress(done.length,jobs.length,Date.now()-start);await new Promise(r=>setTimeout(r,0))}
- }
- return done;
-}
-// Construtor único de tarefas: os laboratórios 2 e 3 geram as mesmas partidas para as mesmas
-// sementes, configuração e perfis (partida g → semente g, rotação de perfis g).
-export function buildJobs(cfg,opts,{scenario=null,mode=opts.mode}={}){return Array.from({length:opts.games},(_,g)=>({cfg,opts:{kind:opts.kind,eras:opts.eras,mode,profiles:opts.profiles,civCount:opts.civCount,seed:fixedGameSeed(opts.baseSeed,g),game:g,scenario}}))}
-// Estimativa de memória: cada linha guarda um vetor de 17 números por civilização e era.
-export function estimateRows(opts,scenarios,cfgs){const eras=opts.kind==="fixed"?opts.eras:Math.max(...cfgs.map(c=>c.endgame.maxEras+(c.endgame.extendForSupremacy?c.endgame.supremacyEras:0)));return opts.games*scenarios*eras*opts.civCount}
-export const ROW_WARN=3e6;
-export function csvDownload(name,rows){download(name,rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n"),"text/csv;charset=utf-8")}
 export function readSimOpts(prefix){
  const num=(id,min,max)=>{const v=safeNum($(prefix+id).value,min,max);if(!Number.isInteger(v))throw Error("Use números inteiros nas configurações da simulação.");return v};
  const profiles=[...document.querySelectorAll(`#${prefix}Profiles input:checked`)].map(x=>x.value);if(!profiles.length)throw Error("Selecione pelo menos um perfil.");
@@ -1038,32 +547,6 @@ export function barChart(canvas,labels,series,opts={}){
  labels.forEach((lab,i)=>{const x0=pad.l+gw*i+(gw-bw*series.length)/2;series.forEach((s,k)=>{const v=s.values[i];if(!Number.isFinite(v))return;const bh=ph*clamp(v/max,0,1);ctx.fillStyle=s.color;ctx.fillRect(x0+k*bw,pad.t+ph-bh,bw-1,bh)});ctx.fillStyle="#9fb0c7";const t=String(lab);ctx.fillText(t.length>14?t.slice(0,13)+"…":t,pad.l+gw*i+2,h-pad.b+14)});
 }
 export const legendHtml=items=>items.map(([name,color])=>`<span style="--c:${cssColor(color)}">${escapeHtml(name)}</span>`).join("");
-/* ═══════════════ Laboratório 1: testes funcionais ═══════════════ */
-export const TEST_CATS=[["ECO","Economia"],["TEC","Tecnologia"],["MIL","Militar e territorial"],["IA","Inteligência artificial"],["SUP","Supremacia"],["TER","Vitória territorial e eliminação"],["PON","Pontuação final"],["END","Encerramento geral"],["INF","Infraestrutura comum e laboratórios"]];
-// Identificador estável: categoria + código de 4 dígitos derivado do nome (FNV-1a).
-// Não muda quando se acrescentam ou reordenam testes; só muda se o nome do teste mudar.
-export function stableCode(str){let h=0x811c9dc5;for(const ch of str){h^=ch.codePointAt(0);h=Math.imul(h,0x01000193)>>>0}return (h&0xffff).toString(16).toUpperCase().padStart(4,"0")}
-export let TEST_REGISTRY=null;
-export function testRegistry(){
- if(TEST_REGISTRY)return TEST_REGISTRY;const seen=new Set();
- TEST_REGISTRY=defineTests().map(t=>{const cat=t.cat||TEST_CAT_BY_NAME[t.name]||"INF";let id=cat+"-"+stableCode(t.name);while(seen.has(id))id+="b";seen.add(id);return {...t,cat,id}});
- return TEST_REGISTRY;
-}
-export const ftResults=new Map();
-export let ftHistory=[],ftLastRun=null;
-export const FT_HISTORY_KEY="imperios-ft-history";
-export async function loadFtHistory(){try{ftHistory=JSON.parse(await storage.get(FT_HISTORY_KEY)||"[]")}catch(e){ftHistory=[]}}
-// Corre os testes internos escolhidos por filter, sem tocar na tela: guarda os resultados em ftResults e
-// o resumo em ftHistory. Devolve {total,pass}. (A aba "Testes funcionais" usa runFtTests, que também a redesenha.)
-export function executeTests(filter,label){
- const reg=testRegistry().filter(filter),t0=performance.now();
- for(const t of reg){const s=performance.now();let ok=true,msg="Resultado esperado obtido.";try{t.fn()}catch(e){ok=false;msg=e.message||String(e)}ftResults.set(t.id,{ok,msg,ms:performance.now()-s,at:Date.now()})}
- const pass=reg.filter(t=>ftResults.get(t.id).ok).length,ms=performance.now()-t0;
- ftHistory.unshift({at:new Date().toISOString(),label,total:reg.length,pass,fail:reg.length-pass,ms,failed:reg.filter(t=>!ftResults.get(t.id).ok).map(t=>t.id)});ftHistory=ftHistory.slice(0,20);
- storage.set(FT_HISTORY_KEY,JSON.stringify(ftHistory)).catch(()=>{});
- ftLastRun={filter,label};
- return {total:reg.length,pass};
-}
 // Corre os testes e, se a aba "Testes funcionais" estiver ligada (versão de desenvolvimento), mostra o resultado.
 export let ftLabReady=false;
 export function runFtTests(filter,label){const r=executeTests(filter,label);if(ftLabReady){$("ftRepeat").disabled=false;renderFtLab()}return r}
@@ -1089,17 +572,6 @@ export function setupFtLab(){
  $("ftFilter").oninput=renderFtLab;$("ftOnlyFail").onchange=renderFtLab;$("ftExport").onclick=exportFtReport;
  ftLabReady=true;if(ftLastRun)$("ftRepeat").disabled=false;renderFtLab();
 }
-/* ═══════════════ Laboratório 2: balanceamento ═══════════════ */
-// Catálogo de parâmetros experimentais = parâmetros da configuração (exceto desempenho e nº de IAs).
-export function paramCatalog(){
- const out=[];for(const [title,g,items] of PARAM_GROUPS){if(g==="simulation")continue;for(const [key,label] of items){if((g==="map"&&key==="aiCount")||(g==="endgame"&&key==="enabled"))continue;out.push({id:`${g}.${key}`,group:g,key,label:`${title} · ${label}`,type:typeof DEFAULTS[g][key]})}}
- return out;
-}
-export const SCENARIO_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];
-export let expState={params:["endgame.supremacyRelative","endgame.territoryPct"],scenarios:[],results:null},expCancel=false;
-export const getParam=(cfg,id)=>{const [g,k]=id.split(".");return cfg[g][k]};
-export function scenarioConfig(base,values){const c=clone(base);for(const [id,v] of Object.entries(values)){const [g,k]=id.split(".");c[g][k]=v}return normalizeConfig(c)}
-export function parseParamValue(def,raw){if(def.type==="boolean")return !!raw;if(def.type==="string")return String(raw);const v=Number(String(raw).trim().replace(",","."));if(!Number.isFinite(v))throw Error(`Valor inválido para ${def.label}: ${raw}`);return v}
 export function renderExpTable(){
  const cat=paramCatalog(),defs=expState.params.map(id=>cat.find(c=>c.id===id)).filter(Boolean);
  $("expHead").innerHTML=`<th>Cenário</th>${defs.map(d=>`<th>${d.label}<button class="small" data-exp-delparam="${d.id}" title="Remover coluna" style="padding:1px 6px;margin-left:6px">×</button></th>`).join("")}<th></th>`;
@@ -1128,7 +600,7 @@ export async function runExperiment(){
   for(const m of modes)scen.push({name:modes.length>1?`${s.name} · ${m==="fast"?"rápido":"lento"}`:s.name,values:clone(s.values),cfg,mode:m,color:SCENARIO_COLORS[scen.length%SCENARIO_COLORS.length]})});
  const est=estimateRows(opts,scen.length,scen.map(s=>s.cfg));if(est>ROW_WARN&&!confirm(`Esta experiência vai guardar cerca de ${fmt(est/1e6,1)} milhões de registos (civilização × era) em memória. Continuar?`))return;
  if(opts.civCount>configApplied.map.territories)throw Error("Mais civilizações do que territórios.");
- busy=true;expCancel=false;$("runExp").disabled=true;$("cancelExp").disabled=false;$("expProgress").style.width="0%";$("expResults").innerHTML="";$("expCharts").classList.add("hidden");
+ setBusy(true);setExpCancel(false);$("runExp").disabled=true;$("cancelExp").disabled=false;$("expProgress").style.width="0%";$("expResults").innerHTML="";$("expCharts").classList.add("hidden");
  // Mesmas sementes, perfis e condições em todos os cenários: a partida g de cada cenário usa a
  // semente g e a mesma rotação de perfis. As partidas são intercaladas por rodada para que um
  // cancelamento deixe todos os cenários com o mesmo número de partidas.
@@ -1140,7 +612,7 @@ export async function runExperiment(){
   expState.results={opts,scenarios:scen,at:new Date().toISOString()};
   renderExpResults();
   const per=scen[0].recs.length;setStatus("expStatus",expCancel?`Cancelado: ${per} partidas por cenário concluídas e preservadas (rodadas completas).`:`Concluído: ${scen.length} cenários × ${per} partidas (${opts.kind==="auto"?"encerramento automático":"duração fixa"}${modes.length>1?", lento e rápido":""}).`,"success");refreshValConfigOptions();
- }finally{busy=false;$("runExp").disabled=false;$("cancelExp").disabled=true}
+ }finally{setBusy(false);$("runExp").disabled=false;$("cancelExp").disabled=true}
 }
 export function renderExpResults(){
  const R=expState.results;if(!R)return;const fixed=R.opts.kind==="fixed";
@@ -1158,7 +630,7 @@ export function renderExpResults(){
 // Integração: leva os parâmetros de um cenário para a configuração aplicada (jogo e laboratórios).
 export function applyScenarioToConfig(i){
  const s=expState.results?.scenarios[i];if(!s)return;
- configApplied=normalizeConfig({...clone(s.cfg),references:configApplied.references});rememberAiBase(configApplied);configEdited=clone(configApplied);renderParams();renderAll();refreshValConfigOptions();
+ setConfigApplied(normalizeConfig({...clone(s.cfg),references:configApplied.references}));rememberAiBase(configApplied);setConfigEdited(clone(configApplied));renderParams();renderAll();refreshValConfigOptions();
  setStatus("expStatus",`Parâmetros do cenário "${s.name}" aplicados à configuração. A partida em curso mantém os investimentos já feitos; reinicie-a para jogar só com as novas regras. Recomenda-se executar de novo os testes funcionais.`,"success");
 }
 export function renderExpProfileTable(){
@@ -1183,17 +655,6 @@ export function redrawExpCharts(){
  const series=[["military","#f4bd50"],["infrastructure","#56d6a1"],["technology","#b49aff"],["treasury","#62a8ff"],["revenue","#ff737b"]].map(([d,c])=>({color:c,data:eraAxis.map((e,i)=>{let sum=0,n=0;for(const a of stats){const b=a.byEra[i];if(b){sum+=b[d];n+=b.n}}return {x:e,y:n?sum/n:NaN}})}));
  svgLine($("expChartRes"),series);
 }
-export function exportExp(level){
- const R=expState.results;if(!R){setStatus("expStatus","Execute uma experiência antes de exportar.","error");return}
- const params=expState.params;
- if(level==="summary"){csvDownload("imperios-balanceamento-resumo.csv",[["scenario",...params,"games","mode","kind","pct_supremacy","pct_territorial","pct_elimination","pct_score","pct_draw","pct_no_end","mean_end_era","median_end_era","min_end_era","max_end_era","mean_winner_territory_share","streaks_started","streaks_interrupted","mean_ice_ratio","unused_resources_share"],...R.scenarios.map(s=>{const m=s.sum;return [s.name,...params.map(p=>s.values[p]??getParam(configApplied,p)),m.games,s.mode||R.opts.mode,R.opts.kind,...["supremacy","territorial","elimination","score","draw","none"].map(k=>m.pct(k).toFixed(2)),mean(m.endEras),median(m.endEras),m.endEras.length?Math.min(...m.endEras):"",m.endEras.length?Math.max(...m.endEras):"",mean(m.winnerTerrShare),m.streaksStarted,m.streaksInterrupted,mean(m.ratioMean.filter(v=>v!=null)),mean(m.unusedShare)]})]);return}
- if(level==="games"){const rows=[["scenario","game","seed","mode","kind","outcome","end_era","winners","winner_profiles","reasons","seat","civ_id","profile","final_score","final_territories","eliminated"]];
-  for(const s of R.scenarios)for(const rec of s.recs){const o=gameOutcome(rec),last=rec.rows.at(-1);rec.seats.forEach((p,k)=>rows.push([s.name,rec.game,rec.seed,rec.mode,rec.kind,o.ended?(o.would?"would_"+o.type:o.type):"none",o.era??"",o.ended?o.winners.map(w=>rec.ids[w]).join("|"):"",o.ended?o.winners.map(w=>rec.seats[w]).join("|"):"",o.ended?o.winners.map(w=>rec.ids[w]+":"+(o.reasons[w]||[]).join("+")).join("|"):"",k,rec.ids[k],p,rec.finalScores[k],last?.civs[k][RC.T],last&&!last.civs[k][RC.ACT]?1:0]))}
-  csvDownload("imperios-balanceamento-partidas.csv",rows);return}
- const rows=[["scenario","game","seed","era","seat","civ_id","profile",...RC_NAMES,"supremacy_leader","supremacy_streak","supremacy_status","supremacy_ratio"]];
- for(const s of R.scenarios)for(const rec of s.recs)for(const row of rec.rows)row.civs.forEach((c,k)=>rows.push([s.name,rec.game,rec.seed,row.era,k,rec.ids[k],rec.seats[k],...c,row.sup?.leader??"",row.sup?.streak??"",row.sup?.status??"",row.sup?.ratio??""]));
- csvDownload("imperios-balanceamento-historico.csv",rows);
-}
 export function setupExpLab(){
  profileChecks("expProfiles");$("expCivs").value=1+configApplied.map.aiCount;$("expSeed").value=configApplied.simulation.seed;
  const cat=paramCatalog(),opts=cat.map(c=>`<option value="${c.id}">${c.label}</option>`).join("");$("expParamPick").innerHTML=opts;$("expVaryParam").innerHTML=opts;$("expVaryParam").value="endgame.supremacyRelative";
@@ -1203,53 +664,26 @@ export function setupExpLab(){
  $("expAddParam").onclick=()=>addExpParam($("expParamPick").value);
  $("expAddScenario").onclick=()=>{expState.scenarios.push({name:"Cenário "+(expState.scenarios.length+1),values:Object.fromEntries(expState.params.map(id=>[id,getParam(configApplied,id)]))});renderExpTable()};
  $("expVary").onclick=()=>{try{generateVariations()}catch(e){setStatus("expStatus",e.message,"error")}};
- $("runExp").onclick=()=>runExperiment().catch(e=>{busy=false;$("runExp").disabled=false;$("cancelExp").disabled=true;setStatus("expStatus",e.message,"error")});
- $("cancelExp").onclick=()=>{expCancel=true;setStatus("expStatus","Cancelamento pedido; a concluir a rodada em curso...")};
+ $("runExp").onclick=()=>runExperiment().catch(e=>{setBusy(false);$("runExp").disabled=false;$("cancelExp").disabled=true;setStatus("expStatus",e.message,"error")});
+ $("cancelExp").onclick=()=>{setExpCancel(true);setStatus("expStatus","Cancelamento pedido; a concluir a rodada em curso...")};
  $("exportExpSummary").onclick=()=>exportExp("summary");$("exportExpGames").onclick=()=>exportExp("games");$("exportExpEras").onclick=()=>exportExp("eras");
  $("expResScenario").onchange=redrawExpCharts;$("expResProfile").onchange=redrawExpCharts;$("expProfScenario").onchange=()=>{renderExpProfileTable();redrawExpCharts()};
 }
-/* ═══════════════ Laboratório 3: validação estratégica das IAs ═══════════════ */
-export let valState={results:null},valCancel=false;
-// Comportamento esperado de cada perfil (secção 5.4): verificação observável nos resultados.
-export const PROFILE_EXPECTATIONS={
- reference:{text:"Distribuição relativamente equilibrada dos investimentos",check:(a)=>{const d=Math.max(...a.shares)-Math.min(...a.shares);return {ok:d<=.35,detail:`diferença entre maior e menor parcela: ${fmt(100*d,0)} p.p. (limite 35)`}}},
- military:{text:"Maior prioridade para capacidade militar",check:(a,all)=>{const top=all.every(b=>b===a||a.shares[0]>=b.shares[0]);return {ok:top&&a.shares[0]>=.5,detail:`parcela militar ${fmt(100*a.shares[0],0)}%${top?" (a maior)":" (não é a maior)"}`}}},
- aggressive:{text:"Maior frequência de expansão e combate",check:(a,all)=>{const others=all.filter(b=>b!==a),med=median(others.map(b=>b.combatsPerGame));return {ok:!others.length||a.combatsPerGame>=med*1.2,detail:`${fmt(a.combatsPerGame,1)} combates/partida vs mediana dos outros ${fmt(med,1)}`}}},
- technologist:{text:"Maior prioridade para tecnologia",check:(a,all)=>{const top=all.every(b=>b===a||a.shares[2]>=b.shares[2]);return {ok:top&&a.shares[2]>=.5,detail:`parcela tecnológica ${fmt(100*a.shares[2],0)}%${top?" (a maior)":" (não é a maior)"}`}}},
- economist:{text:"Maior prioridade para desenvolvimento económico",check:(a,all)=>{const top=all.every(b=>b===a||a.shares[1]>=b.shares[1]);return {ok:top&&a.shares[1]>=.5,detail:`parcela de infraestrutura ${fmt(100*a.shares[1],0)}%${top?" (a maior)":" (não é a maior)"}`}}},
- adaptive:{text:"Ajusta as prioridades à situação",check:(a)=>({ok:a.milShareStd>=.05,detail:`variação da parcela militar entre eras: desvio padrão ${fmt(100*a.milShareStd,1)} p.p. (mínimo 5)`})}
-};
-// Diagnóstico automático (secção 5.7): alertas para investigação, nunca alterações automáticas.
-export function profileDiagnostics(stats,opts){
- const out=[],avg=k=>mean(stats.map(s=>s[k]).filter(Number.isFinite)),get=p=>stats.find(s=>s.profile===p);
- const t=get("technologist");if(t&&t.shares[2]<.4)out.push(["Tecnológico",`baixo investimento em tecnologia (${fmt(100*t.shares[2],0)}% do total).`]);
- const m=get("military");if(m&&m.shares[0]>=.5&&m.conquestsPerGame<avg("conquestsPerGame"))out.push(["Militar",`acumula força (parcela militar ${fmt(100*m.shares[0],0)}%) mas conquista menos do que a média (${fmt(m.conquestsPerGame,1)} vs ${fmt(avg("conquestsPerGame"),1)} por partida).`]);
- const e=get("economist");if(e&&Number.isFinite(e.infraConversion)&&e.infraConversion<1)out.push(["Infraestrutura",`a receita de infraestrutura acumulada é ${fmt(100*e.infraConversion,0)}% do investido em infraestrutura (não recupera o investimento no horizonte jogado).`]);
- const g=get("aggressive");if(g&&g.combatsPerGame>=avg("combatsPerGame")&&g.successRate<.6)out.push(["Agressivo",`inicia muitos combates (${fmt(g.combatsPerGame,1)}/partida) com baixa taxa de sucesso (${fmt(100*g.successRate,0)}%).`]);
- const r=get("reference");if(r&&Math.max(...r.shares)>.6)out.push(["Equilibrado",`concentra ${fmt(100*Math.max(...r.shares),0)}% dos recursos numa só dimensão.`]);
- for(const s of stats)if(s.idleRate>.1)out.push([profileName(s.profile),`deixa mais de metade dos recursos por usar durante 3+ eras seguidas em ${fmt(100*s.idleRate,0)}% das partidas.`]);
- for(const s of stats)if(s.seats>=4&&s.winRate===0&&opts.kind==="auto")out.push([profileName(s.profile),`não venceu nenhuma partida (${s.seats} lugares) — perfil possivelmente fraco demais.`]);
- for(const s of stats)if(s.eliminatedRate>.25)out.push([profileName(s.profile),`eliminado em ${fmt(100*s.eliminatedRate,0)}% das partidas.`]);
- // Perfis com comportamento excessivamente semelhante (distância entre parcelas de investimento).
- for(let i=0;i<stats.length;i++)for(let j=i+1;j<stats.length;j++){const a=stats[i],b=stats[j],d=a.shares.reduce((x,v,k)=>x+Math.abs(v-b.shares[k]),0)/2,dc=Math.abs(a.combatsPerGame-b.combatsPerGame)/Math.max(1,a.combatsPerGame,b.combatsPerGame);if(d<.1&&dc<.2)out.push([`${profileName(a.profile)} × ${profileName(b.profile)}`,`comportamento muito semelhante (diferença de investimento ${fmt(100*d,0)} p.p., combates ${fmt(100*dc,0)}%).`])}
- if(opts.mode==="fast")out.push(["Modo rápido","os multiplicadores do modo rápido são aplicados pelo motor a todos os investimentos das IAs (verificado nos testes funcionais ECO); este laboratório não mede o seu aproveitamento estratégico separadamente."]);
- return out;
-}
 export async function runValidation(){
  if(busy)return;const opts=readSimOpts("val");if(opts.civCount>configApplied.map.territories)throw Error("Mais civilizações do que territórios.");
- busy=true;valCancel=false;$("runVal").disabled=true;$("cancelVal").disabled=false;$("valProgress").style.width="0%";$("valResults").innerHTML="";$("valChartBox").classList.add("hidden");
+ setBusy(true);setValCancel(false);$("runVal").disabled=true;$("cancelVal").disabled=false;$("valProgress").style.width="0%";$("valResults").innerHTML="";$("valChartBox").classList.add("hidden");
  const src=valConfigSource(),cfg=clone(src.cfg);
  // Um cenário do balanceamento é validado na velocidade em que foi testado.
  if(src.mode){opts.mode=src.mode;$("valMode").value=src.mode}
  if(opts.mode==="both")throw Error("Escolha uma velocidade (lenta ou rápida).");
- const est=estimateRows(opts,1,[cfg]);if(est>ROW_WARN&&!confirm(`Esta validação vai guardar cerca de ${fmt(est/1e6,1)} milhões de registos em memória. Continuar?`)){busy=false;$("runVal").disabled=false;$("cancelVal").disabled=true;return}
+ const est=estimateRows(opts,1,[cfg]);if(est>ROW_WARN&&!confirm(`Esta validação vai guardar cerca de ${fmt(est/1e6,1)} milhões de registos em memória. Continuar?`)){setBusy(false);$("runVal").disabled=false;$("cancelVal").disabled=true;return}
  const jobs=buildJobs(cfg,opts,{scenario:src.name});
  try{
   const recs=await runGameJobs(jobs,(d,t,ms)=>{$("valProgress").style.width=(100*d/t)+"%";setStatus("valStatus",`A executar · ${d} de ${t} partidas (${fmt(100*d/t,0)}%) · ${fmt(ms/1000,1)} s decorridos`)},()=>valCancel,1);
   if(!recs.length){setStatus("valStatus","Cancelado antes de concluir qualquer partida.","error");return}
   valState.results={opts,recs,stats:profileStats(recs),source:src.name};renderValidation();
   setStatus("valStatus",valCancel?`Cancelado: ${recs.length} partidas concluídas e analisadas.`:`Concluído: ${recs.length} partidas analisadas.`,"success");
- }finally{busy=false;$("runVal").disabled=false;$("cancelVal").disabled=true}
+ }finally{setBusy(false);$("runVal").disabled=false;$("cancelVal").disabled=true}
 }
 export function renderValidation(){
  const V=valState.results;if(!V)return;const st=V.stats,pc=v=>Number.isFinite(v)?fmt(100*v,1)+"%":"—",auto=V.opts.kind==="auto";
@@ -1283,8 +717,8 @@ export function refreshValConfigOptions(){const el=$("valConfig");if(!el)return;
 export function setupValLab(){
  refreshValConfigOptions();
  profileChecks("valProfiles");$("valCivs").value=1+configApplied.map.aiCount;$("valSeed").value=configApplied.simulation.seed;
- $("runVal").onclick=()=>runValidation().catch(e=>{busy=false;$("runVal").disabled=false;$("cancelVal").disabled=true;setStatus("valStatus",e.message,"error")});
- $("cancelVal").onclick=()=>{valCancel=true;setStatus("valStatus","Cancelamento pedido...")};
+ $("runVal").onclick=()=>runValidation().catch(e=>{setBusy(false);$("runVal").disabled=false;$("cancelVal").disabled=true;setStatus("valStatus",e.message,"error")});
+ $("cancelVal").onclick=()=>{setValCancel(true);setStatus("valStatus","Cancelamento pedido...")};
  $("exportVal").onclick=exportValidation;$("valChartPick").onchange=drawValChart;
 }
 /* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
@@ -1292,7 +726,7 @@ export function setupValLab(){
    (a folha aberta ocupa uma entrada do histórico). Enquanto há uma folha aberta, o resto da tela fica inerte
    e o foco fica preso dentro dela; ao fechar, o foco volta para quem a abriu. */
 export const SHEET_HOOKS={
- attackSheet:{onClose:()=>{if(selectedTerritory!==null){selectedTerritory=null;renderMap()}}},
+ attackSheet:{onClose:()=>{if(selectedTerritory!==null){setSelectedTerritory(null);renderMap()}}},
  details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
  scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
 };
@@ -1364,16 +798,17 @@ export function showView(view){
 /* ── Arranque, em partes: jogo, tela inicial, tutorial e (só com ?dev=1) laboratórios ── */
 // Jogo: carrega o save (ou começa uma partida), desenha e liga os controles da tela da era.
 export async function initGame(){
+ onHook("saveStatus",showSaveWarning);
  const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true;savedRaw=read.raw}
+ if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
  else if(saved){
   // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
   // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
-  try{configApplied=saved.config;gameMode=saved.gameMode;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;state=saved.state;restoreSetupAfterTutorial();state=newGame()}
-  catch(e){configApplied=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];state=newGame()}
+  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
+  catch(e){setConfigApplied(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setState(newGame())}
  }
- else{applyDifficulty(currentDifficulty);state=newGame()}
+ else{applyDifficulty(currentDifficulty);setState(newGame())}
  renderSavedSafely(renderAll);
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
  AREAS.forEach(([k],idx)=>{
@@ -1401,17 +836,17 @@ export async function initLabs(){
  // Com os laboratórios, Início e Reiniciar ficam no cabeçalho (na versão do jogador estão no menu ☰).
  $("topActions").prepend($("returnHome"),$("restart"));
  renderParams();
- onHook("configChanged",()=>{configEdited=clone(configApplied);renderParams()});
+ onHook("configChanged",()=>{setConfigEdited(clone(configApplied));renderParams()});
  onHook("viewShown",view=>{if(view==="balanceLab")redrawExpCharts()});
  $("exportHistory").onclick=exportHistory;
  $("applyConfig").onclick=()=>{try{applyConfig()}catch(e){setStatus("labStatus",e.message,"error")}};
- $("restoreConfig").onclick=()=>{configEdited=clone(configDefault);renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
+ $("restoreConfig").onclick=()=>{setConfigEdited(clone(configDefault));renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
  $("saveConfig").onclick=()=>{try{download("imperios-configuracao.json",JSON.stringify({formatVersion:VERSION,config:readParams()},null,2))}catch(e){setStatus("labStatus",e.message,"error")}};
  $("loadConfigBtn").onclick=()=>$("configFile").click();$("configFile").onchange=e=>{if(e.target.files[0])loadJsonFile(e.target.files[0],"config");e.target.value=""};
- $("restartWithConfig").onclick=()=>{try{configApplied=readParams();rememberAiBase(configApplied);configEdited=clone(configApplied);state=newGame();selectedTerritory=null;renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
+ $("restartWithConfig").onclick=()=>{try{setConfigApplied(readParams());rememberAiBase(configApplied);setConfigEdited(clone(configApplied));setState(newGame());setSelectedTerritory(null);renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
  document.querySelectorAll(".quick").forEach(b=>b.onclick=()=>runLong(Number(b.dataset.n)));
  $("customAdvance").onclick=()=>{try{const n=safeNum($("customEras").value,1,1e9);if(!Number.isSafeInteger(n))throw Error("Use um inteiro positivo.");runLong(n)}catch(e){setStatus("advanceStatus",e.message,"error")}};
- $("cancelAdvance").onclick=()=>{cancelRequested=true;setStatus("advanceStatus","Cancelamento solicitado; concluindo o bloco atual...")};
+ $("cancelAdvance").onclick=()=>{setCancelRequested(true);setStatus("advanceStatus","Cancelamento solicitado; concluindo o bloco atual...")};
  document.querySelectorAll(".strategy").forEach(b=>b.onclick=()=>{try{runStrategy(b.dataset.strategy,$("strategyEras").value)}catch(e){setStatus("strategyStatus",e.message,"error")}});
  $("runCompare").onclick=()=>compareStrategies().catch(e=>setStatus("compareStatus",e.message,"error"));
  $("exportCompare").onclick=()=>{if(!compareResults.length){setStatus("compareStatus","Execute uma comparação primeiro.","error");return}const rows=[["strategy","era","revenue","cumulative_revenue","budget","military","territories","ai_territories","player_wins","player_losses","neutral_conquests","enemy_conquests","invested_military","invested_infrastructure","invested_technology"],...compareResults.flatMap(r=>r.state.history.map(h=>[r.strategy,h.era,h.total,h.cumRevenue,h.budget,h.military,h.territories,h.aiTerritories,h.attacksTotal?.playerWins||0,h.attacksTotal?.playerLosses||0,h.attacksTotal?.neutralConquests||0,h.attacksTotal?.enemyConquests||0,P(r.state).invested.military,P(r.state).invested.infrastructure,P(r.state).invested.technology]))];download("imperios-comparacao.csv",rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n"),"text/csv;charset=utf-8")};
@@ -1451,7 +886,7 @@ export function initHome(){
   return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty)}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
- const renderProfiles=()=>{if(!DEV_MODE)opponentChoices=opponentChoices.map(v=>v==="config"?"adaptive":v);$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
+ const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
@@ -1474,7 +909,7 @@ export function initHome(){
  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{choice.eras=Number(b.dataset.eras);sync()});
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
- const begin=()=>{restoreSetupAfterTutorial();gameMode=choice.mode;currentDifficulty=choice.difficulty;applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied=normalizeConfig(configApplied);runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
+ const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
  $("homeStart").onclick=()=>openSetup(false);
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false};
  $("homeHowTo").onclick=()=>showModal(`<h2>Como jogar</h2>${$("howTo").querySelector(".grid").innerHTML}`,[{label:"Entendi",cls:"primary"}]);
@@ -1523,15 +958,15 @@ export async function initTutorial(){
   storage.set(TUT_KEY,"1").catch(()=>{});
   // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
   const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false};
-  gameMode="slow";currentDifficulty="facil";applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;configApplied=normalizeConfig(configApplied);
+  setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
   // O rival do tutorial é sempre "Equilibrado" (definido abaixo em ai.profile); opponentChoices do jogador não muda.
-  state=newGame();
+  setState(newGame());
   // Posições do tutorial: você no 8, a IA no 10, o território 9 livre entre os dois.
   state.owners=state.owners.map(()=> "neutral");state.owners[P_START]="player";state.owners[AI_START]=A(state).id;
   const ai=A(state);ai.profile="reference";ai.hiddenProfile=false;
   state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
 
-  selectedTerritory=null;saveGame();
+  setSelectedTerritory(null);saveGame();
   runHook("configChanged");
   $("homeScreen").hidden=true;if($("setupScreen"))$("setupScreen").hidden=true;
   showView("game");
@@ -1604,6 +1039,23 @@ export async function initTutorial(){
  onHook("continueGame",()=>setTimeout(draw,0));
  onHook("returnHome",()=>{clearFocus();box.hidden=true});
 }
+// Únicas formas de outros módulos substituírem estas variáveis (um módulo não pode reatribuir o que importa).
+export function setCompareResults(v){compareResults=v;return v}
+export function setLastStrategyResult(v){lastStrategyResult=v;return v}
+export function setScenarioLoaded(v){scenarioLoaded=v;return v}
+export function setSavedGameLoaded(v){savedGameLoaded=v;return v}
+export function setSaveProblem(v){saveProblem=v;return v}
+export function setSavedRaw(v){savedRaw=v;return v}
+export function setAiValidationResults(v){aiValidationResults=v;return v}
+export function setBalanceLabResults(v){balanceLabResults=v;return v}
+export function setFixedRun(v){fixedRun=v;return v}
+export function setFixedCancel(v){fixedCancel=v;return v}
+export function setFtLabReady(v){ftLabReady=v;return v}
+export function setSheetOpen(v){sheetOpen=v;return v}
+export function setSheetReturn(v){sheetReturn=v;return v}
+export function setSheetHist(v){sheetHist=v;return v}
+export function setSheetIgnorePop(v){sheetIgnorePop=v;return v}
+export function setToastTimer(v){toastTimer=v;return v}
 
 // Depuração e testes: variáveis globais só com ?dev=1 ou quando os testes automáticos o pedem (ver src/app/debug.js).
-if(DEV_MODE||globalThis.__IMPERIOS_TEST__)exposeGlobals([coreNs,aiNs,legacyNs],{configDefault:v=>{configDefault=v},configEdited:v=>{configEdited=v},configApplied:v=>{configApplied=v},state:v=>{state=v},busy:v=>{busy=v},cancelRequested:v=>{cancelRequested=v},selectedTerritory:v=>{selectedTerritory=v},compareResults:v=>{compareResults=v},lastStrategyResult:v=>{lastStrategyResult=v},scenarioLoaded:v=>{scenarioLoaded=v},gameMode:v=>{gameMode=v},currentDifficulty:v=>{currentDifficulty=v},aiConfigBase:v=>{aiConfigBase=v},opponentChoices:v=>{opponentChoices=v},saveFailed:v=>{saveFailed=v},savedGameLoaded:v=>{savedGameLoaded=v},saveProblem:v=>{saveProblem=v},savedRaw:v=>{savedRaw=v},downloadCapture:v=>{downloadCapture=v},aiValidationResults:v=>{aiValidationResults=v},balanceLabResults:v=>{balanceLabResults=v},fixedRun:v=>{fixedRun=v},fixedCancel:v=>{fixedCancel=v},TEST_REGISTRY:v=>{TEST_REGISTRY=v},ftHistory:v=>{ftHistory=v},ftLastRun:v=>{ftLastRun=v},ftLabReady:v=>{ftLabReady=v},expState:v=>{expState=v},expCancel:v=>{expCancel=v},valState:v=>{valState=v},valCancel:v=>{valCancel=v},sheetOpen:v=>{sheetOpen=v},sheetReturn:v=>{sheetReturn=v},sheetHist:v=>{sheetHist=v},sheetIgnorePop:v=>{sheetIgnorePop=v},toastTimer:v=>{toastTimer=v}});
+if(DEV_MODE||globalThis.__IMPERIOS_TEST__)exposeGlobals([ns_core_index,ns_ai_index,ns_app_session,ns_app_save,ns_app_hooks,ns_platform_storage,ns_platform_files,ns_ui_format,ns_ui_dom,ns_labs_settings,ns_labs_ai_checks,ns_labs_engine,ns_labs_experiment,ns_labs_validation,ns_labs_tests_def,ns_legacy]);
