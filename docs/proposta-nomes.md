@@ -1,6 +1,8 @@
 # Proposta — nomes das regiões e dos rivais
 
-> **Status: proposta para aprovação do usuário. Nada disto está implementado.**
+> **Status: aprovada (Opção A "Cores" + nome e número pequeno no mapa) e implementada na versão do jogador em 19/11/2026.**
+> Diferenças da proposta: a cor do rival 5 (Turquesa) passou a `#3cb8e0` (mais azul e mais clara que o verde-jade do jogador);
+> no Placar a variação usa ↑/↓ (o ▲ é o símbolo do Rubro); na legenda do mapa, Livre e "Pode atacar" usam quadrados (o ● é do Ocre).
 > Base: decisões de 19/11/2026 ("Regiões com nome no lugar dos números 01–24" e "Rivais com nome próprio").
 
 ## 1. Regiões (24 nomes)
