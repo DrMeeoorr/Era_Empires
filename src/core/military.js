@@ -15,6 +15,16 @@ export function territoryDefense(s,idx,cfg){
  // continua difícil de atacar, mas cada território já não recebe a força da economia inteira.
  const split=m.defenseSplitExponent||0;return m.defenseOwned+(split>0?econ/Math.pow(Math.max(1,countTerritories(s,o)),split):econ);
 }
+// Tecnologia reforça o ATAQUE: o custo de cada ataque divide-se por 1 + techAttackMax × P/(P + techAttackHalf),
+// com P = progresso tecnológico do atacante (retornos decrescentes; teto = techAttackMax). 0 desliga.
+export function techAttackFactor(s,owner,cfg){
+ const m=cfg.military,max=Math.max(0,m.techAttackMax||0),half=Math.max(0,m.techAttackHalf||0),P=Math.max(0,getCiv(s,owner)?.techProgress||0);
+ if(!(max>0)||!(P>0))return 1;return 1+max*(half>0?P/(P+half):1);
+}
+// Desconto tecnológico do atacante como fração do custo (0,2 = custo 20% menor).
+export function techAttackDiscount(s,owner,cfg){return 1-1/techAttackFactor(s,owner,cfg)}
+// Custo base de um ataque (antes do multiplicador de ordens extra): (conquista + defesa do alvo) com o desconto tecnológico do atacante.
+export function attackNeed(s,idx,owner,cfg){return (cfg.military.conquestCost+territoryDefense(s,idx,cfg))/techAttackFactor(s,owner,cfg)}
 /* Saque: ao conquistar um território de outra civilização, o vencedor leva uma parte da infraestrutura
    ainda ativa e da tecnologia do derrotado (pillageInvestShare × 1/territórios, até metade) e um espólio
    em tesouro de pillageRevenueEras eras da receita daquele território. Torna a guerra uma forma de crescer. */
@@ -41,7 +51,7 @@ export function pillage(s,victimId,owner,cfg){
 export function attackTerritory(s,idx,owner,cfg,automatic=false){
  const civ=getCiv(s,owner);if(!civ||!civ.active)return {ok:false,reason:"Civilização inexistente ou inativa."};
  if(idx<0||idx>=s.owners.length||s.owners[idx]===owner||!adjacentOwned(s,idx,owner))return {ok:false,reason:"Alvo não é adjacente ou já pertence ao atacante."};
- const targetOwner=s.owners[idx],def=territoryDefense(s,idx,cfg),need=cfg.military.conquestCost+def;
+ const targetOwner=s.owners[idx],need=attackNeed(s,idx,owner,cfg);
  if(civ.military+1e-9<need)return {ok:false,reason:`Poder insuficiente: precisa de ${fmtCore(need)} pontos.`};
  // Mesma regra de consumo para sucesso e falha; defesa + custo de conquista são comprometidos.
  // A semente inclui o índice do atacante para que duas civilizações não partilhem o mesmo sorteio.
@@ -77,7 +87,7 @@ export function orderAttack(s,idx,owner,cfg){
  let replaced=null;if(mine.length>=max){if(max!==1)return {ok:false,reason:`Máximo de ${max} ordens por era.`};replaced=mine[0];civ.military+=replaced.need;s.orders=s.orders.filter(o=>o!==replaced);mine=[]}
  const undo=()=>{if(replaced){civ.military-=replaced.need;s.orders.push(replaced)}};
  if(idx<0||idx>=s.owners.length||s.owners[idx]===owner||!adjacentOwned(s,idx,owner)){undo();return {ok:false,reason:"Alvo não é adjacente ou já pertence ao atacante."}}
- const base=cfg.military.conquestCost+territoryDefense(s,idx,cfg),mult=orderCostMultiplier(cfg,mine.length),need=base*mult;
+ const base=attackNeed(s,idx,owner,cfg),mult=orderCostMultiplier(cfg,mine.length),need=base*mult;
  if(civ.military+1e-9<need){undo();return {ok:false,reason:`Poder insuficiente: precisa de ${fmtCore(need)} pontos${mult>1?` (${mine.length+1}.º ataque da era, custo ×${fmtCore(mult,1)})`:""}.`}}
  const power=civ.military+(cfg.military.battleTechWeight||0)*(civ.techProgress||0);
  civ.military-=need;s.orders.push({idx,owner,need,base,mult,step:cfg.military.extraOrderCostStep||0,power,era:s.era,target:s.owners[idx]});
@@ -106,7 +116,7 @@ export function resolveOrders(s,cfg,era){
    for(const l of g.slice(1)){const c=getCiv(s,l.owner);c.military=Math.max(0,c.military-l.need*cfg.military.lossCost);addLog(s,`⚔️ Batalha pelo território ${idx+1}: ${name(g[0].owner)} venceu ${name(l.owner)} (força ${fmtCore(g[0].power,0)} × ${fmtCore(l.power,0)}); ${name(l.owner)} perdeu ${fmtCore(l.need)} pontos.`);events.push({type:"battleLost",owner:l.owner,winner:g[0].owner,idx})}
    g=[g[0]];
   }
-  const o=g[0],c=getCiv(s,o.owner),base=cfg.military.conquestCost+territoryDefense(s,idx,cfg),need=base*(o.mult||1),now=s.owners[idx];
+  const o=g[0],c=getCiv(s,o.owner),base=attackNeed(s,idx,o.owner,cfg),need=base*(o.mult||1),now=s.owners[idx];
   if(c.military+1e-9<need){addLog(s,`↩️ Ordem de ${name(o.owner)} contra o território ${idx+1} cancelada: o alvo mudou de dono e a defesa subiu para ${fmtCore(need)}; poder devolvido.`);events.push({type:"cancel",owner:o.owner,idx});continue}
   if(now!==o.target)events.push({type:"retarget",owner:o.owner,idx,from:o.target,to:now});
   const r=attackTerritory(s,idx,o.owner,cfg,true);

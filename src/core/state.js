@@ -1,6 +1,7 @@
 // Estado de uma partida: civilizações, criação do estado inicial e acesso às civilizações.
 import {CIV_COLORS,CHART_COLORS,MAX_AI,VERSION,normMode} from "./config.js";
-import {civIds,startPositions} from "./map.js";
+import {civIds,startPositions,startSeedFor} from "./map.js";
+import {rand} from "./rng.js";
 import {clone,clamp} from "./util.js";
 
 export function newCiv(id,index,c,aiCount,profile=null,controller=null){
@@ -19,12 +20,12 @@ export function newCiv(id,index,c,aiCount,profile=null,controller=null){
 //   false = duração fixa (Modo A): tudo é calculado e registado, mas nada elimina nem encerra.
 export function newState(cfg,opts={}){
  const c=clone(cfg), n=c.map.territories, aiCount=clamp(Number(c.map.aiCount??1)|0,1,MAX_AI), owners=Array(n).fill("neutral");
- const ids=civIds(aiCount), pos=startPositions(n,ids.length);
+ const ids=civIds(aiCount),startSeed=c.map.randomStart?(Number(opts.startSeed)>>>0||0):null,pos=startPositions(n,ids.length,c.map.randomStart?rand(startSeedFor(c,startSeed)):null);
  ids.forEach((id,k)=>owners[pos[k]]=id);
  const civs=ids.map((id,k)=>newCiv(id,k,c,aiCount,opts.profiles?.[k]??null,opts.allAI?"ai":null));
  return {formatVersion:VERSION,mode:normMode(opts.mode),era:0,owners,civs,investments:[],orders:[],nextInvestmentId:1,history:[],timeline:[],log:[],
   attacks:{playerWins:0,playerLosses:0,aiWins:0,aiLosses:0,neutralConquests:0,enemyConquests:0},
-  rngSeed:c.simulation.seed,initialBudget:c.economy.initialBudget,lastEraProcessed:0,stopped:false,
+  rngSeed:c.simulation.seed,startSeed,initialBudget:c.economy.initialBudget,lastEraProcessed:0,stopped:false,
   endRules:!!opts.endRules,maxEras:c.endgame?.maxEras??30,supremacy:{leader:null,streak:0,status:"none"},result:null};
 }
 export const getCiv=(s,id)=>s.civs.find(c=>c.id===id);

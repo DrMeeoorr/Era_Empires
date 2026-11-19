@@ -52,7 +52,7 @@ src/
   app/                sessão (partida atual, dificuldade, rivais), gravação do save, ganchos, depuração
   platform/           armazenamento (localStorage hoje; @capacitor/preferences no app) e ficheiros
   ui/                 telas do jogador: tela inicial, tela da era, mapa, gaveta, folhas, tutorial…
-  labs/               laboratórios (só no dev.html), incluindo os 140 testes internos
+  labs/               laboratórios (só no dev.html), incluindo os 148 testes internos
   main-player.js      entrada do index.html
   main-dev.js         entrada do dev.html
 tools/                build-player-html.js (gera o index.html) e serve.js (servidor local do npm start)
@@ -94,15 +94,15 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 
 | Ficheiro | O que verifica |
 | --- | --- |
-| `tests/internal.test.js` | Os 140+ testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
-| `tests/internal-node.test.js` | Os mesmos 140+ testes internos, mas no Node, sem navegador. |
+| `tests/internal.test.js` | Os 148 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
+| `tests/internal-node.test.js` | Os mesmos 148 testes internos, mas no Node, sem navegador. |
 | `tests/structure.test.js` | Organização do código: regras sem tela, `localStorage` só no `storage`, sem funções substituídas em cadeia, jogador sem laboratórios, `index.html` igual ao gerado a partir do `dev.html`. |
 | `tests/rules.test.js` | Regras extra: mapa, economia, ataques, fim de partida, configuração e gravação. |
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
-| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `5917a5c2` (o valor do jogo original). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Para ver o código e os subcódigos: `npm run fingerprint`. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
-| `tests/game-flow.test.js` | Partida curta completa até à tela de resultado, salvar/recarregar e o tutorial do início ao fim. |
+| `tests/game-flow.test.js` | Partida curta completa até à tela de resultado, salvar/recarregar, a "Posição inicial aleatória" (gravada no aparelho e ignorada pelo tutorial) e o tutorial do início ao fim. |
 | `tests/security.test.js` | Um save com HTML no nome de uma IA, na cor ou no registo de eventos não pode executar código. |
 | `tests/save.test.js` | Save danificado não trava o jogo (vai para `…-corrompido` e começa partida nova com aviso); falha ao salvar mostra aviso ao jogador. |
 | `tests/difficulty.test.js` | Valores de uma dificuldade não "vazam" para outra nem para "Configurações"; o tutorial não grava as suas escolhas (Fácil, 1 IA, 30 eras) nas do jogador. |

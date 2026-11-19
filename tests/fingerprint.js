@@ -1,13 +1,13 @@
 // "Impressão digital" das simulações com semente fixa (SEED).
 // Calcula um código curto (hash FNV-1a) a partir de 27 partidas e simulações: se QUALQUER número de
 // qualquer era mudar, o código muda. Serve para provar que uma refatoração não alterou o jogo.
-// Referência atual: 5917a5c2 (medida no código original, commit 65bd900).
+// Referência atual: e82cdda4 (após o rebalanceamento: Obras dão defesa, Ciência barateia ataques, Ciência rende após 2 eras, Difícil/Hardcore atacam o líder).
 //
 // Uso direto: node tests/fingerprint.js        (imprime o código e os subcódigos de cada grupo)
 // Na suíte:   tests/fingerprint.test.js (faz parte do `npm test`).
 "use strict";
 
-const EXPECTED = "5917a5c2";
+const EXPECTED = "e82cdda4";
 
 /** Corre dentro da página do jogo. Devolve {tests, all, parts}. */
 function fingerprintInPage() {

@@ -151,6 +151,32 @@ test("salvar e recarregar: partida do tutorial terminada volta às escolhas de a
   await context.close();
 });
 
+test("posição inicial aleatória: interruptor da tela inicial, gravado no aparelho e ignorado pelo tutorial", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.locator("#homeStart").click();
+  assert.equal(await page.locator("#homeRandomStart").isChecked(), false, "o padrão deve ser desligado");
+  await page.locator("#homeRandomStart").check();
+  assert.match(await page.locator("#setupSummary").innerText(), /posição aleatória/);
+  await page.locator("#setupStart").click();
+  await page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1);
+  const first = await page.evaluate(() => ({ on: configApplied.map.randomStart, seed: state.startSeed, owners: state.owners }));
+  assert.equal(first.on, true);
+  assert.ok(Number.isInteger(first.seed), "a partida devia guardar a semente das posições");
+  // Gravado de verdade (armazenamento do aparelho): recarregar mantém a opção, a semente e as posições.
+  await page.reload();
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
+  assert.deepEqual(await page.evaluate(() => ({ on: configApplied.map.randomStart, seed: state.startSeed, owners: state.owners })), first);
+  // O tutorial (startTutorial completo, com a tela) usa sempre as posições fixas e lembra a escolha do jogador.
+  const tut = await page.evaluate(() => { startTutorial(); return { p: state.owners[7], ai: state.owners[9] === A(state).id, n: state.owners.filter((o) => o !== "neutral").length, prev: state.tutorial.prevSetup.randomStart }; });
+  assert.deepEqual(tut, { p: "player", ai: true, n: 2, prev: true });
+  // Depois do tutorial, a próxima partida volta a ter a posição aleatória ligada.
+  await page.evaluate(() => { document.getElementById("returnHome").click(); });
+  await page.locator("#homeStart").click();
+  assert.equal(await page.locator("#homeRandomStart").isChecked(), true);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test("salvar e recarregar: partida terminada não é retomada e save corrompido não quebra o jogo", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   // Partida terminada: força o fim rápido por simulação e grava.

@@ -1,11 +1,10 @@
 // Tutorial: partida guiada (1 rival, roteiro controlado; depois jogo livre no Fácil).
 import {onHook,runHook} from "../app/hooks.js";
 import {saveGame} from "../app/save.js";
-import {state,configApplied,gameMode,currentDifficulty,setGameMode,setCurrentDifficulty,applyDifficulty,setConfigApplied,setState,newGame,setSelectedTerritory} from "../app/session.js";
-import {tutorialPrevSetup} from "../app/setup.js";
-import {normalizeConfig} from "../core/config.js";
+import {state,configApplied,setSelectedTerritory} from "../app/session.js";
+import {newTutorialGame,TUTORIAL_POS} from "../app/setup.js";
 import {countTerritories,eligibleTargets} from "../core/map.js";
-import {territoryDefense,attackTerritory} from "../core/military.js";
+import {attackNeed,attackTerritory} from "../core/military.js";
 import {regionName} from "../core/names.js";
 import {P,A} from "../core/state.js";
 import {storage} from "../platform/storage.js";
@@ -21,7 +20,7 @@ import {showModal} from "./modal.js";
    Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
    e state.forcedAttack (resultado do próximo ataque de uma civilização). */
 export async function initTutorial(){
- const TUT_KEY="imperios-tutorial-oferecido",P_START=7,AI_START=9,TARGET=8;
+ const TUT_KEY="imperios-tutorial-oferecido",TARGET=TUTORIAL_POS.target;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
  const planCta=name=>SHORT_SCREEN.matches?`Toque em “Planos” e escolha “${name}”.`:`Toque no plano “${name}”.`;
@@ -41,22 +40,14 @@ export async function initTutorial(){
   const tu=state.tutorial;if(tu.attackDone)return;tu.attackDone=true;
   const ai=A(state);if(!ai?.active)return;
   const mine=state.owners.map((o,i)=>o==="player"&&eligibleTargets(state,ai.id).some(t=>t.i===i)?i:-1).filter(i=>i>=0);if(!mine.length)return;
-  const idx=mine[0];tu.attackIdx=idx;const need=configApplied.military.conquestCost+territoryDefense(state,idx,configApplied);
+  const idx=mine[0];tu.attackIdx=idx;const need=attackNeed(state,idx,ai.id,configApplied);
   ai.military=Math.max(ai.military,need);state.forcedAttack={owner:ai.id,win:false};state.aiAvoid=null;
   attackTerritory(state,idx,ai.id,configApplied,true);state.aiAvoid={player:true};saveGame();renderAll();
  }
  function startTutorial(){
   scrolledStep=-1;
   storage.set(TUT_KEY,"1").catch(()=>{});
-  // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
-  const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false};
-  setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
-  // O rival do tutorial é sempre "Equilibrado" (definido abaixo em ai.profile); opponentChoices do jogador não muda.
-  setState(newGame());
-  // Posições do tutorial: você no 8, a IA no 10, o território 9 livre entre os dois.
-  state.owners=state.owners.map(()=> "neutral");state.owners[P_START]="player";state.owners[AI_START]=A(state).id;
-  const ai=A(state);ai.profile="reference";ai.hiddenProfile=false;
-  state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
+  newTutorialGame();   // estado da partida guiada (src/app/setup.js): posições fixas, Fácil, 1 rival
 
   setSelectedTerritory(null);saveGame();
   runHook("configChanged");

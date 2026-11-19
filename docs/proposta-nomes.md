@@ -36,7 +36,7 @@ Hoje cada quadrado mostra: número grande ("09") + dono pequeno ("livre", "Seu",
 
 Nos textos (painel de ataque, relatório da era, registro de eventos): "Ataque bem-sucedido: **Ivara** (livre)" no
 lugar de "território 9". Como esses textos são guardados pelo motor, a troca deve ser feita na hora de
-mostrar (como já foi feito para "u." → "de ouro"), para manter a impressão digital `5917a5c2`.
+mostrar (como já foi feito para "u." → "de ouro"), para manter a impressão digital (hoje `e82cdda4`; era `5917a5c2` antes do rebalanceamento do PR #5).
 
 ## 2. Rivais (até 5) e o jogador
 
@@ -95,7 +95,7 @@ O **nome** passa a ser a identidade do rival; o **estilo** fica como etiqueta pe
 ### Pontos de atenção para a implementação (depois de aprovado)
 
 - O nome "IA"/"IA 2" também aparece em textos que entram na impressão digital (decisões das IAs nas
-  simulações). Para manter `5917a5c2`, os nomes novos devem ser dados **só nas partidas do jogador**
+  simulações). Para manter a impressão digital (hoje `e82cdda4`), os nomes novos devem ser dados **só nas partidas do jogador**
   (em `newGame()`), sem mudar `newCiv()` nem as simulações dos laboratórios.
 - A cor do rival 5 (`#3fa3a8`) é parecida com a do jogador (`#2c9d87`). O símbolo (✚ × ★) resolve a
   distinção, mas vale considerar outra cor para o rival 5 na Fase 2/3.

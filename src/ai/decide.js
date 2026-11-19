@@ -3,7 +3,7 @@ import {SEED} from "../core/config.js";
 import {releaseMilitaryInvestments,invest} from "../core/economy.js";
 import {fmtCore} from "../core/format.js";
 import {countTerritories,eligibleTargets} from "../core/map.js";
-import {territoryDefense,orderAttack,attackTerritory,orderCostMultiplier} from "../core/military.js";
+import {territoryDefense,attackNeed,orderAttack,attackTerritory,orderCostMultiplier} from "../core/military.js";
 import {rand} from "../core/rng.js";
 import {clamp} from "../core/util.js";
 
@@ -16,7 +16,7 @@ export function aiDecide(s,civ,cfg,era){
  const rivalTerr=rivals.length?Math.max(...rivals.map(c=>countTerritories(s,c.id))):0;
  const targetsNow=eligibleTargets(s,civ.id),threat=targetsNow.some(t=>t.o!=="neutral");
  const neutralTargets=targetsNow.filter(t=>t.o==="neutral").length;
- const defenseNeed=targetsNow.length?Math.min(...targetsNow.map(t=>cfg.military.conquestCost+territoryDefense(s,t.i,cfg))):Infinity;
+ const defenseNeed=targetsNow.length?Math.min(...targetsNow.map(t=>attackNeed(s,t.i,civ.id,cfg))):Infinity;
  const readyToAttack=civ.military>=defenseNeed;
  let weights;
  // Perfis revistos no balanceamento (decisão 33): menos extremos, para não ficarem sem economia ou sem território.
@@ -54,7 +54,14 @@ export function aiDecide(s,civ,cfg,era){
  const av=s.aiAvoid,targets=eligibleTargets(s,civ.id).filter(t=>!(av&&((av.player&&t.o==="player")||(av.idx||[]).includes(t.i))));let action;
  if(targets.length&&roll<aggression/100){
   const priority=cfg.military.aiTarget||"neutralFirst";
+  // Coligação contra o líder: alvos pagáveis (custo cheio) primeiro; depois o líder em territórios
+  // (exceto a própria IA; em empate, o jogador), os neutros e, por último, as outras IAs; o mais barato em cada grupo.
+  let leaderId=null,payable=null,leaderClass=null;
+  if(priority==="leader"){const others=s.civs.filter(c=>c.active&&c.id!==civ.id),top=Math.max(...others.map(c=>countTerritories(s,c.id)));
+   leaderId=(others.find(c=>c.id==="player"&&countTerritories(s,c.id)===top)||others.find(c=>countTerritories(s,c.id)===top))?.id??null;
+   payable=t=>civ.military+1e-9>=cfg.military.conquestCost+territoryDefense(s,t.i,cfg);leaderClass=t=>t.o===leaderId?0:t.o==="neutral"?1:2}
   targets.sort((a,b)=>{
+   if(priority==="leader")return (payable(a)?0:1)-(payable(b)?0:1)||leaderClass(a)-leaderClass(b)||territoryDefense(s,a.i,cfg)-territoryDefense(s,b.i,cfg)||a.i-b.i;
    if(priority==="playerFirst")return (a.o==="player"?0:1)-(b.o==="player"?0:1)||a.i-b.i;
    // Estratega: o alvo mais barato (menor defesa); em empate prefere o jogador humano.
    if(priority==="cheapest"){const da=territoryDefense(s,a.i,cfg),db=territoryDefense(s,b.i,cfg);return da-db||(a.o==="player"?-1:b.o==="player"?1:0)||a.i-b.i}
@@ -62,12 +69,13 @@ export function aiDecide(s,civ,cfg,era){
    if(priority==="strongest")return b.i-a.i;
    return (a.o==="neutral"?0:1)-(b.o==="neutral"?0:1)||a.i-b.i;
   });
-  const t=targets[0],targetDefense=territoryDefense(s,t.i,cfg),required=cfg.military.conquestCost+targetDefense;
+  // IA prudente: só dá a 1ª ordem com o custo cheio (sem desconto tecnológico), mas paga o custo com desconto.
+  const t=targets[0],required=cfg.military.conquestCost+territoryDefense(s,t.i,cfg);
   if(civ.military+1e-9>=required){const result=cfg.military.simultaneousOrders?orderAttack(s,t.i,civ.id,cfg):attackTerritory(s,t.i,civ.id,cfg,true);action=result.ok?(result.queued?`${civ.name} ordenou ataque ao território ${t.i+1}`:result.win?`${civ.name} conquistou território ${t.i+1}`:`${civ.name} atacou território ${t.i+1} e foi repelida`):`${civ.name}: ${result.reason}`;}
   else action=`${civ.name} acumulando poder militar (precisa ${fmtCore(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.
   if(cfg.military.simultaneousOrders&&cfg.military.maxOrdersPerEra!==1){let n=(s.orders||[]).filter(o=>o.owner===civ.id).length;const max=cfg.military.maxOrdersPerEra||Infinity;
-   if(n>0)for(const t2 of targets.slice(1)){if(n>=max)break;const req=(cfg.military.conquestCost+territoryDefense(s,t2.i,cfg))*orderCostMultiplier(cfg,n);if(civ.military+1e-9<req)continue;if(orderAttack(s,t2.i,civ.id,cfg).ok){n++;action+=` + território ${t2.i+1}`}}}
+   if(n>0)for(const t2 of targets.slice(1)){if(n>=max)break;const req=attackNeed(s,t2.i,civ.id,cfg)*orderCostMultiplier(cfg,n);if(civ.military+1e-9<req)continue;if(orderAttack(s,t2.i,civ.id,cfg).ok){n++;action+=` + território ${t2.i+1}`}}}
  }else if(targets.length)action=`${civ.name} decidiu não atacar nesta era`;
  else action=`${civ.name} sem alvos adjacentes`;
  return {style,action,investment,budgetInvested:investment.military+investment.infrastructure+investment.technology};

@@ -45,7 +45,7 @@ test("applyDifficulty('config') volta aos valores das Configurações depois de 
 test("pela interface (?dev=1): Difícil → Configurações não herda agressividade/alvo do Difícil (também depois de recarregar)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, dev: true });
   await startVia(page, { diff: "dificil", ai: 2 });
-  assert.deepEqual(await aiVals(page), [1, -1, 100, "cheapest"]);
+  assert.deepEqual(await aiVals(page), [1.03, -1, 100, "leader"]);
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await startVia(page, { diff: "config", ai: 2 });
@@ -64,7 +64,7 @@ test("valores aplicados nos laboratórios com 'Configurações' sobrevivem a uma
   assert.equal((await aiVals(page))[2], 40);
   await page.evaluate(() => { document.getElementById("homeScreen").hidden = false; });
   await startVia(page, { diff: "hardcore" });
-  assert.deepEqual(await aiVals(page), [1.03, -1, 100, "cheapest"]);
+  assert.deepEqual(await aiVals(page), [1.12, -1, 100, "leader"]);
   await startVia(page, { diff: "config" });
   assert.deepEqual(await aiVals(page), [1, -1, 40, "neutralFirst"]);
   assert.deepEqual(errors, []);

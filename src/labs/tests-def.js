@@ -2,14 +2,16 @@
 // Correm no navegador (aba "Testes funcionais" do dev.html) e no Node (tests/internal-node.test.js).
 import {aiDecide} from "../ai/decide.js";
 import {LAB_PROFILES} from "../ai/profiles.js";
+import {serializeGame,parseSavedGame} from "../app/save.js";
 import {setGameMode,gameMode,setConfigApplied,configApplied,state,setState,applyDifficulty,newGame,currentDifficulty,setCurrentDifficulty,opponentChoices,setOpponentChoices} from "../app/session.js";
+import {newTutorialGame,TUTORIAL_POS} from "../app/setup.js";
 import {DEFAULTS,normalizeConfig,MAX_AI,SCORE_WEIGHT_KEYS} from "../core/config.js";
 import {invest,makeInvestment,infraReturn,techReturn} from "../core/economy.js";
 import {evaluateEndOfEra,evaluateSupremacy,territorialMinimum,computeICE,finalScores,scoreWinners} from "../core/endgame.js";
 import {processEra,simulate,beginEra,finishEra} from "../core/era.js";
-import {eligibleTargets,countTerritories,adjacentOwned,neighbors} from "../core/map.js";
+import {eligibleTargets,countTerritories,adjacentOwned,neighbors,startPositions,gridDist} from "../core/map.js";
 import {runFixedGame,seatProfiles,fixedGameSeed,runMatch} from "../core/match.js";
-import {attackTerritory,territoryDefense,pillage,orderAttack,resolveOrders,cancelOrder} from "../core/military.js";
+import {attackTerritory,territoryDefense,attackNeed,techAttackFactor,techAttackDiscount,pillage,orderAttack,resolveOrders,cancelOrder} from "../core/military.js";
 import {calibrateReferences,validateReferences,refAt,REF_DIMS,DEFAULT_REFERENCE_VALUES} from "../core/references.js";
 import {rand} from "../core/rng.js";
 import {newState,P,A,aiCivs,getCiv} from "../core/state.js";
@@ -243,7 +245,20 @@ export function defineTests(){
   if(Math.abs(sum(pl.id,"infrastructure","amount")-100*f)>1e-9||Math.abs(sum(ai.id,"infrastructure","amount")-100*(1-f))>1e-9)throw Error("Infraestrutura mal transferida");
   if(Math.abs(sum(pl.id,"technology","progress")+sum(ai.id,"technology","progress")-60*c.technology.progressPerInvestment)>1e-9||!(r.tech>0))throw Error("Progresso tecnológico não se conserva");
   if(Math.abs(pl.treasury-tr0-c.military.pillageRevenueEras*40/T)>1e-9)throw Error("Espólio "+(pl.treasury-tr0))},"MIL");
- test("Ataque usa a defesa reforçada",()=>{const c=clone(DEFAULTS);c.military.conquestCost=0;const s=newState(c);s.owners[1]="ai";A(s).techProgress=100;P(s).military=c.military.defenseOwned+1;const r=attackTerritory(s,1,"player",c);if(r.ok)throw Error("Ataque passou ignorando a defesa tecnológica")},"MIL");
+ // Reescrito com a T1: a defesa reforçada vem da receita de infraestrutura do dono (a tecnologia passou a reforçar o ataque).
+ test("Ataque usa a defesa reforçada",()=>{const c=clone(DEFAULTS);c.military.conquestCost=0;const s=newState(c);s.owners[1]="ai";A(s).lastRevenue={...A(s).lastRevenue,infrastructure:100};P(s).techProgress=0;P(s).military=c.military.defenseOwned+1;
+  if(!(territoryDefense(s,1,c)>c.military.defenseOwned+1))throw Error("Infraestrutura não reforçou a defesa");const r=attackTerritory(s,1,"player",c);if(r.ok)throw Error("Ataque passou ignorando as fortificações da infraestrutura")},"MIL");
+ test("Desconto tecnológico: sem tecnologia o custo do ataque não muda",()=>{const c=clone(DEFAULTS),s=newState(c);const idx=eligibleTargets(s,"player")[0].i,base=c.military.conquestCost+territoryDefense(s,idx,c);P(s).techProgress=0;
+  if(Math.abs(attackNeed(s,idx,"player",c)-base)>1e-9||techAttackDiscount(s,"player",c)!==0)throw Error("Custo mudou sem tecnologia");
+  const c0=clone(c);c0.military.techAttackMax=0;P(s).techProgress=500;if(Math.abs(attackNeed(s,idx,"player",c0)-base)>1e-9)throw Error("techAttackMax 0 deveria desligar o desconto")},"MIL");
+ test("Desconto tecnológico respeita o teto e tem retornos decrescentes",()=>{const c=clone(DEFAULTS),s=newState(c),pl=P(s),m=c.military,f=P=>{pl.techProgress=P;return techAttackFactor(s,"player",c)};
+  if(Math.abs(f(m.techAttackHalf)-(1+m.techAttackMax/2))>1e-9)throw Error("Metade do desconto fora do ponto médio");
+  const big=f(1e9);if(big>1+m.techAttackMax+1e-12||big<1+m.techAttackMax*0.999)throw Error("Teto não respeitado: "+big);
+  if(!(f(20)-f(10)>f(110)-f(100)))throw Error("Sem retornos decrescentes");pl.techProgress=1e9;if(techAttackDiscount(s,"player",c)>1-1/(1+m.techAttackMax)+1e-12)throw Error("Desconto acima do teto")},"MIL");
+ test("Desconto tecnológico: orderAttack e resolveOrders cobram o mesmo valor",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);s.owners=s.owners.map(()=>"neutral");s.owners[7]="player";const pl=P(s);pl.military=50;pl.techProgress=40;
+  const full=c.military.conquestCost+territoryDefense(s,8,c),r=orderAttack(s,8,"player",c);if(!r.ok)throw Error("Ordem recusada");
+  if(!(r.need<full-1e-9)||Math.abs(r.need-attackNeed(s,8,"player",c))>1e-9)throw Error("Ordem sem desconto: "+r.need);
+  s.forcedAttack={owner:"player",win:true};resolveOrders(s,c,s.era);if(s.owners[8]!=="player")throw Error("Ordem não resolvida");if(Math.abs(pl.military-(50-r.need))>1e-9)throw Error("Resolução cobrou "+(50-pl.military)+" em vez de "+r.need)},"MIL");
 
  test("Ordens simultâneas: a ordem reserva o poder e só se resolve no fim da era",()=>{const c=clone(DEFAULTS),s=newState(c);beginEra(s,c);const pl=P(s),idx=eligibleTargets(s,"player").find(x=>x.o==="neutral").i;pl.military=50;const r=orderAttack(s,idx,"player",c);
   if(!r.ok||!r.queued||s.owners[idx]!=="neutral"||Math.abs(pl.military-(50-r.need))>1e-9)throw Error("Ordem não reservou o poder");s.forcedAttack={owner:"player",win:true};finishEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.owners[idx]!=="player")throw Error("Ordem não resolvida no fim da era")},"MIL");
@@ -273,13 +288,44 @@ export function defineTests(){
  // ── Dificuldade ──
  test("Multiplicador de receita só afeta IAs em partidas com jogador humano",()=>{const c=clone(DEFAULTS);c.economy.aiIncomeMultiplier=1.5;const s=newState(c);beginEra(s,c);if(s.pending.revenue.player.total!==22)throw Error("Jogador afetado");if(Math.abs(s.pending.revenue.ai.total-33)>1e-9)throw Error("IA sem multiplicador: "+s.pending.revenue.ai.total);const l=newState(c,{allAI:true});beginEra(l,c);if(l.pending.revenue.ai.total!==22)throw Error("Laboratório (todas IA) não deveria aplicar o multiplicador")},"IA");
  test("IA estratega escolhe o alvo mais barato e prefere o jogador no empate",()=>{const c=clone(DEFAULTS);c.military.aiTarget="cheapest";c.military.aiAggression=100;c.military.aiStyle="military";const s=newState(c);s.owners.fill("neutral");s.owners[7]="ai";s.owners[13]="player";A(s).military=50;A(s).treasury=0;s.era=1;processEra(s,c,{ai:true,playerAllocation:{military:0,infrastructure:0,technology:0}});const conq=s.log.find(x=>/IA conquistou|IA atacou/.test(x.text));if(!conq)throw Error("IA não atacou");if(!/território (1|2|7|9|8|14) /.test(conq.text+" "))throw Error("Alvo inesperado: "+conq.text)},"IA");
+ test("IA estratega ataca o líder: prefere o líder pagável a uma IA mais fraca e a neutros",()=>{const c=clone(DEFAULTS);c.map.aiCount=2;c.military.aiTarget="leader";c.military.aiAggression=100;c.military.aiStyle="military";c.military.simultaneousOrders=false;
+  const run=(setup,mil,prep)=>{const s=newState(c);s.owners.fill("neutral");for(const [i,o] of setup)s.owners[i]=o;prep?.(s);const before=[...s.owners],ai=A(s);ai.military=mil;ai.treasury=0;s.era=1;const r=aiDecide(s,ai,c,1),m=r.action.match(/território (\d+)/);return m?before[Number(m[1])-1]:null};
+  // Jogador lidera (3 territórios): atacado antes da IA vizinha e dos neutros.
+  let o=run([[8,"ai"],[7,"ai2"],[9,"player"],[10,"player"],[11,"player"]],200);if(o!=="player")throw Error("Não atacou o jogador líder: "+o);
+  // Outra IA lidera: é ela o alvo, não o jogador nem os neutros.
+  o=run([[8,"ai"],[7,"ai2"],[0,"ai2"],[1,"ai2"],[2,"ai2"],[9,"player"]],200);if(o!=="ai2")throw Error("Devia atacar a IA líder: "+o);
+  // Líder impagável (defesa muito alta): ataca um alvo que consegue pagar.
+  o=run([[8,"ai"],[9,"player"],[10,"player"]],10,s=>{P(s).lastRevenue={...P(s).lastRevenue,infrastructure:1e4}});if(o!=="neutral")throw Error("Com o líder impagável devia atacar um neutro: "+o)},"IA");
+ test("Posição inicial: desligada mantém as posições de sempre",()=>{for(let k=1;k<=MAX_AI;k++){const c=clone(DEFAULTS);c.map.aiCount=k;if(c.map.randomStart!==false)throw Error("Padrão deveria ser desligado");
+   const exp=startPositions(c.map.territories,k+1),s=newState(c,{startSeed:12345}),got=s.civs.map(civ=>s.owners.indexOf(civ.id));if(JSON.stringify(got)!==JSON.stringify(exp))throw Error(k+" IAs: "+got+" ≠ "+exp);if(k===1&&JSON.stringify(got)!=="[0,23]")throw Error("1×1 devia ser [0,23]: "+got)}},"INF");
+ test("Posição inicial aleatória: posições válidas, afastadas e reprodutíveis com a mesma semente",()=>{const firsts=new Set();
+  for(let k=1;k<=MAX_AI;k++)for(let seed=1;seed<=25;seed++){const c=clone(DEFAULTS);c.map.aiCount=k;c.map.randomStart=true;c.simulation.seed=seed;
+   const pos=st=>{const s=newState(c,{startSeed:st});return s.civs.map(civ=>s.owners.indexOf(civ.id))},a=pos(0),b=pos(0),d=pos(777);
+   if(JSON.stringify(a)!==JSON.stringify(b))throw Error("Não reprodutível: "+a+" / "+b);
+   if(a.length!==k+1||a.some(i=>i<0||i>=c.map.territories)||new Set(a).size!==a.length)throw Error("Posições inválidas: "+a);
+   for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)if(gridDist(a[i],a[j])<2)throw Error("Posições iniciais adjacentes: "+a);
+   if(k===1){firsts.add(a[0]);firsts.add(d[0])}}
+  if(firsts.size<6)throw Error("Sorteio pouco variado: "+[...firsts])},"INF");
+ // O tutorial cria a partida com newTutorialGame (src/app/setup.js; ui/tutorial.js só acrescenta a tela e a gravação):
+ // assim o teste corre também no Node, sem tocar na tela nem no save.
+ test("Posição inicial aleatória não afeta o tutorial",()=>{const bk={state,configApplied:clone(configApplied),currentDifficulty,gameMode,opp:clone(opponentChoices)};
+  try{configApplied.map.randomStart=true;newTutorialGame();if(state.owners[TUTORIAL_POS.player]!=="player"||state.owners[TUTORIAL_POS.ai]!==A(state).id||state.owners.filter(o=>o!=="neutral").length!==2)throw Error("Posições do tutorial mudaram: "+state.owners.map((o,i)=>o!=="neutral"?i+":"+o:"").filter(Boolean));
+   if(TUTORIAL_POS.player!==7||TUTORIAL_POS.ai!==9)throw Error("Posições fixas do tutorial alteradas: "+JSON.stringify(TUTORIAL_POS));
+   if(state.tutorial?.prevSetup?.randomStart!==true)throw Error("O tutorial esqueceu a escolha de posição aleatória do jogador")}
+  finally{setState(bk.state);setConfigApplied(bk.configApplied);setCurrentDifficulty(bk.currentDifficulty);setGameMode(bk.gameMode);setOpponentChoices(bk.opp)}},"INF");
+ // Mesmo texto que saveGame grava e mesma leitura que loadSavedGame faz (sem passar pelo armazenamento do aparelho).
+ test("Gravar e carregar preserva a posição inicial aleatória; saves antigos ficam desligados",()=>{const bk={state,configApplied:clone(configApplied)};
+  try{configApplied.map.randomStart=true;setState(newGame());const raw=serializeGame(),R=parseSavedGame(raw),L=R.status==="ok"?R.game:null;if(!L)throw Error("Save não carregou");
+   if(L.config.map.randomStart!==true||L.state.startSeed!==state.startSeed||JSON.stringify(L.state.owners)!==JSON.stringify(state.owners))throw Error("Opção ou posições não preservadas");
+   const old=JSON.parse(raw);delete old.config.map.randomStart;delete old.state.startSeed;const R2=parseSavedGame(JSON.stringify(old));if(R2.status!=="ok"||R2.game.config.map.randomStart!==false)throw Error("Save antigo devia ficar desligado")}
+  finally{setState(bk.state);setConfigApplied(bk.configApplied)}},"INF");
  test("Modo Conquista: supremacia desligada nunca dá vitória",()=>{const c=clone(DEFAULTS);c.endgame.supremacyEnabled=false;c.endgame.maxEras=150;const n=normalizeConfig(c);if(n.endgame.maxEras!==150||n.endgame.supremacyEnabled!==false)throw Error("Configuração não aceite");
   const r=runGame(n,{kind:"auto",profiles:LAB_PROFILES.map(x=>x[0]),civCount:4,seed:11});const o=gameOutcome(r);if(o.type==="supremacy"||(r.result&&r.result.reasons&&Object.values(r.result.reasons).flat().includes("supremacy")))throw Error("Houve supremacia");if(!o.ended)throw Error("Partida não terminou")},"SUP");
  test("Referências padrão cobrem 150 eras",()=>{for(const [d] of REF_DIMS){const a=DEFAULT_REFERENCE_VALUES[d];if(!a||a.length<150||!a.every(Number.isFinite))throw Error(d)}},"SUP");
  test("Predefinições de dificuldade aplicam os valores certos",()=>{
   // Os 4 valores (incluindo aiIncomeMultiplier1v1), vindos de outra dificuldade, e a receita real das IAs.
   const saved=configApplied,base=DEFAULTS.economy.baseIncome;
-  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1,-1,100,"cheapest"],hardcore:[1.03,-1,100,"cheapest"]};
+  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1.03,-1,100,"leader"],hardcore:[1.12,-1,100,"leader"]};
   try{for(const [k,v] of Object.entries(exp)){
    for(const prev of ["medio","dificil"]){setConfigApplied(clone(DEFAULTS));applyDifficulty(prev);applyDifficulty(k);
     const got=[configApplied.economy.aiIncomeMultiplier,configApplied.economy.aiIncomeMultiplier1v1,configApplied.military.aiAggression,configApplied.military.aiTarget];

@@ -9,11 +9,19 @@ export function civIds(aiCount){const ids=["player"];for(let k=1;k<=aiCount;k++)
 export function gridDist(a,b){const ra=Math.floor(a/MAP_COLS),ca=a%MAP_COLS,rb=Math.floor(b/MAP_COLS),cb=b%MAP_COLS;return Math.abs(ra-rb)+Math.abs(ca-cb)}
 // Posições iniciais determinísticas: jogador no primeiro território, 1ª IA no último
 // (como no MVP original) e as restantes o mais afastadas possível das já escolhidas.
-export function startPositions(n,count){
+// Posição inicial aleatória (rng): o jogador começa num território sorteado e cada civilização seguinte
+// fica no território mais afastado das já colocadas (mesma regra), com empates sorteados.
+export function startPositions(n,count,rng=null){
+ if(rng){const pos=[Math.floor(rng()*n)];
+  while(pos.length<count){let bestD=-1,cands=[];for(let i=0;i<n;i++){if(pos.includes(i))continue;const d=Math.min(...pos.map(p=>gridDist(i,p)));if(d>bestD){bestD=d;cands=[i]}else if(d===bestD)cands.push(i)}pos.push(cands[Math.floor(rng()*cands.length)])}
+  return pos}
  const pos=[0];if(count>1)pos.push(n-1);
  while(pos.length<count){let best=-1,bestD=-1;for(let i=0;i<n;i++){if(pos.includes(i))continue;const d=Math.min(...pos.map(p=>gridDist(i,p)));if(d>bestD){best=i;bestD=d}}pos.push(best)}
  return pos;
 }
+// Semente das posições aleatórias: deriva da semente da simulação (SEED) e de opts.startSeed (0 nos
+// laboratórios e testes, logo reprodutível; sorteado e guardado em cada nova partida do jogo).
+export function startSeedFor(cfg,startSeed=0){return ((Number(cfg.simulation.seed)>>>0)^(Number(startSeed)>>>0)^0x5bd1e995)>>>0}
 export const countTerritories=(s,id)=>s.owners.reduce((a,o)=>a+(o===id?1:0),0);
 export function neighbors(i,n){let cols=MAP_COLS,r=Math.floor(i/cols),c=i%cols,a=[];if(c>0)a.push(i-1);if(c<cols-1&&i+1<n)a.push(i+1);if(r>0)a.push(i-cols);if(i+cols<n)a.push(i+cols);return a}
 export function adjacentOwned(s,idx,owner){return neighbors(idx,s.owners.length).some(j=>s.owners[j]===owner)}

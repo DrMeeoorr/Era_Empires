@@ -27,8 +27,10 @@ export async function migrateLegacySaveKey(){
 // com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
 // Devolve uma promessa: true se gravou, false se falhou (o aviso já foi mostrado).
 export let saveFailed=false;
+// Texto do save (o que fica guardado no aparelho): partida, configuração e escolhas atuais.
+export function serializeGame(){return JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase})}
 export function saveGame(){
- let w;try{w=storage.set(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase}))}catch(e){w=Promise.reject(e)}
+ let w;try{w=storage.set(SAVE_KEY,serializeGame())}catch(e){w=Promise.reject(e)}
  return w.then(()=>{if(saveFailed){saveFailed=false;runHook("saveStatus",null)}return true},e=>{saveFailed=true;runHook("saveStatus",e);return false});
 }
 // Valida a estrutura de um estado salvo antes de o usar. Devolve null se estiver bem, ou o motivo.
@@ -75,6 +77,10 @@ export function migrateSavedState(st){
 // Lê o save: {status:"none"} (não há), {status:"ok",raw,game} ou {status:"invalid",raw,reason}.
 export async function readSavedGame(){
  let raw=null;try{raw=await storage.get(SAVE_KEY)}catch(e){return {status:"none"}}
+ return parseSavedGame(raw);
+}
+// Interpreta o texto de um save (sem ler o armazenamento): mesmo resultado que readSavedGame.
+export function parseSavedGame(raw){
  if(!raw)return {status:"none"};
  try{const o=JSON.parse(raw);
   if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
