@@ -1,7 +1,6 @@
 // Versões reforçadas de testes internos fracos de defineTests() (src/labs/tests-def.js).
-// Os testes internos continuam a correr em internal.test.js; estes NÃO os substituem ainda.
-// Os internos devem ser trocados por estas versões
-// (lista em tests/README.md, secção "Testes internos a trocar").
+// Cinco delas já foram portadas para defineTests(); continuam aqui também (a do avanço rápido só existe aqui).
+// (lista em tests/README.md, secção "Testes internos fracos").
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
