@@ -41,8 +41,9 @@ test("applyDifficulty('config') volta aos valores das Configurações depois de 
   assert.equal(r.medioDificil, -1);
 });
 
-test("pela interface: Difícil → Configurações não herda agressividade/alvo do Difícil (também depois de recarregar)", async () => {
-  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+// "⚙ Configurações" só aparece com ?dev=1 (na versão do jogador a opção fica escondida).
+test("pela interface (?dev=1): Difícil → Configurações não herda agressividade/alvo do Difícil (também depois de recarregar)", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, dev: true });
   await startVia(page, { diff: "dificil", ai: 2 });
   assert.deepEqual(await aiVals(page), [1, -1, 100, "cheapest"]);
   await page.reload();

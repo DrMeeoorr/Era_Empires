@@ -71,3 +71,43 @@ test("versão de desenvolvimento (?dev=1): laboratórios, Exportar e 'Versão co
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test("versão do jogador: dificuldade padrão Médio, sem '⚙ Configurações' nem estilo 'Definido nas Configurações'", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  assert.equal(await page.evaluate(() => currentDifficulty), "medio");
+  await page.locator("#homeStart").click();
+  await page.locator("#setupScreen").waitFor({ state: "visible" });
+  assert.equal(await page.locator('#homeDifficulty [data-diff].selected').getAttribute("data-diff"), "medio");
+  assert.equal(await page.locator('#homeDifficulty [data-diff="config"]').isVisible(), false, "chip Configurações visível");
+  assert.equal(await page.locator('#homeProfiles option[value="config"]').count(), 0, "estilo 'Definido nas Configurações' disponível");
+  assert.equal(await page.locator('#homeProfiles select').first().inputValue(), "adaptive");
+  await page.locator("#setupStart").click();
+  await page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1);
+  assert.deepEqual(await page.evaluate(() => [currentDifficulty, state.difficulty]), ["medio", "medio"]);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("versão do jogador: save antigo com dificuldade 'config' e rivais 'config' abre e continua sem erro", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.evaluate(() => {
+    configApplied = clone(DEFAULTS); configApplied.map.aiCount = 2; currentDifficulty = "config";
+    const s = newGame(); s.difficulty = "config";
+    localStorage.setItem("imperios-completo-partida", JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: s, opponentChoices: ["config", "config", "config"], difficulty: "config", aiBase: pickAiDifficulty(DEFAULTS) }));
+  });
+  await page.reload();
+  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  assert.equal(await page.evaluate(() => currentDifficulty), "config", "a partida salva perdeu a dificuldade");
+  await page.locator("#homeContinue").click().catch(() => {});
+  await page.evaluate(() => { document.getElementById("homeScreen").hidden = true; renderAll(); });
+  await page.locator('[data-plan="balanced"]').click();
+  await concludeEraUI(page);
+  assert.equal(await page.evaluate(() => state.era), 2);
+  // A próxima partida nova (pela tela de configuração) usa Médio e estilos visíveis.
+  await page.locator("#returnHome").click();
+  await page.locator("#homeStart").click();
+  assert.equal(await page.locator('#homeDifficulty [data-diff].selected').getAttribute("data-diff"), "medio");
+  assert.equal(await page.locator('#homeProfiles select').first().inputValue(), "adaptive");
+  assert.deepEqual(errors, []);
+  await context.close();
+});

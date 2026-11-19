@@ -151,7 +151,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
           <button type="button" class="mode-option" id="modeFast" aria-pressed="false"><strong>⚡ Modo rápido</strong><span>Retornos antecipados: tudo acontece em menos eras.</span></button>
         </div>
         <div class="home-settings">
-          <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button><button type="button" class="chip selected" data-diff="config">⚙ Configurações</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
+          <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip selected" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button><button type="button" class="chip dev-only" data-diff="config">⚙ Configurações</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
           <div><label>Adversários (IA)</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de adversários"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
           <div><label>Estilo de cada adversário</label><div id="homeProfiles" class="profile-rows"></div></div>
           <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:42px" aria-label="Limite de eras"></div></div>
@@ -1053,7 +1053,10 @@ const DIFFICULTIES={
  hardcore:{name:"Hardcore",desc:"Rivais estrategas com +3% de receita. Para quem já domina o jogo.",aiIncomeMultiplier:1.03,aiAggression:100,aiTarget:"cheapest"},
  config:{name:"Configurações",desc:"Usa a receita, a agressividade e o alvo das IAs definidos nas Configurações."}
 };
-let currentDifficulty="config";
+// Versão do jogador: começa no "Médio"; "Configurações" (valores dos laboratórios) só existe com ?dev=1.
+// Saves antigos com dificuldade "config" continuam a abrir e a jogar normalmente.
+const DEFAULT_DIFFICULTY=DEV_MODE?"config":"medio";
+let currentDifficulty=DEFAULT_DIFFICULTY;
 // Os 4 valores que as dificuldades substituem. aiConfigBase guarda os valores "das Configurações", para que
 // escolher "Configurações" depois de outra dificuldade volte a eles (antes ficavam os da dificuldade anterior).
 const AI_DIFF_FIELDS=[["economy","aiIncomeMultiplier"],["economy","aiIncomeMultiplier1v1"],["military","aiAggression"],["military","aiTarget"]];
@@ -1069,7 +1072,11 @@ function applyDifficulty(key){const d=DIFFICULTIES[key];if(!d)return;
 /* ── Adversários: estilo escolhido por IA ou sorteado ── */
 const OPPONENT_OPTIONS=[["random","🎲 Aleatório (descobre no fim)"],["config","⚙ Definido nas Configurações"],["reference","Equilibrado — divide igualmente"],["military","Militar — exército forte"],["aggressive","Agressivo — expande e ataca muito"],["technologist","Tecnológico — aposta no longo prazo"],["economist","Infraestrutura — economia forte"],["adaptive","Adaptativa — reage à situação"]];
 // Na versão completa o padrão segue o perfil definido nas Configurações (comportamento anterior).
-let opponentChoices=["config","config","config"];
+// Na versão do jogador o padrão é "Adaptativa" (o mesmo estilo que "Definido nas Configurações" usa por padrão).
+const DEFAULT_OPPONENT=DEV_MODE?"config":"adaptive";
+let opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];
+// Opções mostradas ao jogador: sem "Definido nas Configurações" fora do ?dev=1.
+const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
 function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}
 function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)]});opp.forEach((o,i)=>{if(s.civs[i+1])s.civs[i+1].hiddenProfile=o.hidden});s.difficulty=currentDifficulty;beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
@@ -1160,7 +1167,7 @@ function renderSavedSafely(render){
  try{render()}catch(e){
   if(!savedGameLoaded)throw e;
   savedGameLoaded=false;try{quarantineSave(localStorage.getItem(SAVE_KEY)||JSON.stringify({v:1,state}))}catch(_){}
-  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty="config";aiConfigBase=pickAiDifficulty(configDefault);opponentChoices=["config","config","config"];selectedTerritory=null;state=newGame();
+  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];selectedTerritory=null;state=newGame();
   if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
   render();
  }
@@ -1326,7 +1333,7 @@ function concludeEra(){
 function tutorialPrevSetup(){const p=state?.tutorial?.prevSetup;return p&&typeof p==="object"?p:null}
 function restoreSetupAfterTutorial(){
  const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
- try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:"config";
+ try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
   c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;const n=normalizeConfig(c);
   configApplied=n;gameMode=p.mode==="fast"?"fast":"slow";currentDifficulty=diff;applyDifficulty(diff);configEdited=clone(configApplied);if(typeof renderParams==="function")renderParams();
  }catch(e){}
@@ -2144,9 +2151,9 @@ function init(){
   // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
   // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
   try{configApplied=saved.config;gameMode=saved.gameMode;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;state=saved.state;restoreSetupAfterTutorial();state=newGame()}
-  catch(e){configApplied=clone(configDefault);gameMode="slow";currentDifficulty="config";aiConfigBase=pickAiDifficulty(configDefault);opponentChoices=["config","config","config"];state=newGame()}
+  catch(e){configApplied=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];state=newGame()}
  }
- else state=newGame();
+ else{applyDifficulty(currentDifficulty);state=newGame()}
  renderSavedSafely(()=>{renderParams();renderAll()});
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
@@ -2195,11 +2202,13 @@ init();
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
  // fromGame=true repõe as escolhas da partida atual; a partir da tela inicial mantém as escolhas em curso.
  // Escolhas atuais; durante/depois do tutorial, as que o jogador tinha antes de o começar.
- const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:DIFFICULTIES[p.difficulty]?p.difficulty:"config"};
-  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:currentDifficulty}};
+ // Na versão do jogador, "Configurações" (de um save antigo) aparece como "Médio" na próxima partida.
+ const shownDiff=d=>DIFFICULTIES[d]&&(DEV_MODE||d!=="config")?d:"medio";
+ const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY)};
+  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty)}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
- const renderProfiles=()=>{$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>IA ${choice.ai===1?"":i+1}</span><select data-prof="${i}" aria-label="Estilo da IA ${i+1}">${OPPONENT_OPTIONS.map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
+ const renderProfiles=()=>{if(!DEV_MODE)opponentChoices=opponentChoices.map(v=>v==="config"?"adaptive":v);$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>IA ${choice.ai===1?"":i+1}</span><select data-prof="${i}" aria-label="Estilo da IA ${i+1}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
