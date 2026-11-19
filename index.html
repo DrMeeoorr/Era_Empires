@@ -602,8 +602,9 @@ const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43
 const $=id=>document.getElementById(id);
 /* ── Ganchos: avisam outras partes da interface (relatório, tutorial) sem substituir funções ──
    afterEra(era,row): depois de cada era jogada pelo jogador · afterRender(): depois de renderAll ·
-   beforeConclude(): antes de concluir a era (devolver false impede) · continueGame / returnHome: tela inicial. */
-const hooks={afterEra:[],afterRender:[],beforeConclude:[],continueGame:[],returnHome:[]};
+   beforeConclude(): antes de concluir a era (devolver false impede) · continueGame / returnHome: tela inicial ·
+   configChanged(): a configuração aplicada mudou (os laboratórios atualizam o editor) · viewShown(view): aba mostrada. */
+const hooks={afterEra:[],afterRender:[],beforeConclude:[],continueGame:[],returnHome:[],configChanged:[],viewShown:[]};
 const onHook=(name,fn)=>{hooks[name].push(fn)};
 const runHook=(name,...args)=>{for(const fn of hooks[name])fn(...args)};
 /* ── Armazenamento (único lugar que usa localStorage) ──
@@ -1709,7 +1710,7 @@ function restoreSetupAfterTutorial(){
  const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
  try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
   c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;const n=normalizeConfig(c);
-  configApplied=n;gameMode=p.mode==="fast"?"fast":"slow";currentDifficulty=diff;applyDifficulty(diff);configEdited=clone(configApplied);if(typeof renderParams==="function")renderParams();
+  configApplied=n;gameMode=p.mode==="fast"?"fast":"slow";currentDifficulty=diff;applyDifficulty(diff);runHook("configChanged");
  }catch(e){}
 }
 function startNewGame(){restoreSetupAfterTutorial();state=newGame();selectedTerritory=null;saveGame();renderAll();window.scrollTo({top:0})}
@@ -2291,16 +2292,21 @@ function testRegistry(){
 const ftResults=new Map();let ftHistory=[],ftLastRun=null;
 const FT_HISTORY_KEY="imperios-ft-history";
 async function loadFtHistory(){try{ftHistory=JSON.parse(await storage.get(FT_HISTORY_KEY)||"[]")}catch(e){ftHistory=[]}}
+// Corre os testes internos escolhidos por filter, sem tocar na tela: guarda os resultados em ftResults e
+// o resumo em ftHistory. Devolve {total,pass}. (A aba "Testes funcionais" usa runFtTests, que também a redesenha.)
 function executeTests(filter,label){
  const reg=testRegistry().filter(filter),t0=performance.now();
  for(const t of reg){const s=performance.now();let ok=true,msg="Resultado esperado obtido.";try{t.fn()}catch(e){ok=false;msg=e.message||String(e)}ftResults.set(t.id,{ok,msg,ms:performance.now()-s,at:Date.now()})}
  const pass=reg.filter(t=>ftResults.get(t.id).ok).length,ms=performance.now()-t0;
  ftHistory.unshift({at:new Date().toISOString(),label,total:reg.length,pass,fail:reg.length-pass,ms,failed:reg.filter(t=>!ftResults.get(t.id).ok).map(t=>t.id)});ftHistory=ftHistory.slice(0,20);
  storage.set(FT_HISTORY_KEY,JSON.stringify(ftHistory)).catch(()=>{});
- ftLastRun={filter,label};$("ftRepeat").disabled=false;renderFtLab();
+ ftLastRun={filter,label};
  return {total:reg.length,pass};
 }
-function runTests(){return executeTests(()=>true,"Todos os testes")}
+// Corre os testes e, se a aba "Testes funcionais" estiver ligada (versão de desenvolvimento), mostra o resultado.
+let ftLabReady=false;
+function runFtTests(filter,label){const r=executeTests(filter,label);if(ftLabReady){$("ftRepeat").disabled=false;renderFtLab()}return r}
+function runTests(){return runFtTests(()=>true,"Todos os testes")}
 function renderFtLab(){
  const reg=testRegistry(),q=($("ftFilter")?.value||"").trim().toLowerCase(),onlyFail=$("ftOnlyFail")?.checked;
  const ran=reg.filter(t=>ftResults.has(t.id)),pass=ran.filter(t=>ftResults.get(t.id).ok).length,last=ftHistory[0];
@@ -2311,16 +2317,16 @@ function renderFtLab(){
  const rows=reg.filter(t=>{const r=ftResults.get(t.id);if(onlyFail&&!(r&&!r.ok))return false;return !q||t.name.toLowerCase().includes(q)||t.id.toLowerCase().includes(q)});
  $("testResults").innerHTML=TEST_CATS.map(([c,n])=>{const ts=rows.filter(t=>t.cat===c);if(!ts.length)return "";return `<h3>${n}</h3>`+ts.map(t=>{const r=ftResults.get(t.id);return `<div class="test"><div style="min-width:0"><strong>${t.name}</strong> <span class="pill">${t.id}</span><div class="small muted">${r?(r.ok?r.msg:`<span class="red">Falha:</span> ${r.msg}`):"Ainda não executado."}${r?` · ${fmt(r.ms,1)} ms`:""}</div></div><div class="row" style="flex-wrap:nowrap"><span class="${r?(r.ok?"pass":"fail"):"muted"}">${r?(r.ok?"APROVADO":"REPROVADO"):"—"}</span><button class="small" data-ft-run="${t.id}" style="padding:4px 8px">${r?"Repetir":"Executar"}</button></div></div>`}).join("")}).join("")||'<div class="small muted">Nenhum teste corresponde ao filtro.</div>';
  $("ftHistory").innerHTML=ftHistory.length?`<div class="tablewrap"><table><thead><tr><th>Quando</th><th>Execução</th><th>Aprovados</th><th>Reprovados</th><th>Tempo</th><th>Falhas</th></tr></thead><tbody>${ftHistory.map(h=>`<tr><td>${new Date(h.at).toLocaleString("pt-BR")}</td><td>${h.label}</td><td>${h.pass}/${h.total}</td><td class="${h.fail?"red":""}">${h.fail}</td><td>${fmt(h.ms,0)} ms</td><td>${h.failed.join(", ")||"—"}</td></tr>`).join("")}</tbody></table></div>`:"Sem execuções registadas.";
- document.querySelectorAll("[data-ft-run]").forEach(b=>b.onclick=()=>{const id=b.dataset.ftRun;executeTests(t=>t.id===id,"Teste "+id)});
- document.querySelectorAll("[data-ft-cat]").forEach(b=>b.onclick=()=>{const c=b.dataset.ftCat;executeTests(t=>t.cat===c,"Categoria "+c)});
+ document.querySelectorAll("[data-ft-run]").forEach(b=>b.onclick=()=>{const id=b.dataset.ftRun;runFtTests(t=>t.id===id,"Teste "+id)});
+ document.querySelectorAll("[data-ft-cat]").forEach(b=>b.onclick=()=>{const c=b.dataset.ftCat;runFtTests(t=>t.cat===c,"Categoria "+c)});
 }
 function exportFtReport(){const reg=testRegistry();csvDownload("imperios-testes-funcionais.csv",[["id","category","name","status","ms","message"],...reg.map(t=>{const r=ftResults.get(t.id);return [t.id,t.cat,t.name,r?(r.ok?"pass":"fail"):"not_run",r?r.ms.toFixed(2):"",r?.msg||""]})])}
 function setupFtLab(){
  $("ftCategory").innerHTML=TEST_CATS.map(([c,n])=>`<option value="${c}">${c} · ${n}</option>`).join("");
- $("runCategory").onclick=()=>{const c=$("ftCategory").value;executeTests(t=>t.cat===c,"Categoria "+c)};
- $("ftRepeat").onclick=()=>{if(ftLastRun)executeTests(ftLastRun.filter,ftLastRun.label+" (repetição)")};
+ $("runCategory").onclick=()=>{const c=$("ftCategory").value;runFtTests(t=>t.cat===c,"Categoria "+c)};
+ $("ftRepeat").onclick=()=>{if(ftLastRun)runFtTests(ftLastRun.filter,ftLastRun.label+" (repetição)")};
  $("ftFilter").oninput=renderFtLab;$("ftOnlyFail").onchange=renderFtLab;$("ftExport").onclick=exportFtReport;
- renderFtLab();
+ ftLabReady=true;if(ftLastRun)$("ftRepeat").disabled=false;renderFtLab();
 }
 
 /* ═══════════════ Laboratório 2: balanceamento ═══════════════ */
@@ -2593,7 +2599,13 @@ SHORT_SCREEN.addEventListener?.("change",placePlans);
 // ainda rola; Fase 3). Com ?dev=1 o cabeçalho e as abas ficam por cima e a página rola como antes.
 function updateFit(){const g=$("game");document.documentElement.classList.toggle("game-fit",!DEV_MODE&&!!g&&g.classList.contains("active")&&!state?.result);if(state?.result&&sheetOpen==="attackSheet")closeSheet({focus:false})}
 
-async function init(){
+// Mostra uma vista (Jogo ou, na versão de desenvolvimento, um laboratório) e marca a aba correspondente.
+function showView(view){
+ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.view===view));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===view));closeSheet({focus:false});updateFit();if(view==="game")fitRegionNames();runHook("viewShown",view);
+}
+/* ── Arranque, em partes: jogo, tela inicial, tutorial e (só com ?dev=1) laboratórios ── */
+// Jogo: carrega o save (ou começa uma partida), desenha e liga os controles da tela da era.
+async function initGame(){
  const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
  if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true;savedRaw=read.raw}
@@ -2604,8 +2616,8 @@ async function init(){
   catch(e){configApplied=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];state=newGame()}
  }
  else{applyDifficulty(currentDifficulty);state=newGame()}
- renderSavedSafely(()=>{renderParams();renderAll()});
- document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));closeSheet({focus:false});updateFit();if(b.dataset.view==="game")fitRegionNames();if(b.dataset.view==="balanceLab")redrawExpCharts();}));
+ renderSavedSafely(renderAll);
+ document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
  AREAS.forEach(([k],idx)=>{
   const input=$(k+"Spend");
   input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
@@ -2619,11 +2631,20 @@ async function init(){
  placePlans();
  // "Investir em Militar" (folha de ataque sem Força suficiente): fecha a folha e leva ao + do Militar.
  $("attackInvest").onclick=()=>{closeSheet({focus:false});const row=document.querySelector('[data-row="mil"]'),plus=document.querySelector('[data-area="mil"] [data-step="1"]');row.classList.remove("flash");void row.offsetWidth;row.classList.add("flash");plus.focus({preventScroll:true})};
- // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
- if(DEV_MODE)$("topActions").prepend($("returnHome"),$("restart"));
  $("advance").onclick=concludeEra;
  $("attack").onclick=attackSelected;
+ // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
  $("restart").onclick=()=>{closeSheet({focus:false});showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}])};
+ onHook("afterEra",era=>setTimeout(()=>showEraReport(era),60));
+ window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult()});
+}
+// Laboratórios (versão de desenvolvimento): editor de configuração, testes funcionais, balanceamento, IAs.
+async function initLabs(){
+ // Com os laboratórios, Início e Reiniciar ficam no cabeçalho (na versão do jogador estão no menu ☰).
+ $("topActions").prepend($("returnHome"),$("restart"));
+ renderParams();
+ onHook("configChanged",()=>{configEdited=clone(configApplied);renderParams()});
+ onHook("viewShown",view=>{if(view==="balanceLab")redrawExpCharts()});
  $("exportHistory").onclick=exportHistory;
  $("applyConfig").onclick=()=>{try{applyConfig()}catch(e){setStatus("labStatus",e.message,"error")}};
  $("restoreConfig").onclick=()=>{configEdited=clone(configDefault);renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
@@ -2648,18 +2669,22 @@ async function init(){
  setupFixedLab();
  await loadFtHistory();
  setupFtLab();setupExpLab();setupValLab();
- window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult();redrawExpCharts();drawValChart()});
+ window.addEventListener("resize",()=>{redrawExpCharts();drawValChart()});
 }
-// Arranque: espera o save (armazenamento assíncrono) e só depois liga a tela inicial, as ordens e o tutorial.
+
+// Arranque: espera o save (armazenamento assíncrono) e só depois liga a tela inicial e o tutorial.
+// Os laboratórios só são ligados na versão de desenvolvimento (?dev=1).
 // window.__imperiosReady fica true quando tudo está pronto (os testes automáticos esperam por isso).
 (async function boot(){
- await init();
- setupHomeScreen();setupOrdersUI();await setupTutorial();
+ await initGame();
+ initHome();
+ await initTutorial();
+ if(DEV_MODE&&$("lab"))await initLabs();
  window.__imperiosReady=true;
 })();
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
-function setupHomeScreen(){
+function initHome(){
  const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
  // fromGame=true repõe as escolhas da partida atual; a partir da tela inicial mantém as escolhas em curso.
@@ -2693,7 +2718,7 @@ function setupHomeScreen(){
  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{choice.eras=Number(b.dataset.eras);sync()});
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
- const begin=()=>{restoreSetupAfterTutorial();gameMode=choice.mode;currentDifficulty=choice.difficulty;applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied=normalizeConfig(configApplied);configEdited=clone(configApplied);renderParams();startNewGame();home.hidden=true;setup.hidden=true;const t=document.querySelector('.tab[data-view="game"]');if(t)t.click()};
+ const begin=()=>{restoreSetupAfterTutorial();gameMode=choice.mode;currentDifficulty=choice.difficulty;applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied=normalizeConfig(configApplied);runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
  $("homeStart").onclick=()=>openSetup(false);
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false};
  $("homeHowTo").onclick=()=>showModal(`<h2>Como jogar</h2>${$("howTo").querySelector(".grid").innerHTML}`,[{label:"Entendi",cls:"primary"}]);
@@ -2701,7 +2726,7 @@ function setupHomeScreen(){
   const inProgress=state&&!state.result&&(state.era>1||state.history.length>0);
   if(inProgress)showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
  };
- const openTab=v=>{home.hidden=true;const t=document.querySelector(`.tab[data-view="${v}"]`);if(t)t.click()};
+ const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
  $("homeCompare").onclick=()=>openTab("balanceLab");
  $("homeLab").onclick=()=>openTab("lab");
@@ -2709,16 +2734,11 @@ function setupHomeScreen(){
  sync();
 }
 
-/* ── Ordens simultâneas: relatório da era (abre 60 ms depois de cada era jogada) ── */
-function setupOrdersUI(){
- onHook("afterEra",era=>setTimeout(()=>showEraReport(era),60));
-}
-
 /* ── Tutorial: partida guiada (1 IA, roteiro controlado; depois jogo livre no Fácil) ──
    O estado do tutorial vive em state.tutorial={step,waitEra,attackDone} e é guardado com a partida.
    Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
    e state.forcedAttack (resultado do próximo ataque de uma civilização). */
-async function setupTutorial(){
+async function initTutorial(){
  const TUT_KEY="imperios-tutorial-oferecido",P_START=7,AI_START=9,TARGET=8;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
@@ -2757,9 +2777,9 @@ async function setupTutorial(){
   state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
 
   selectedTerritory=null;saveGame();
-  if(typeof configEdited!=="undefined"&&typeof renderParams==="function"){configEdited=clone(configApplied);renderParams()}
+  runHook("configChanged");
   $("homeScreen").hidden=true;if($("setupScreen"))$("setupScreen").hidden=true;
-  const tab=document.querySelector('.tab[data-view="game"]');if(tab)tab.click();
+  showView("game");
   renderAll();window.scrollTo({top:0});enterStep();
  }
  window.startTutorial=startTutorial;
