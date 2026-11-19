@@ -233,9 +233,16 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
 // ── Substitui "Cancelamento preserva eras concluídas (primitiva)" ──
 // O interno só corria processEra uma vez e verificava history.length === 1 (não cancelava nada).
 // Aqui usa o "Avanço rápido de eras" dos laboratórios (?dev=1) e o botão Cancelar a meio.
+//
+// Ritmo controlado pelo relógio da página (page.clock): runLong processa um bloco e espera um
+// setTimeout(0) antes do seguinte. Com o relógio em pausa, só avança quando o teste deixa passar
+// tempo (page.clock.runFor), um bloco (= 1 era) de cada vez, por isso o clique em Cancelar acontece sempre com o avanço a meio.
+// Antes o teste dependia do tempo real: as 1000 eras pedidas acabam em ~150 ms (a IA vence por
+// maioria territorial na era 22, independentemente de maxEras), e no CI o avanço terminava e
+// abria o modal de resultado antes do clique em Cancelar (run 44568991059).
 test("avanço rápido: Cancelar a meio para, preserva as eras concluídas e a partida continua jogável", async () => {
   const { context, page, errors } = await openGame(browser, { dev: true });
-  // Partida longa para o avanço não terminar antes do cancelamento; bloco de 1 era para cancelar logo.
+  // Bloco de 1 era: cada tique do relógio processa uma era. maxEras alto para o limite de eras não contar.
   await page.locator("#homeLab").click();
   await page.locator('[data-param="simulation.blockSize"]').fill("1");
   await page.locator('[data-param="endgame.maxEras"]').fill("150");
@@ -246,26 +253,55 @@ test("avanço rápido: Cancelar a meio para, preserva as eras concluídas e a pa
   await page.waitForFunction(() => state.era === 1 && state.history.length === 0 && configApplied.simulation.blockSize === 1);
   const e0 = await page.evaluate(() => ({ era: state.era, h: state.history.length }));
 
+  // Relógio da página em pausa (não usar waitForFunction a partir daqui: o polling por rAF também pára).
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + 60_000);
+  const look = () => page.evaluate(() => ({
+    h: state.history.length, status: document.getElementById("advanceStatus").textContent,
+    cancelDisabled: document.getElementById("cancelAdvance").disabled, result: !!state.result,
+  }));
+
   await page.locator("#customEras").fill("1000");
   await page.locator("#customAdvance").click();
-  await page.waitForFunction(() => state.history.length >= 3);
-  await page.locator("#cancelAdvance").click();
-  await page.waitForFunction(() => document.getElementById("cancelAdvance").disabled);
+  // O primeiro bloco corre logo no clique; depois o avanço espera pelo relógio.
+  let now = await look();
+  assert.equal(now.h, e0.h + 1, "o primeiro bloco do avanço não correu no clique");
+  assert.match(now.status, /^Processadas 1 de 1\.000 eras/);
+  assert.equal(now.cancelDisabled, false, "Cancelar não ficou ativo durante o avanço");
+  // Deixa passar o relógio aos poucos até haver pelo menos 4 eras concluídas, sempre com o avanço a correr.
+  for (let tick = 0; now.h < e0.h + 4; tick++) {
+    if (tick > 20) assert.fail("o avanço não progride com o relógio da página");
+    const prev = now.h;
+    await page.clock.runFor(1);
+    now = await look();
+    assert.ok(now.h - prev <= 2, `um tique de 1 ms processou ${now.h - prev} eras`);
+    assert.equal(now.result, false, "a partida terminou durante o avanço (teste inválido)");
+    assert.equal(now.cancelDisabled, false, "Cancelar ficou inativo com o avanço a meio");
+  }
+  const beforeCancel = now.h - e0.h;
+  // Cancelar a meio (clique real no botão, que tem de estar visível, ativo e sem nada por cima).
+  await page.locator("#cancelAdvance").click({ timeout: 5000 });
+  now = await look();
+  assert.equal(now.status, "Cancelamento solicitado; concluindo o bloco atual...");
+  await page.clock.runFor(1);
   const r = await page.evaluate(() => ({
     status: document.getElementById("advanceStatus").textContent, era: state.era, h: state.history.length,
     eras: state.history.map((x) => x.era), result: !!state.result, advanceDisabled: document.getElementById("advance").disabled,
+    cancelDisabled: document.getElementById("cancelAdvance").disabled, modal: document.getElementById("modalRoot").innerHTML.trim() !== "",
   }));
+  assert.equal(r.cancelDisabled, true, "o avanço não terminou depois de cancelar");
   const m = /Cancelado após (\d+) eras/.exec(r.status);
   assert.ok(m, "estado do avanço não diz que foi cancelado: " + r.status);
   const done = Number(m[1]);
-  assert.ok(done >= 3 && done < 1000, `cancelado após ${done} eras`);
+  assert.equal(done, beforeCancel, `cancelado após ${done} eras (esperado: as ${beforeCancel} concluídas antes do clique)`);
   assert.equal(r.result, false);
+  assert.equal(r.modal, false, "abriu um modal ao cancelar o avanço");
   assert.equal(r.h, e0.h + done, "histórico não tem todas as eras concluídas antes do cancelamento");
   assert.equal(r.era, e0.era + done);
   assert.deepEqual(r.eras, r.eras.map((_, i) => r.eras[0] + i), "eras no histórico não são consecutivas");
   assert.equal(r.advanceDisabled, false, "'Concluir a era' ficou desativado após cancelar");
-  // Parou mesmo: passado um momento não avança mais.
-  await page.waitForTimeout(150);
+  // Parou mesmo: mesmo com muito tempo a passar no relógio da página, não avança mais.
+  await page.clock.runFor(5000);
   assert.equal(await page.evaluate(() => state.history.length), r.h, "o avanço continuou depois de cancelar");
   // E a partida continua jogável a partir dali.
   await page.evaluate(() => { playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
