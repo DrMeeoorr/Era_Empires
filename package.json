@@ -1,0 +1,14 @@
+{
+  "name": "imperios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Impérios — jogo de estratégia por eras (HTML/JS puro). Suíte de testes automáticos.",
+  "scripts": {
+    "test": "node --test --test-timeout=180000 tests/*.test.js",
+    "test:rapido": "node --test --test-timeout=60000 tests/internal.test.js tests/rules.test.js tests/regression.test.js",
+    "test:update-snapshots": "UPDATE_SNAPSHOTS=1 node --test tests/regression.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
