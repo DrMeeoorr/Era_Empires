@@ -141,6 +141,32 @@ async function assertClickable(page, selector, label = selector) {
   return box;
 }
 
+/**
+ * Clica num item do menu ☰ (Início, Reiniciar…). Na versão do jogador (UX Fase 2) esses botões ficam dentro
+ * da folha do menu; abre o menu se o item não estiver visível (com ?dev=1 eles continuam no cabeçalho).
+ */
+async function menuClick(page, selector) {
+  const el = page.locator(selector);
+  if (!(await el.isVisible())) {
+    await page.locator("#menuBtn").click();
+    await el.waitFor({ state: "visible" });
+  }
+  await el.click();
+}
+
+/**
+ * Escolhe um plano rápido (balanced, attack, economy, tech, clear). Em telas baixas (altura ≤ 700 px:
+ * Galaxy S9+, 360x640) os planos ficam na folha "Planos ▾" (UX Fase 2); abre a folha se o botão não estiver visível.
+ */
+async function choosePlan(page, plan) {
+  const b = page.locator(`[data-plan="${plan}"]`);
+  if (!(await b.isVisible())) {
+    await page.locator("#plansBtn").click();
+    await b.waitFor({ state: "visible" });
+  }
+  await b.click();
+}
+
 async function screenshot(page, name) {
   fs.mkdirSync(SHOTS_DIR, { recursive: true });
   const file = path.join(SHOTS_DIR, name.replace(/[^\w.-]+/g, "_") + ".png");
@@ -150,5 +176,5 @@ async function screenshot(page, name) {
 
 module.exports = {
   playwright, chromium, devices, ROOT, GAME_URL, KEYS, MOBILE_SCREENS, SHOTS_DIR,
-  launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot,
+  launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, menuClick, choosePlan,
 };

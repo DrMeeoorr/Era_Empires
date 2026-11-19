@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan } = require("./helpers");
 const { playTutorial, waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -28,7 +28,8 @@ async function tryOrderAttack(page) {
   if (idx === null) return false;
   await page.locator(`[data-territory="${idx}"]`).click();
   const btn = page.locator("#attack");
-  if (await btn.isDisabled()) return false;
+  // UX Fase 2: o território abre a folha de ataque; se não der para atacar, fecha a folha (Esc) e segue.
+  if (await btn.isDisabled()) { await page.keyboard.press("Escape"); return false; }
   await btn.click();
   return true;
 }
@@ -182,7 +183,7 @@ for (const [name, opts] of [MOBILE_SCREENS[0], MOBILE_SCREENS[2]]) {
     await page.waitForFunction(() => document.getElementById("tutBox").hidden);
     const end = await page.evaluate(() => ({ done: state.tutorial.done, avoid: state.aiAvoid, forced: state.forcedAttack, skipIdle: state.ui.skipIdleWarning, result: state.result }));
     assert.deepEqual(end, { done: true, avoid: null, forced: null, skipIdle: false, result: null });
-    await page.locator('[data-plan="balanced"]').click();
+    await choosePlan(page, "balanced");
     await concludeEraUI(page);
     assert.equal(await page.evaluate(() => state.era), 6);
     assert.deepEqual(await horizontalOverflow(page), []);

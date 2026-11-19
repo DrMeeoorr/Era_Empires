@@ -5,7 +5,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick } = require("./helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
 let browser, ctx;
@@ -156,7 +156,7 @@ test("dificuldade Médio pela interface: em 1×1 o rival recebe o mesmo que o jo
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   const out = {};
   for (const ai of [1, 3]) {
-    if (await page.locator("#homeScreen").isHidden()) await page.locator("#returnHome").click();
+    if (await page.locator("#homeScreen").isHidden()) await menuClick(page, "#returnHome");
     await page.locator("#homeStart").click();
     await page.locator('#homeDifficulty [data-diff="medio"]').click();
     await page.locator(`#homeOpponents [data-ai="${ai}"]`).click();
@@ -203,12 +203,12 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
   assert.ok(played.investments > 0 && played.history === 3);
 
   // Cancelar no diálogo: nada muda.
-  await page.locator("#restart").click();
+  await menuClick(page, "#restart");
   await page.locator('#modalRoot button:has-text("Cancelar")').click();
   assert.deepEqual(await snap(page), played, "Cancelar no diálogo de Reiniciar alterou a partida");
 
   // Reiniciar de verdade.
-  await page.locator("#restart").click();
+  await menuClick(page, "#restart");
   await page.locator('#modalRoot button.danger:has-text("Reiniciar")').click();
   await page.waitForFunction(() => state.era === 1);
   await dismissModals(page);

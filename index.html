@@ -34,29 +34,7 @@ document.documentElement.classList.toggle("player-build",new URLSearchParams(loc
 .top{margin-bottom:12px}.top h1{font-size:clamp(17px,4vw,25px)}.top .sub{display:none}
 .top .actions button{padding:8px 10px;min-height:40px}
 @media(max-width:620px){.brand .logo{width:36px;height:36px;font-size:19px}.top{gap:8px}.top .actions{width:100%;flex-wrap:nowrap}.top .actions button{flex:1;font-size:13px;padding:6px 8px;min-height:38px;white-space:nowrap}}
-.statusbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
-.stat .k{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat .v{font-size:clamp(16px,3.6vw,21px);font-weight:750;line-height:1.2}.stat .f{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:900px){.statusbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.playgrid{display:grid;grid-template-columns:1fr;gap:12px}
-@media(min-width:900px){.playgrid{grid-template-columns:minmax(0,1.1fr) minmax(340px,.9fr);align-items:start}}
-.sidecol{display:grid;gap:12px}
 .card{padding:clamp(12px,2.5vw,16px)}
-.target-panel{margin-top:10px;border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#0e192a;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.target-panel .txt{flex:1 1 220px;font-size:13px;min-width:0}
-.target-panel button{min-height:46px;font-weight:700}
-.events{margin-top:10px;font-size:12.5px}.events div{padding:5px 0;border-top:1px solid #25364d}
-.plans{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px}.plans button{flex:1 1 auto;min-height:42px;padding:8px 10px;font-size:13px}
-.inv-row{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:8px 0;background:#0e192a}
-.inv-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
-.inv-ctrl{display:grid;grid-template-columns:48px minmax(0,1fr) 48px auto auto;gap:6px;margin:8px 0 6px;align-items:stretch}
-.inv-ctrl button{min-height:46px;padding:6px 10px;font-size:18px;font-weight:700}
-.inv-ctrl button.txtbtn{font-size:13px;font-weight:600}
-.inv-ctrl input{min-height:46px;text-align:center;font-size:18px;font-weight:700;width:100%}
-.inv-row .bar{margin-top:6px}
-.actionbar{position:sticky;bottom:0;z-index:50;margin:14px -4px 0;padding:10px 12px;background:rgba(11,18,32,.94);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -8px 24px #0006}
-.actionbar .left{font-size:13px;color:var(--muted);min-width:0}.actionbar .left strong{font-size:18px;color:var(--text)}
-.actionbar button{min-height:52px;padding:10px 22px;font-size:16px}
 details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:center;gap:6px}
 .modal-back{position:fixed;inset:0;background:#000a;z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal .grid{grid-template-columns:1fr!important;gap:4px}.modal h3{margin:10px 0 4px}
@@ -84,28 +62,14 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 .territory.ordered{box-shadow:0 0 0 3px #f4bd50 inset}.order-tag{display:block;font-size:11px;color:#f4bd50;font-weight:700}
 .report{display:grid;gap:6px;margin-top:8px;max-height:50vh;overflow:auto}.report-line{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);font-size:14px;opacity:0;animation:repIn .35s ease forwards}.report-line.mine{background:rgba(244,189,80,.12);border-left:3px solid #f4bd50}
 @keyframes repIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.report-line{animation:none;opacity:1}}
-.score-strip{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:8px 0 12px;font-size:14px}.score-title{font-weight:700;cursor:help}
-.score-chip{display:inline-flex;gap:5px;align-items:baseline;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid color-mix(in srgb,var(--c) 60%,transparent)}.score-chip.me{background:color-mix(in srgb,var(--c) 18%,transparent)}
-.score-chip .pos{color:#9fb0c8;font-size:12px}.score-chip .gap{color:#ff9a9a;font-size:12px}.trend{font-size:11px}.trend.up{color:#5fd39a}.trend.down{color:#ff9a9a}
 /* ===== UX Fase 1: áreas seguras (entalhe e barra de gestos do Android) ===== */
 .wrap{padding-top:calc(22px + env(safe-area-inset-top,0px));padding-left:calc(22px + env(safe-area-inset-left,0px));padding-right:calc(22px + env(safe-area-inset-right,0px))}
 @media(max-width:620px){.wrap{padding-top:calc(12px + env(safe-area-inset-top,0px));padding-left:calc(12px + env(safe-area-inset-left,0px));padding-right:calc(12px + env(safe-area-inset-right,0px))}}
-.actionbar{bottom:env(safe-area-inset-bottom,0px)}
-.actionbar::after{content:"";position:absolute;left:-1px;right:-1px;top:100%;height:env(safe-area-inset-bottom,0px);background:#0b1220}
 .home-screen{padding-top:max(15px,env(safe-area-inset-top,0px));padding-bottom:max(15px,env(safe-area-inset-bottom,0px));padding-left:max(15px,env(safe-area-inset-left,0px));padding-right:max(15px,env(safe-area-inset-right,0px))}
 @media(min-width:421px){.home-screen{padding:max(clamp(14px,3vw,38px),env(safe-area-inset-top,0px)) max(clamp(14px,3vw,38px),env(safe-area-inset-right,0px)) max(clamp(14px,3vw,38px),env(safe-area-inset-bottom,0px)) max(clamp(14px,3vw,38px),env(safe-area-inset-left,0px))}}
 .setup-footer{bottom:env(safe-area-inset-bottom,0px)}
 .modal-back{padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .save-warning{top:calc(8px + env(safe-area-inset-top,0px))}
-/* ===== UX Fase 1: cartões do topo sem frases cortadas (quebram linha em vez de "...") ===== */
-.stat .f{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3;overflow-wrap:anywhere}
-/* ===== UX Fase 1: painel do alvo curto e botão de ataque legível ===== */
-.target-panel{scroll-margin-bottom:96px}
-.tgt-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 2px;font-size:13px;color:var(--muted)}.tgt-nums b{color:var(--text);font-size:15px}.tgt-nums b.red{color:var(--red)}
-.tgt-info{margin-top:4px;font-size:12.5px;color:var(--muted)}.tgt-info summary{cursor:pointer;min-height:48px;display:inline-flex;align-items:center;gap:4px;color:#b9c8dc;text-decoration:underline;text-underline-offset:3px;list-style:none}.tgt-info summary::-webkit-details-marker{display:none}.tgt-info[open] summary{margin-bottom:2px}
-.target-panel button#attack{min-height:48px;min-width:132px}
-.target-panel button#attack:disabled{opacity:1;background:#162236;border:1px dashed #4a6283;color:#c3d1e3;filter:none;cursor:not-allowed}
-@media(max-width:480px){.target-panel{flex-direction:column;align-items:stretch}.target-panel .txt{flex:0 0 auto}.target-panel button#attack{width:100%}}
 /* ===== UX Fase 1: alvos de toque com pelo menos 48 px ===== */
 .top .actions button,.top .actions button.ghost{min-height:48px}
 @media(max-width:620px){.top .actions button{min-height:48px}}
@@ -116,9 +80,6 @@ button.ghost:hover{color:var(--text)}
 .chip{min-height:48px;min-width:48px}
 .home-actions button,.home-screen .home-primary,.home-screen .home-secondary{min-height:48px}
 .profile-row select{min-height:48px}
-.plans button{min-height:48px}
-.inv-ctrl{grid-template-columns:48px minmax(0,1fr) 48px auto minmax(48px,auto)}
-.inv-ctrl button{min-height:48px;min-width:48px}.inv-ctrl input{min-height:48px}
 details.card summary{min-height:48px}
 .modal .actions button{min-height:48px}
 .territory{min-height:clamp(48px,11vw,72px)}
@@ -147,6 +108,174 @@ details.card summary{min-height:48px}
 .dot.sq{border-radius:2px;width:10px;height:10px;vertical-align:-1px;box-sizing:border-box}
 /* Sobre fundos coloridos (resultado) e nas legendas dos gráficos (cor própria), o símbolo usa a cor do texto. */
 .notice .csym,.chart-legend .csym{color:inherit!important}
+/* ===== UX Fase 2: a era cabe numa tela (barra de recursos, mapa, gaveta, Concluir) e folhas inferiores ===== */
+.sr-only{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:3px solid #ffd479;outline-offset:2px}
+.player-build .top{display:none}
+svg{flex:none}
+.hud-btn svg,.sheet-x svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Barra de recursos */
+.hud{display:grid;gap:6px;margin-bottom:6px}
+.hud-row{display:flex;align-items:center;gap:6px;min-width:0}
+.hud-btn{width:48px;height:48px;min-width:48px;padding:0;display:grid;place-items:center;border-radius:12px;background:#15233a;color:var(--text)}
+.hud-era{flex:1 1 auto;min-width:0;padding:0 4px}
+.hud-era-t{display:flex;align-items:baseline;gap:6px;white-space:nowrap;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.hud-era-t b{color:var(--text);font-size:18px;letter-spacing:0}.hud-era-t .of{letter-spacing:0;text-transform:none;font-size:13px}
+.hud-prog{height:6px;margin-top:5px;border-radius:99px;background:#25344b;overflow:hidden}.hud-prog span{display:block;height:100%;background:var(--gold);border-radius:99px}
+.hud-pill{min-height:48px;padding:0 12px;border-radius:12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#15233a;font-weight:750;font-size:15px;color:var(--text)}
+.hud-pill .gap{font-size:13px;font-weight:700}.hud-pill .gap.down{color:#ff9aa1}.hud-pill .gap.up{color:#6fe0b0}.hud-pill .gap.none{color:var(--muted)}
+.hud-stats{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);gap:6px}
+.hud-stat{min-height:48px;min-width:0;display:flex;align-items:center;gap:8px;padding:3px 8px;border:1px solid var(--line);border-radius:12px;background:#111c2f;color:var(--text);text-align:left;font:inherit;line-height:1.15}
+button.hud-stat{cursor:pointer}
+.hud-ico{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:800}
+.hud-ico.gold-ico{background:radial-gradient(circle at 35% 35%,#ffe08a,#e2a22c 70%);color:#5b3b05;box-shadow:inset 0 0 0 2px #b27a16}
+.hud-ico.force-ico{background:#3a2420;color:#ffb27a}
+.hud-ico.terr-ico{background:#173a35;color:#6fe0b0}
+.hud-v{min-width:0;display:flex;flex-direction:column}
+.hud-v b{font-size:17px;white-space:nowrap}.hud-v b small{font-size:12px;color:var(--muted);font-weight:600}
+.hud-v .k{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.hud-v .k .green{color:#6fe0b0;font-weight:700}
+/* Mapa no meio */
+.map-card{display:flex;flex-direction:column;min-width:0}
+.map-box{position:relative;min-width:0}
+.legend{margin:6px 2px 0;gap:4px 12px;font-size:12px;line-height:16px}
+.legend>span{white-space:nowrap}
+/* Gaveta de investimento */
+.drawer{background:linear-gradient(180deg,#15233a,#101b2d);border:1px solid var(--line);border-radius:16px;padding:2px 8px 4px;min-width:0}
+.drawer-head{display:flex;align-items:center;gap:6px;min-height:48px}
+.drawer-head h2{flex:1 1 auto;min-width:0;margin:0;font-size:15px;white-space:nowrap}
+.plans-btn{min-height:48px;padding:0 14px;border-radius:12px;font-weight:700;white-space:nowrap;color:#ffd479}
+.fine-btn{background:transparent}
+.stackbar{display:flex;height:6px;margin:0 2px 4px;border-radius:99px;background:#25344b;overflow:hidden}
+.stackbar span{display:block;height:100%;width:0;transition:width .15s}
+.sb-mil{background:var(--gold)}.sb-infra{background:var(--green)}.sb-tech{background:var(--purple)}
+.plans{display:flex;gap:6px;margin:2px 0 4px;overflow-x:auto;scrollbar-width:none}
+.plans button{flex:1 1 auto;min-height:48px;min-width:48px;padding:6px 10px;border-radius:12px;font-size:13.5px;font-weight:650;white-space:nowrap}
+.plans .plan-d,.plans .plan-lbl{display:none}
+.plans .plan-clear{flex:0 0 48px;padding:0;font-size:20px}
+.plans button.on{border-color:var(--gold);background:#302817;color:#ffd479}
+.inv-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;padding:1px 0;border-top:1px solid #22324a;min-height:50px}
+.inv-ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:#1b2a42}
+.inv-ico.gold{background:#3a2c12}.inv-ico.green{background:#123a32}.inv-ico.purple{background:#2a2346}
+.inv-sym{display:none}
+.inv-lbl{min-width:0}.inv-lbl strong{display:block;font-size:15px;white-space:nowrap}
+.inv-prev{display:block;font-size:12px;color:var(--muted);white-space:nowrap}
+.inv-prev b{font-weight:700}.inv-prev .gold,.inv-prev .green,.inv-prev .purple{font-weight:700}
+.inv-ctrl{display:grid;grid-template-columns:48px 68px 48px;gap:4px;align-items:center}
+.inv-ctrl button{min-height:48px;min-width:48px;padding:0;font-size:22px;font-weight:700;border-radius:12px}
+.inv-ctrl input{min-height:48px;width:100%;padding:0 2px;text-align:center;font-size:18px;font-weight:750;background:transparent;border:1px solid transparent;border-radius:10px;font-variant-numeric:tabular-nums}
+.inv-ctrl input:hover{border-color:#334762}.inv-ctrl input:focus{border-color:var(--gold);background:#0a1423;outline:none}
+.inv-row.flash{animation:rowFlash .9s ease-out}
+@keyframes rowFlash{0%{background:rgba(244,189,80,.28)}100%{background:transparent}}
+/* Concluir era: sempre visível */
+.actionbar{display:flex;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px))}
+#advance{flex:1;min-height:56px;padding:6px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:14px;line-height:1.2}
+#advance .adv-t{font-size:17px;font-weight:800}
+#advance .adv-s{font-size:12.5px;font-weight:600;color:#3a2a08}
+#advance .adv-s strong{font-weight:800}
+#advance.done-all .adv-s{color:#1d3a12}
+/* Layout que cabe na tela (sem resultado): HUD, mapa flexível, gaveta e Concluir */
+html.game-fit .wrap{height:100vh;height:100dvh;display:flex;flex-direction:column;padding-bottom:0}
+html.game-fit .wrap>.top,html.game-fit .wrap>.tabs{flex:none}
+html.game-fit #game.active{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:640px;margin:0 auto}
+html.game-fit #game>*{flex:none}
+html.game-fit #game>.map-card{flex:1 1 0;min-height:0}
+html.game-fit .map-box{flex:1 1 0;min-height:204px;container-type:size;display:grid;place-items:center}
+html.game-fit .map{width:min(100cqw,160cqh);height:min(100cqh,72cqw);grid-template-rows:repeat(4,minmax(48px,1fr))}
+html.game-fit .territory{min-height:48px;height:100%}
+html.game-fit #game>.drawer{margin-top:6px}
+html.player-build.game-fit .wrap{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-left:calc(10px + env(safe-area-inset-left,0px));padding-right:calc(10px + env(safe-area-inset-right,0px))}
+@media (max-height:700px){
+ .legend{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+ .legend::-webkit-scrollbar,.plans::-webkit-scrollbar{display:none}
+}
+@media (min-height:701px){html.game-fit .map-card{padding-top:4px}}
+/* Telas largas e deitadas: mapa à esquerda, gaveta e Concluir à direita */
+@media (min-width:900px) and (min-aspect-ratio:1/1){
+ html.game-fit #game.active{display:grid;max-width:1280px;grid-template-columns:minmax(0,1fr) minmax(340px,400px);grid-template-rows:auto auto minmax(0,1fr) auto auto;column-gap:16px;grid-template-areas:"banner banner" "hud hud" "map drawer" "map ." "map action"}
+ html.game-fit #resultBanner{grid-area:banner}html.game-fit .hud{grid-area:hud}html.game-fit .map-card{grid-area:map}html.game-fit #game>.drawer{grid-area:drawer;align-self:start}html.game-fit .actionbar{grid-area:action}
+ html.game-fit .hud{grid-template-columns:auto 1fr;align-items:center;column-gap:12px}
+}
+/* Telas estreitas: o símbolo da área entra no nome (sem o quadrado do ícone) */
+@media (max-width:380px){
+ .legend .lg-style{display:none}
+ .inv-row{grid-template-columns:minmax(0,1fr) auto}
+ .inv-ico{display:none}.inv-sym{display:inline}
+ .inv-ctrl{grid-template-columns:48px 62px 48px;gap:3px}
+ .inv-prev .wide{display:none}
+ .hud-stat{padding:3px 6px;gap:6px}.hud-ico{width:22px;height:22px;font-size:12px}
+}
+/* Planos: chips na gaveta (telas altas); em telas baixas ficam na folha "Planos ▾" */
+#plansBtn{display:none}
+@media (max-height:700px){#plansBtn{display:inline-flex;align-items:center;gap:4px}#plansInline{display:none}}
+#planSheet .plans{flex-direction:column;overflow:visible;margin:4px 0 0}
+#planSheet .plans button{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:52px;padding:8px 16px;font-size:16px;text-align:left}
+#planSheet .plans .plan-d{display:inline;font-size:13px;color:var(--muted);font-weight:500}
+#planSheet .plans .plan-clear{flex:1 1 auto;font-size:16px}#planSheet .plan-ico{display:none}#planSheet .plan-lbl{display:inline}
+/* Folhas inferiores (bottom sheets) */
+.sheet-scrim{position:fixed;inset:0;z-index:1100;background:rgba(3,8,16,.66)}
+.sheet-scrim[hidden],.sheet[hidden]{display:none!important}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:1101;width:100%;max-width:640px;margin:0 auto;max-height:88vh;max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));overflow:auto;overscroll-behavior:contain;background:#14213a;border:1px solid #34496a;border-bottom:0;border-radius:20px 20px 0 0;padding:4px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -14px 40px #000b;color:var(--text)}
+.sheet:focus{outline:none}
+.sheet.sheet-tall{height:88vh;height:calc(100dvh - 24px - env(safe-area-inset-top,0px))}
+.sheet-grip{width:40px;height:4px;border-radius:99px;background:#4a5f80;margin:4px auto 6px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;margin-bottom:4px}
+.sheet-head h2{margin:0;font-size:18px}
+.sheet-x{width:48px;height:48px;min-width:48px;padding:0;display:grid;place-items:center;border-radius:12px;background:transparent;border-color:transparent;color:var(--muted)}
+.sheet-x:hover{color:var(--text)}
+.sheet-x-float{position:absolute;top:8px;right:8px}
+.sheet-hint{margin:0 0 8px}
+@media (prefers-reduced-motion:no-preference){.sheet:not([hidden]){animation:sheetUp .2s ease-out}.sheet-scrim:not([hidden]){animation:scrimIn .2s ease-out}}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes scrimIn{from{opacity:0}to{opacity:1}}
+.sheet .grid.two,.sheet .grid.three{grid-template-columns:1fr}
+/* Folha de ataque */
+.tgt-title{font-size:19px;font-weight:800;margin:4px 0 2px;line-height:1.3;padding-right:52px}
+.tgt-sub{padding-right:4px}
+.tgt-title .muted{font-weight:600}
+.tgt-sub{font-size:13px;color:var(--muted);margin:2px 0}
+.tgt-orders{font-size:13px;color:#ffd479;margin:4px 0}
+.tgt-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.tgt-num{border:1px solid var(--line);border-radius:12px;background:#101b2d;padding:8px 6px;text-align:center;min-width:0}
+.tgt-num span{display:block;font-size:12.5px;color:var(--muted)}
+.tgt-num b{display:block;font-size:22px;line-height:1.25;color:var(--text)}
+.tgt-num b.red{color:#ff9aa1}.tgt-num b.ok{color:#6fe0b0}
+.attack-btn{display:block;width:100%;min-height:52px;margin-top:6px;font-size:16px;font-weight:800;border-radius:14px}
+.attack-btn:disabled{opacity:1;background:#2a1820;border:1px dashed #c86a76;color:#ffc7cc;cursor:not-allowed}
+.attack-btn.cancel{background:#20324d;border-color:#4a6283}
+.attack-invest{display:block;width:100%;min-height:48px;margin-top:8px;font-weight:700;border-radius:14px}
+.attack-invest[hidden]{display:none}
+.tgt-info{margin-top:6px;font-size:13px;color:var(--muted)}
+.tgt-info summary{cursor:pointer;min-height:48px;display:flex;align-items:center;gap:6px;list-style:none}
+.tgt-info summary::-webkit-details-marker{display:none}
+.tgt-info summary u{color:#ffd479;text-underline-offset:3px}
+.tgt-info>div{padding-bottom:4px}
+/* Menu, placar e ajuste fino */
+.menu-list{display:grid;gap:6px}
+.menu-item{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;text-align:left;font-size:16px;font-weight:650;border-radius:12px;background:#1a2a44}
+.menu-item .mi{width:24px;text-align:center;color:#ffd479}
+#restart.menu-item{color:#ffc7cc}
+.score-list{display:grid;gap:6px;margin:8px 0 6px}
+.score-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:#101b2d;border:1px solid color-mix(in srgb,var(--c) 55%,transparent)}
+.score-row.me{background:color-mix(in srgb,var(--c) 14%,#101b2d)}
+.score-row .pos{color:var(--muted);font-weight:700}
+.score-row .pts{text-align:right;white-space:nowrap}.score-row .pts strong{font-size:16px}
+.score-row .gap{color:#ff9aa1;font-size:12.5px}.trend{font-size:12px}.trend.up{color:#5fd39a}.trend.down{color:#ff9a9a}
+.fine-row{border-top:1px solid #22324a;padding:10px 0}
+.fine-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.fine-val{font-weight:800;font-size:16px}
+.fine-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.fine-btns button{min-height:48px;font-weight:700}
+/* Região com ordem: a marca "⚔ ordem" ocupa a linha do número (cabe em quadrados de 48 px) */
+.territory.ordered .who{display:none}
+.territory .order-tag{line-height:1.1;font-size:clamp(9.5px,2.2cqi,11px);white-space:nowrap}
+/* Legenda que não cabe numa linha (telas baixas): rola para o lado, com a borda direita esmaecida */
+.legend.more{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+/* Aviso rápido (ordem dada etc.) */
+.toast{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:1050;width:min(560px,calc(100vw - 20px));display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:#123a32;border:1px solid #2c9d87;color:#dffbef;font-size:14px;box-shadow:0 10px 30px #000a}
+.toast.bad{background:#3a1820;border-color:#c86a76;color:#ffdfe2}
+.toast[hidden]{display:none}
+@media (prefers-reduced-motion:no-preference){.toast:not([hidden]){animation:toastIn .2s ease-out}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.stackbar span,.hud-prog span{transition:none}.inv-row.flash{animation:none;outline:2px solid var(--gold)}}
 </style>
 </head>
 <body>
@@ -211,41 +340,67 @@ details.card summary{min-height:48px}
   </div>
 </section>
 <div class="wrap">
-<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions"><button id="returnHome" type="button">⌂ Início</button><button id="exportHistory" class="dev-only" title="Salva um arquivo com a partida para enviar como feedback">Exportar</button><button id="restart" class="ghost" type="button" aria-label="Reiniciar a partida">↺ Reiniciar</button></div></header>
+<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions" id="topActions"><button id="exportHistory" class="dev-only" title="Salva um arquivo com a partida para enviar como feedback">Exportar</button></div></header>
 <div class="tabs dev-only">
 <button class="tab active" data-view="game">Jogo</button><button class="tab" data-view="lab">Configurações</button><button class="tab" data-view="tests">Testes funcionais</button><button class="tab" data-view="balanceLab">Balanceamento</button><button class="tab" data-view="aiLab">Validação das IAs</button>
 </div>
 <div id="game" class="view active">
 <div id="resultBanner" class="hidden"></div>
-<div class="statusbar" id="metrics"></div>
-<div class="playgrid">
- <section class="card" id="mapCard">
-  <div class="section-title"><h2>Mapa</h2><span class="pill" id="territoryPill"></span></div>
-  <div class="legend" id="mapLegend"></div>
-  <div class="map" id="map"></div>
-  <div class="target-panel"><div class="txt" id="mapStatus">Toque em um território com contorno dourado (vizinho do seu império).</div><button id="attack" class="good" disabled>Atacar</button></div>
-  <div class="events" id="lastEvents"></div>
- </section>
- <div class="sidecol">
-  <section class="card" id="investCard">
-   <div class="section-title"><h2>Investir nesta era</h2><span class="pill" id="budgetPill"></span></div>
-   <div class="small muted">Planos rápidos (usam todo o orçamento):</div>
-   <div class="plans" id="plans"><button data-plan="balanced">Equilibrado</button><button data-plan="attack">Ataque</button><button data-plan="economy">Economia</button><button data-plan="tech">Ciência</button><button data-plan="clear">Limpar</button></div>
-   <div class="inv-row"><div class="inv-head"><strong class="gold">⚔ Militar</strong><span class="small muted">curto prazo · Força na era seguinte</span></div><div class="inv-ctrl" data-area="mil"><button data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar"><button data-step="1" aria-label="Mais militar">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar militar" title="Zerar">0</button></div><div class="bar"><span id="milBar" style="background:var(--gold)"></span></div><div class="small muted" id="milForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="green">▰ Obras</strong><span class="small muted">médio prazo · cresce e depois termina</span></div><div class="inv-ctrl" data-area="infra"><button data-step="-1" aria-label="Menos obras">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em obras"><button data-step="1" aria-label="Mais obras">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar obras" title="Zerar">0</button></div><div class="bar"><span id="infraBar" style="background:var(--green)"></span></div><div class="small muted" id="infraForecast"></div></div>
-   <div class="inv-row"><div class="inv-head"><strong class="purple">✦ Ciência</strong><span class="small muted">longo prazo · rende para sempre</span></div><div class="inv-ctrl" data-area="tech"><button data-step="-1" aria-label="Menos ciência">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em ciência"><button data-step="1" aria-label="Mais ciência">+</button><button class="txtbtn" data-rest>Resto</button><button class="txtbtn" data-zero aria-label="Zerar ciência" title="Zerar">0</button></div><div class="bar"><span id="techBar" style="background:var(--purple)"></span></div><div class="small muted" id="techForecast"></div></div>
-   <div class="status" id="allocationStatus"></div>
-  </section>
-  <section class="card"><div class="section-title"><h2>Condições de vitória</h2><span class="pill" id="victoryPill"></span></div><div id="victoryPanel"></div></section>
+<div class="hud" id="metrics">
+ <div class="hud-row">
+  <button type="button" class="hud-btn" id="menuBtn" data-open="menuSheet" aria-haspopup="dialog" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="hud-era" id="statEra"></div>
+  <button type="button" class="hud-pill" id="scorePill" data-open="scoreSheet" aria-haspopup="dialog"></button>
+  <button type="button" class="hud-btn" id="helpBtn" data-open="howTo" aria-haspopup="dialog" aria-label="Como jogar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.9v.2"/></svg></button>
+ </div>
+ <div class="hud-stats">
+  <div class="hud-stat" id="statGold"></div>
+  <div class="hud-stat" id="statForce"></div>
+  <button type="button" class="hud-stat" id="statTerr" data-open="scoreSheet" aria-haspopup="dialog"></button>
  </div>
 </div>
-<details class="card" style="margin-top:12px" id="howTo"><summary><strong>Como jogar</strong> <span class="small muted">— regras em 1 minuto</span></summary>
+<section class="map-card" id="mapCard" aria-labelledby="mapTitle">
+ <h2 class="sr-only" id="mapTitle">Mapa</h2>
+ <div class="map-box"><div class="map" id="map"></div></div>
+ <div class="legend" id="mapLegend"></div>
+</section>
+<section class="drawer" id="investCard" aria-labelledby="investTitle">
+ <div class="drawer-head"><h2 id="investTitle">Dividir o ouro</h2><button type="button" class="plans-btn" id="plansBtn" data-open="planSheet" aria-haspopup="dialog">Planos <span aria-hidden="true">▾</span></button><button type="button" class="hud-btn fine-btn" id="fineBtn" data-open="fineSheet" aria-haspopup="dialog" aria-label="Ajuste fino: zerar, resto e previsões"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h10M4 14h16M18 8v4M10 12v4"/><path d="M4 18h6"/></svg></button></div>
+ <div class="stackbar" id="stackBar" aria-hidden="true"><span id="milBar" class="sb-mil"></span><span id="infraBar" class="sb-infra"></span><span id="techBar" class="sb-tech"></span></div>
+ <div class="plans-slot" id="plansInline"><div class="plans" id="plans" role="group" aria-label="Planos rápidos (usam todo o ouro)"><button type="button" data-plan="balanced">Equilibrado<span class="plan-d">um pouco de tudo</span></button><button type="button" data-plan="attack">Ataque<span class="plan-d">65% Militar</span></button><button type="button" data-plan="economy">Economia<span class="plan-d">65% Obras</span></button><button type="button" data-plan="tech">Ciência<span class="plan-d">60% Ciência</span></button><button type="button" data-plan="clear" class="plan-clear" aria-label="Limpar (zerar tudo)" title="Limpar (zerar tudo)"><span class="plan-ico" aria-hidden="true">↺</span><span class="plan-lbl">Limpar</span><span class="plan-d">zera as três áreas</span></button></div></div>
+ <div class="inv-row" data-row="mil"><span class="inv-ico gold" aria-hidden="true">⚔</span><div class="inv-lbl"><strong><span class="inv-sym gold" aria-hidden="true">⚔ </span>Militar</strong><span class="inv-prev" id="milPrev"></span></div><div class="inv-ctrl" data-area="mil"><button type="button" data-step="-1" aria-label="Menos militar">−</button><input id="milSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento militar" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais militar">+</button></div></div>
+ <div class="inv-row" data-row="infra"><span class="inv-ico green" aria-hidden="true">▰</span><div class="inv-lbl"><strong><span class="inv-sym green" aria-hidden="true">▰ </span>Obras</strong><span class="inv-prev" id="infraPrev"></span></div><div class="inv-ctrl" data-area="infra"><button type="button" data-step="-1" aria-label="Menos obras">−</button><input id="infraSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em obras" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais obras">+</button></div></div>
+ <div class="inv-row" data-row="tech"><span class="inv-ico purple" aria-hidden="true">✦</span><div class="inv-lbl"><strong><span class="inv-sym purple" aria-hidden="true">✦ </span>Ciência</strong><span class="inv-prev" id="techPrev"></span></div><div class="inv-ctrl" data-area="tech"><button type="button" data-step="-1" aria-label="Menos ciência">−</button><input id="techSpend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-label="Investimento em ciência" title="Toque para digitar o valor exato"><button type="button" data-step="1" aria-label="Mais ciência">+</button></div></div>
+</section>
+<div class="actionbar"><button class="primary" id="advance"><span class="adv-t" id="advTitle">Concluir era</span><span class="adv-s"><span id="actionLeft">sobram <strong>0</strong> de ouro</span><span id="actionEnded" class="hidden"><strong>Partida encerrada</strong></span></span></button></div>
+<div class="sheet-scrim" id="sheetScrim" hidden></div>
+<section class="sheet" id="attackSheet" role="dialog" aria-modal="true" aria-labelledby="attackTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><button type="button" class="sheet-x sheet-x-float" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+ <div id="mapStatus" class="target-body"></div>
+ <button id="attack" class="good attack-btn" disabled>Escolha um alvo</button>
+ <button type="button" id="attackInvest" class="attack-invest" hidden>Investir em Militar</button>
+</section>
+<section class="sheet " id="menuSheet" role="dialog" aria-modal="true" aria-labelledby="menuSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="menuSheetTitle">Menu</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
+</section>
+<section class="sheet sheet-tall" id="scoreSheet" role="dialog" aria-modal="true" aria-labelledby="scoreSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="scoreSheetTitle">Placar e vitória</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="small muted" id="matchInfo"></div>
+ <div id="scoreStrip" class="score-list"></div>
+ <div class="section-title"><h3>Condições de vitória</h3><span class="pill" id="victoryPill"></span></div><div id="victoryPanel"></div>
+</section>
+<section class="sheet " id="planSheet" role="dialog" aria-modal="true" aria-labelledby="planSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="planSheetTitle">Planos rápidos</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="small muted sheet-hint">Dividem todo o ouro de uma vez. Depois você pode ajustar.</p><div class="plans-slot" id="plansSheetSlot"></div>
+</section>
+<section class="sheet " id="fineSheet" role="dialog" aria-modal="true" aria-labelledby="fineSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="fineSheetTitle">Ajuste fino</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="small muted sheet-hint">Toque no valor de uma área para digitar o número exato.</p><div class="fine-row" data-area="mil"><div class="fine-top"><strong><span class="gold" aria-hidden="true">⚔</span> Militar</strong><span class="fine-val" id="milFine"></span></div><div class="small muted" id="milForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar militar">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Militar">Resto</button></div></div><div class="fine-row" data-area="infra"><div class="fine-top"><strong><span class="green" aria-hidden="true">▰</span> Obras</strong><span class="fine-val" id="infraFine"></span></div><div class="small muted" id="infraForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar obras">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Obras">Resto</button></div></div><div class="fine-row" data-area="tech"><div class="fine-top"><strong><span class="purple" aria-hidden="true">✦</span> Ciência</strong><span class="fine-val" id="techFine"></span></div><div class="small muted" id="techForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar ciência">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Ciência">Resto</button></div></div><div class="status" id="allocationStatus" role="status"></div>
+</section>
+<section class="sheet sheet-tall" id="howTo" role="dialog" aria-modal="true" aria-labelledby="howToTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="howToTitle">Como jogar</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="grid three" style="margin-top:12px">
-<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em um território dourado para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir a era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
+<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em um território dourado para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
 <div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 3 eras, rende para sempre e aumenta todo o ouro da era. Obras e Ciência também reforçam a defesa dos seus territórios.</p></div>
 <div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div>
-</div></details>
-<details class="card" style="margin-top:12px" id="details"><summary><strong>Detalhes da partida</strong> <span class="small muted">— previsão, ouro, gráficos e histórico</span></summary>
+</div>
+</section>
+<section class="sheet sheet-tall" id="details" role="dialog" aria-modal="true" aria-labelledby="detailsTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="detailsTitle">Detalhes da partida</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
  <div class="grid two" style="margin-top:12px">
   <section><h3>Previsão de retornos</h3><div id="forecast"></div></section>
   <section><h3>De onde vem o ouro</h3><div id="revenueBreakdown"></div><canvas id="revenueChart" class="chart"></canvas><div class="chart-legend"><span style="--c:#62a8ff">Territórios</span><span style="--c:#56d6a1">Obras</span><span style="--c:#b49aff">Ciência</span></div></section>
@@ -255,8 +410,7 @@ details.card summary{min-height:48px}
  <h3>Eventos militares <span class="pill" id="notificationCount">0</span></h3><div id="notifications" class="log"></div>
  <h3>Histórico <span class="pill" id="historyCount"></span></h3>
  <div class="tablewrap" style="max-height:330px"><table><thead><tr><th>Era</th><th>Ouro recebido</th><th>Em Militar</th><th>Em Obras</th><th>Em Ciência</th><th>Ouro guardado</th><th>Territórios</th><th>Força</th></tr></thead><tbody id="historyTable"></tbody></table></div>
-</details>
-<div class="actionbar"><div class="left"><span id="actionLeft">Para investir<br><strong id="remaining">0 🪙</strong> <span id="allocated" class="small"></span></span><span id="actionEnded" class="hidden"><strong>Partida encerrada</strong></span></div><button class="primary" id="advance">Concluir a era →</button></div>
+</section>
 </div>
 <div id="lab" class="view dev-only">
 <div class="card"><div class="section-title"><div><h2>Configurações do jogo</h2><p class="muted small">Edite parâmetros, aplique-os sem alterar retornos já registrados ou reinicie usando a nova configuração.</p></div><span id="configState" class="pill">Configuração aplicada</span></div><div class="notice">Alterações são aplicadas a novas decisões e investimentos. Investimentos existentes preservam uma cópia dos parâmetros usados quando foram criados. Para recalcular toda a partida, marque a opção explícita abaixo e reinicie.</div>
@@ -1279,15 +1433,26 @@ function renderSavedSafely(render){
 const civSymHtml=c=>`<span class="csym" style="color:${cssColor(c.color)}" aria-hidden="true">${civSym(c)}</span>`;
 const civLabel=c=>`${civSymHtml(c)} ${escapeHtml(civName(c))}`;
 
-/* ── Barra de estado ── */
-function stat(k,v,f,color=""){return `<div class="stat"><div class="k">${k}</div><div class="v ${color}">${v}</div><div class="f">${f||""}</div></div>`}
+/* ── Barra de recursos (topo) ── */
+// Números curtos para a barra: sem casas decimais a partir de 100.
+const hudNum=v=>fmt(v,Math.abs(v)>=100?0:1);
 function renderMetrics(){
- const r=state.pending?.revenue?.player||state.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(state),g.territoryPct);
- $("metrics").innerHTML=[stat("Era",`${escapeHtml(state.era)}<span class="small muted"> / ${escapeHtml(state.maxEras)}</span>`,`${state.mode==="fast"?"rápido":"lento"} · ${DIFFICULTIES[state.difficulty]?.name||"Médio"}${configApplied.endgame.supremacyEnabled===false?" · Conquista":""}`,"gold"),stat("Orçamento",goldShort(P(state).treasury),"já com o ouro da era","green"),stat("Ouro da era",goldShort(r.total),`terr. ${fmt(r.normal,0)} · obras ${fmt(r.infra,0)} · ciên. ${fmt(r.tech,0)}`,"blue"),stat("Força",fmt(P(state).military,1),"para ataques","gold"),stat("Territórios",`${countTerritories(state,"player")}<span class="small muted"> / ${min}</span>`,countTerritories(state,"player")>=min?"maioria atingida":`faltam ${min-countTerritories(state,"player")}`),(()=>{const lv=liveScores();if(!lv)return stat("Placar","—","após a 1.ª era");const me=lv.find(x=>x.id==="player"),pos=lv.indexOf(me)+1,lead=lv[0];
-  if(!me)return stat("Placar","—","você foi eliminado","red");
-  return stat("Seus pontos",`${PTS(me.score)}<span class="small muted"> · ${pos}.º</span>`,pos===1?(lv[1]?`você lidera por ${PTS(me.score)-PTS(lv[1].score)}`:"você lidera"):`${escapeHtml(lead.name)} lidera por ${PTS(lead.score)-PTS(me.score)}`,pos===1?"green":"red")})()].join("");
- $("budgetPill").textContent="Orçamento "+goldShort(P(state).treasury);
- $("territoryPill").textContent=`${countTerritories(state,"player")} seus · ${countTerritories(state,"neutral")} livres`;
+ const s=state,me=P(s),r=s.pending?.revenue?.player||s.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(s),g.territoryPct),mine=countTerritories(s,"player");
+ const pct=clamp(100*s.era/Math.max(1,s.maxEras),0,100);
+ $("statEra").innerHTML=`<div class="hud-era-t"><span>Era</span><span class="of"><b>${escapeHtml(s.era)}</b>/${escapeHtml(s.maxEras)}</span></div><div class="hud-prog" role="progressbar" aria-label="Eras jogadas" aria-valuemin="0" aria-valuemax="${escapeHtml(s.maxEras)}" aria-valuenow="${escapeHtml(s.era)}"><span style="width:${pct}%"></span></div>`;
+ $("statGold").innerHTML=`<span class="hud-ico gold-ico" aria-hidden="true">$</span><span class="hud-v"><b>${hudNum(me.treasury)} <small>ouro</small></b><span class="k"><span class="green">+${hudNum(r.total)}</span>/era</span></span>`;
+ $("statGold").title=`Ouro para investir agora (já com o ouro desta era). Esta era rendeu ${money(r.total)}: territórios ${fmt(r.normal,1)} · Obras ${fmt(r.infra,1)} · Ciência ${fmt(r.tech,1)}.`;
+ $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">Força</span></span>`;
+ $("statForce").title="Força para atacar (perde 20% por era se não for usada).";
+ $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">terras</span></span>`;
+ $("statTerr").setAttribute("aria-label",`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`);
+ const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");
+ if(!lv){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap none">—</span>`;pill.setAttribute("aria-label","Placar: aparece no fim da 1.ª era. Abrir placar e condições de vitória")}
+ else if(!meS){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap down">fora</span>`;pill.setAttribute("aria-label","Placar: você foi eliminado. Abrir placar")}
+ else{const pos=lv.indexOf(meS)+1,lead=lv[0],d=pos===1?(lv[1]?PTS(meS.score)-PTS(lv[1].score):0):PTS(lead.score)-PTS(meS.score);
+  pill.innerHTML=`<span aria-hidden="true">🏆</span> ${pos}.º <span class="gap ${pos===1?"up":"down"}">${pos===1?"+":"−"}${d}</span>`;
+  pill.setAttribute("aria-label",`Placar: você está em ${pos}.º${pos===1?(lv[1]?`, ${d} pontos à frente`:""):`, ${d} pontos atrás de ${lead.name}`}. Abrir placar e condições de vitória`)}
+ $("matchInfo").textContent=`${s.maxEras} eras · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · modo ${s.mode==="fast"?"rápido":"lento"}${g.supremacyEnabled===false?" · Conquista":""} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
 }
 
 /* ── Mapa e painel do alvo ── */
@@ -1306,37 +1471,42 @@ function fitRegionNames(){
   for(let ls=-.04;n.scrollWidth>room&&ls>=-.1;ls-=.02)n.style.letterSpacing=ls.toFixed(2)+"em";
  });
 }
+// Legenda mais larga que a tela: marca para esmaecer a borda (indica que rola para o lado).
+function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
 function renderMap(){
  const targets=eligibleTargets(state,"player");
  $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
   return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
- $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)} <span class="muted">· ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
- document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=selectedTerritory===i?null:i;renderMap()}));
- fitRegionNames();
+ $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
+ document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=i;renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
+ fitRegionNames();markLegend();
  renderAttack();renderEvents();
 }
-// Painel do alvo: uma linha com o território, 3 números (custo, força disponível, chance) e a explicação
-// longa atrás de "ⓘ". O botão desabilitado diz o motivo dentro dele.
+// Folha de ataque: região + dono, 3 números (Custo, Sua força, Chance), botão com o motivo quando não dá,
+// atalho "Investir em Militar" e a explicação longa atrás de "Por quê?".
 const ATTACK_CHANCE="82%";
-const infoTip=(html,label="Como funciona")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> ${label}</summary><div>${html}</div></details>`;
-const targetNums=(cost,have)=>`<div class="tgt-nums"><span>Custo <b>${fmt(cost,1)}</b></span><span>Sua força <b class="${have+1e-9>=cost?"":"red"}">${fmt(have,1)}</b></span><span>Chance <b>${ATTACK_CHANCE}</b></span></div>`;
+const infoTip=(html,label="Por quê?")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> O ataque acontece no fim da era. <u>${label}</u></summary><div>${html}</div></details>`;
+const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>Custo</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>Sua força</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>Chance</span> <b>${ATTACK_CHANCE}</b></div></div>`;
 // Região no painel do alvo: nome + número pequeno (o mesmo do mapa).
 const regionHtml=t=>`<strong>${escapeHtml(regionName(t))}</strong> <span class="muted small">${t+1}</span>`;
-const setAttackBtn=(btn,text,enabled)=>{btn.textContent=text;btn.disabled=!enabled};
+const tgtTitle=html=>`<h2 class="tgt-title" id="attackTitle">${html}</h2>`;
+const setAttackBtn=(btn,text,enabled,{cancel=false,invest=false}={})=>{btn.textContent=text;btn.disabled=!enabled;btn.classList.toggle("cancel",cancel);const inv=$("attackInvest");if(inv)inv.hidden=!invest};
 function renderAttack(){
  const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military;
  setAttackBtn(btn,"Escolha um alvo",false);
- if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar.";return}
- if(t===null){$("mapStatus").innerHTML=`Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.`;return}
+ if(t===null&&isSheetOpen("attackSheet"))closeSheet();
+ if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
+ if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}<p class="tgt-sub">Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.</p>`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${regionHtml(t)} · seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${regionHtml(t)} não faz fronteira com o seu império. Escolha um com contorno dourado.`;return}
+ if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras e Ciência reforçam a defesa.</p>`;return}
+ if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha um com contorno dourado.</p>`;return}
  const def=territoryDefense(state,t,configApplied),need=m.conquestCost+def,civ=owner==="neutral"?null:getCiv(state,owner);
  const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras/Ciência`:""}`:`defesa ${fmt(def,0)}`;
- const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar (${fmt(need,1)})`:`Faltam ${fmt(need-mil,1)} de força`,ok);
- $("mapStatus").innerHTML=`<div>${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}</div>${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
+ const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-mil,1)} de Força`,ok,{invest:!ok});
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
 }
 function renderEvents(){
+ if(!$("lastEvents"))return;
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
  $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">Era ${escapeHtml(e.era)}</span> · ${escapeHtml(uiText(e.text))}</div>`).join(""):"";
 }
@@ -1354,17 +1524,23 @@ function stepArea(idx,dir){const b=P(state).treasury,v=readAlloc(),others=v.redu
 function restArea(idx){const b=P(state).treasury,v=readAlloc(),others=v.reduce((s,x,j)=>s+(j===idx?0:x),0);v[idx]=restOf(Math.max(0,b-others));setAlloc(v)}
 function renderAllocation(statusMessage=null){
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=Math.max(0,b-sum),c=configApplied;
- const shownLeft=left<0.01?0:left;$("allocated").textContent=`· investido ${fmt(sum,2)}`;$("remaining").textContent=goldShort(shownLeft);
- $("actionLeft").classList.toggle("hidden",!!state.result);$("actionEnded").classList.toggle("hidden",!state.result);
- AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?100*vals[i]/b:0)+"%"});
- $("allocationStatus").className="status"+(statusMessage?" error":"");$("allocationStatus").textContent=statusMessage||(sum>b+1e-8?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);
- $("milForecast").textContent=`+${fmt(vals[0]*c.military.pointsPerInvestment,1)} de Força na próxima era.`;
- $("infraForecast").textContent=`Rende cerca de ${money(vals[1]*c.infrastructure.initialReturn)} por era a partir da próxima, crescendo até a 4.ª era.`;
- $("techForecast").textContent=`Rende ${money(vals[2]*c.technology.progressPerInvestment*c.technology.benefitPerProgress)} por era, para sempre, a partir da era ${state.era+effectiveDelay("technology",c.technology.delay,state.mode)}.`;
- const ended=!!state.result;
- $("advance").textContent=ended?"Jogar de novo →":"Concluir a era →";
- $("advance").disabled=busy||(!ended&&sum>b+1e-8);
- document.querySelectorAll("#investCard button, #investCard input").forEach(el=>el.disabled=ended||!P(state).active);
+ const shownLeft=left<0.01?0:left,ended=!!state.result,over=sum>b+1e-8;
+ $("actionLeft").classList.toggle("hidden",ended);$("actionEnded").classList.toggle("hidden",!ended);
+ if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?"O total passa do ouro disponível":shownLeft===0?`<span aria-hidden="true">✓</span> tudo investido`:`sobram <strong>${fmt(shownLeft,2)}</strong> de ouro`;
+ $("advance").classList.toggle("done-all",!ended&&shownLeft===0&&!over&&!statusMessage);
+ AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?clamp(100*vals[i]/b,0,100):0)+"%";$(k+"Fine").textContent=fmt(vals[i],2)});
+ $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);
+ const milGain=vals[0]*c.military.pointsPerInvestment,infraGain=vals[1]*c.infrastructure.initialReturn,techGain=vals[2]*c.technology.progressPerInvestment*c.technology.benefitPerProgress,techEra=state.era+effectiveDelay("technology",c.technology.delay,state.mode);
+ $("milForecast").textContent=`+${fmt(milGain,1)} de Força na próxima era. Curto prazo: a Força não usada perde 20% por era.`;
+ $("infraForecast").textContent=`Rende cerca de ${money(infraGain)} por era a partir da próxima, crescendo até a 4.ª era e depois acabando.`;
+ $("techForecast").textContent=`Rende ${money(techGain)} por era, para sempre, a partir da era ${techEra}.`;
+ $("milPrev").innerHTML=vals[0]>0?`<span class="gold">+${fmt(milGain,1)}</span> de Força`:"curto prazo";
+ $("infraPrev").innerHTML=vals[1]>0?`<span class="green">+${fmt(infraGain,2)}</span>/era`:"médio prazo";
+ $("techPrev").innerHTML=vals[2]>0?`<span class="purple">+${fmt(techGain,2)}</span>/era<span class="wide"> · era ${techEra}</span>`:"longo prazo";
+ $("advTitle").textContent=ended?"Jogar de novo →":`Concluir era ${state.era}`;
+ $("advance").setAttribute("aria-label",ended?"Jogar de novo":`Concluir era ${state.era}: ${$("actionLeft").textContent.trim()}`);
+ $("advance").disabled=busy||(!ended&&over);
+ document.querySelectorAll("#investCard button, #investCard input, #fineSheet button, #plans button").forEach(el=>{if(!el.matches("[data-open]"))el.disabled=ended||!P(state).active});
 }
 
 /* ── Gráficos ── */
@@ -1449,7 +1625,7 @@ function concludeEra(){
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);selectedTerritory=null;renderAll();window.scrollTo({top:0,behavior:"smooth"})};
+ const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);selectedTerritory=null;renderAll();window.scrollTo({top:0,behavior:"smooth"})};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
   showModal(`<h2>Você ainda tem ${money(left)} para investir</h2><p class="small muted">O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.</p><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
    [{label:"Voltar e investir",cls:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}]);
@@ -1469,7 +1645,7 @@ function restoreSetupAfterTutorial(){
 }
 function startNewGame(){restoreSetupAfterTutorial();state=newGame();selectedTerritory=null;saveGame();renderAll();window.scrollTo({top:0})}
 
-function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts()}
+function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts()}
 function setStatus(id,msg,cls=""){const el=$(id);el.className="status "+cls;el.textContent=msg}
 function download(name,text,type="application/json"){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function exportHistory(){download(`imperios-partida-era${state.era}.json`,JSON.stringify({formatVersion:VERSION,exportedAt:new Date().toISOString(),gameMode,config:configApplied,state},null,2))}
@@ -2272,6 +2448,77 @@ function setupValLab(){
  $("cancelVal").onclick=()=>{valCancel=true;setStatus("valStatus","Cancelamento pedido...")};
  $("exportVal").onclick=exportValidation;$("valChartPick").onchange=drawValChart;
 }
+/* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
+   Uma folha de cada vez. Fecham com toque fora, Esc, o botão ✕ e o botão voltar do navegador/Android
+   (a folha aberta ocupa uma entrada do histórico). Enquanto há uma folha aberta, o resto da tela fica inerte
+   e o foco fica preso dentro dela; ao fechar, o foco volta para quem a abriu. */
+const SHEET_HOOKS={
+ attackSheet:{onClose:()=>{if(selectedTerritory!==null){selectedTerritory=null;renderMap()}}},
+ details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
+ scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
+};
+const FOCUSABLE='button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
+let sheetOpen=null,sheetReturn=null,sheetHist=false,sheetIgnorePop=0;
+function isSheetOpen(id){return id?sheetOpen===id:!!sheetOpen}
+function setInertBehind(on){
+ const keep=el=>el.classList.contains("sheet")||el.classList.contains("sheet-scrim");
+ [...document.querySelectorAll(".wrap > *"),...document.querySelectorAll("#game > *")].forEach(el=>{if(el.id==="game"||keep(el))return;if(on)el.inert=true;else el.inert=false});
+ const tut=$("tutBox");if(tut)tut.inert=on;
+}
+function openSheet(id,opener){
+ const el=$(id);if(!el||sheetOpen===id)return;
+ if(sheetOpen)closeSheet({swap:true});
+ else sheetReturn=opener||document.activeElement;
+ sheetOpen=id;el.hidden=false;$("sheetScrim").hidden=false;setInertBehind(true);
+ document.querySelectorAll(`[data-open="${id}"]`).forEach(b=>b.setAttribute("aria-expanded","true"));
+ if(!sheetHist){try{history.pushState({imperiosSheet:id},"");sheetHist=true}catch(e){}}
+ el.scrollTop=0;SHEET_HOOKS[id]?.onOpen?.();
+ el.focus({preventScroll:true});
+}
+function closeSheet({swap=false,fromPop=false,focus=true}={}){
+ const id=sheetOpen;if(!id)return;sheetOpen=null;
+ $(id).hidden=true;document.querySelectorAll(`[data-open="${id}"]`).forEach(b=>b.setAttribute("aria-expanded","false"));
+ SHEET_HOOKS[id]?.onClose?.();
+ if(swap)return;
+ $("sheetScrim").hidden=true;setInertBehind(false);
+ if(fromPop)sheetHist=false;
+ else if(sheetHist){sheetHist=false;sheetIgnorePop++;try{history.back()}catch(e){sheetIgnorePop--}}
+ let r=sheetReturn;sheetReturn=null;if(typeof r==="function")r=r();
+ if(focus&&r&&r.isConnected&&r.offsetParent!==null)r.focus({preventScroll:true});
+}
+// .open nas folhas (como nos antigos <details> "Como jogar" e "Detalhes"): ler diz se está aberta, escrever abre/fecha.
+document.querySelectorAll(".sheet").forEach(el=>Object.defineProperty(el,"open",{configurable:true,get(){return sheetOpen===el.id},set(v){if(v)openSheet(el.id);else if(sheetOpen===el.id)closeSheet()}}));
+window.addEventListener("popstate",()=>{
+ if(sheetIgnorePop>0){sheetIgnorePop--;if(sheetOpen&&!sheetHist){try{history.pushState({imperiosSheet:sheetOpen},"");sheetHist=true}catch(e){}}return}
+ if(sheetOpen)closeSheet({fromPop:true});
+});
+document.addEventListener("click",e=>{
+ const o=e.target.closest("[data-open]");if(o&&!o.disabled){e.preventDefault();openSheet(o.dataset.open,o);return}
+ if(e.target.closest("[data-close]")||e.target.id==="sheetScrim")closeSheet();
+});
+document.addEventListener("keydown",e=>{
+ if(!sheetOpen||$("modalRoot").firstChild)return;
+ if(e.key==="Escape"){e.preventDefault();closeSheet();return}
+ if(e.key!=="Tab")return;
+ const el=$(sheetOpen),f=[...el.querySelectorAll(FOCUSABLE)].filter(x=>x.offsetParent!==null&&!x.closest("[hidden]"));if(!f.length){e.preventDefault();el.focus();return}
+ const first=f[0],last=f.at(-1),a=document.activeElement;
+ if(e.shiftKey&&(a===first||a===el||!el.contains(a))){e.preventDefault();last.focus()}
+ else if(!e.shiftKey&&(a===last||!el.contains(a))){e.preventDefault();first.focus()}
+});
+// Aviso rápido no topo (ordem dada, ataque cancelado...): some sozinho ou com um toque.
+let toastTimer=null;
+function showToast(html,bad=false){
+ let t=$("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";t.setAttribute("role","status");t.setAttribute("aria-live","polite");t.hidden=true;t.onclick=()=>{t.hidden=true};document.body.appendChild(t)}
+ t.innerHTML=`<span>${html}</span>`;t.classList.toggle("bad",bad);t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},3500);
+}
+// Planos rápidos: chips na gaveta em telas altas; em telas baixas (≤ 700 px) ficam na folha "Planos ▾".
+const SHORT_SCREEN=matchMedia("(max-height:700px)");
+function placePlans(){const plans=$("plans"),slot=$(SHORT_SCREEN.matches?"plansSheetSlot":"plansInline");if(plans&&slot&&plans.parentElement!==slot)slot.appendChild(plans);if(!SHORT_SCREEN.matches&&sheetOpen==="planSheet")closeSheet({focus:false})}
+SHORT_SCREEN.addEventListener?.("change",placePlans);
+// Tela da era sem rolagem: só na versão do jogador, com a aba Jogo à vista e sem resultado (a tela de resultado
+// ainda rola; Fase 3). Com ?dev=1 o cabeçalho e as abas ficam por cima e a página rola como antes.
+function updateFit(){const g=$("game");document.documentElement.classList.toggle("game-fit",!DEV_MODE&&!!g&&g.classList.contains("active")&&!state?.result);if(state?.result&&sheetOpen==="attackSheet")closeSheet({focus:false})}
+
 function init(){
  const read=readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
@@ -2284,21 +2531,26 @@ function init(){
  }
  else{applyDifficulty(currentDifficulty);state=newGame()}
  renderSavedSafely(()=>{renderParams();renderAll()});
- document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
+ document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));closeSheet({focus:false});updateFit();if(b.dataset.view==="game")fitRegionNames();if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
   const input=$(k+"Spend");
   input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
   input.addEventListener("focus",()=>{if(parseAmount(input.value)===0)input.select()});
-  const ctrl=input.parentElement;
+  const ctrl=input.parentElement,fine=document.querySelector(`.fine-row[data-area="${k}"]`);
+  input.addEventListener("keydown",e=>{if(e.key==="Enter")input.blur()});
   ctrl.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>stepArea(idx,Number(b.dataset.step)));
-  ctrl.querySelector("[data-rest]").onclick=()=>restArea(idx);ctrl.querySelector("[data-zero]").onclick=()=>{const v=readAlloc();v[idx]=0;setAlloc(v)};
+  fine.querySelector("[data-rest]").onclick=()=>restArea(idx);fine.querySelector("[data-zero]").onclick=()=>{const v=readAlloc();v[idx]=0;setAlloc(v)};
  });
- document.querySelectorAll("[data-plan]").forEach(b=>b.onclick=()=>applyPlan(b.dataset.plan));
+ document.querySelectorAll("[data-plan]").forEach(b=>b.onclick=()=>{applyPlan(b.dataset.plan);if(sheetOpen==="planSheet")closeSheet({focus:false})});
+ placePlans();
+ // "Investir em Militar" (folha de ataque sem Força suficiente): fecha a folha e leva ao + do Militar.
+ $("attackInvest").onclick=()=>{closeSheet({focus:false});const row=document.querySelector('[data-row="mil"]'),plus=document.querySelector('[data-area="mil"] [data-step="1"]');row.classList.remove("flash");void row.offsetWidth;row.classList.add("flash");plus.focus({preventScroll:true})};
+ // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
+ if(DEV_MODE)$("topActions").prepend($("returnHome"),$("restart"));
  $("advance").onclick=concludeEra;
- $("attack").onclick=()=>{if(selectedTerritory===null)return;const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);selectedTerritory=null;saveGame();renderAll();$("mapStatus").innerHTML=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason))};
- $("restart").onclick=()=>showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}]);
+ $("attack").onclick=()=>{if(selectedTerritory===null)return;const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);selectedTerritory=null;closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))};
+ $("restart").onclick=()=>{closeSheet({focus:false});showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}])};
  $("exportHistory").onclick=exportHistory;
- $("details").addEventListener("toggle",renderCharts);
  $("applyConfig").onclick=()=>{try{applyConfig()}catch(e){setStatus("labStatus",e.message,"error")}};
  $("restoreConfig").onclick=()=>{configEdited=clone(configDefault);renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
  $("saveConfig").onclick=()=>{try{download("imperios-configuracao.json",JSON.stringify({formatVersion:VERSION,config:readParams()},null,2))}catch(e){setStatus("labStatus",e.message,"error")}};
@@ -2321,7 +2573,7 @@ function init(){
  $("exportBalanceLab").onclick=exportBalanceLab;
  setupFixedLab();
  setupFtLab();setupExpLab();setupValLab();
- window.addEventListener("resize",()=>{fitRegionNames();renderCharts();if(state.result)renderResult();redrawExpCharts();drawValChart()});
+ window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult();redrawExpCharts();drawValChart()});
 }
 init();
 
@@ -2372,7 +2624,7 @@ init();
  $("homeContinue").onclick=()=>{openTab("game");renderAll()};
  $("homeCompare").onclick=()=>openTab("balanceLab");
  $("homeLab").onclick=()=>openTab("lab");
- $("returnHome").onclick=()=>{choice=currentChoice();sync();home.hidden=false;home.scrollTop=0};
+ $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0};
  sync();
 })();
 
@@ -2384,32 +2636,28 @@ init();
   if(!sim())return _renderAttack();
   const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
   setAttackBtn(btn,"Escolha um alvo",false);
-  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar.";return}
-  const ordTxt=ords.length?`<div class="gold small">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</div>`:"";
+  if(t===null&&isSheetOpen("attackSheet"))closeSheet();
+  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
+  const ordTxt=ords.length?`<p class="tgt-orders">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</p>`:"";
   const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Você pode dar várias ordens por era; cada ataque a mais custa mais (2.º ×2, 3.º ×3…).";
   const howOrders=`As ordens de todos são resolvidas juntas no fim da era: se um rival atacar o mesmo território, há <strong>batalha</strong> (vence quem tiver mais Força, somada à Ciência); depois, ${ATTACK_CHANCE} de chance de conquistar. A Força é gasta mesmo se o ataque falhar.`;
-  if(t===null){$("mapStatus").innerHTML=`${ordTxt}<div>Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</div>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
-  if(ord){setAttackBtn(btn,"Cancelar ordem",true);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · ordem dada (${fmt(ord.need,1)}).</div>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} de Força${ords.length>1?" e recalcula o custo das outras ordens":""}.`)}`;return}
+  if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}${ordTxt}<p class="tgt-sub">Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</p>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
+  if(ord){setAttackBtn(btn,"Cancelar ordem",true,{cancel:true});$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ordem dada`)}${ordTxt}<p class="tgt-sub">${fmt(ord.need,1)} de Força reservada. Cancelar devolve a Força${ords.length>1?" e recalcula o custo das outras ordens":""}.</p>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. ${howOrders}`)}`;return}
   const owner=state.owners[t];
-  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.</div>`;return}
-  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} não faz fronteira com o seu império. Escolha um com contorno dourado.</div>`;return}
+  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras e Ciência reforçam a defesa.</p>`;return}
+  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}${ordTxt}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha um com contorno dourado.</p>`;return}
   const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=m.conquestCost+def,need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
-  if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${ordTxt}<div>Você já deu o máximo de ${maxO} ordens nesta era.</div>`;return}
-  const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Dar ordem"} (${fmt(need,1)})`:`Faltam ${fmt(need-avail,1)} de força`,ok);
-  $("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}${mult>1?` · ${ords.length+1}.º ataque ×${fmt(mult,1)}`:""}</div>${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
+  if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${ordTxt}<p class="tgt-sub">Você já deu o máximo de ${maxO} ordens nesta era.</p>`;return}
+  const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Atacar"} · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-avail,1)} de Força`,ok,{invest:!ok&&mult<=1});
+  $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
  };
-  // Depois de tocar num território, o painel do alvo (e o botão "Dar ordem") sobe para cima da barra fixa de baixo.
- const revealTargetPanel=()=>{const panel=document.querySelector(".target-panel"),bar=document.querySelector(".actionbar");if(!panel||selectedTerritory===null)return;
-  const r=panel.getBoundingClientRect(),limit=(bar&&bar.offsetParent?bar.getBoundingClientRect().top:innerHeight)-8;
-  if(r.bottom>limit){const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;window.scrollBy({top:Math.min(r.bottom-limit,Math.max(0,r.top-8)),behavior:smooth?"smooth":"auto"})}};
- $("map").addEventListener("click",e=>{if(e.target.closest("[data-territory]"))requestAnimationFrame(revealTargetPanel)});
  const _attackClick=$("attack").onclick;
  $("attack").onclick=()=>{
   if(!sim())return _attackClick();
-  if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg;
+  if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg,bad=false;
   if(ord){cancelOrder(state,"player",t);msg=`Ordem contra ${escapeHtml(regionName(t))} cancelada; Força devolvida.`}
-  else{const r=orderAttack(state,t,"player",configApplied);msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
-  selectedTerritory=null;saveGame();renderAll();$("mapStatus").innerHTML=msg};
+  else{const r=orderAttack(state,t,"player",configApplied);bad=!r.ok;msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
+  selectedTerritory=null;closeSheet({focus:false});saveGame();renderAll();$("mapStatus").innerHTML=msg;showToast(msg,bad)};
  const _renderMap=renderMap;
  renderMap=function(){_renderMap();if(!sim())return;myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}})};
  // Relatório da era: ataques, batalhas, conquistas e saques revelados um a um.
@@ -2424,14 +2672,13 @@ init();
    [{label:"Continuar",cls:"primary",onClick:()=>{if($("skipReport")?.checked){state.ui.skipReport=true;saveGame()}}}]);
  }
  window.showEraReport=showEraReport;
- // Placar numérico de todas as civilizações, sempre visível por baixo dos indicadores.
- const strip=document.createElement("div");strip.id="scoreStrip";strip.className="score-strip";$("metrics").insertAdjacentElement("afterend",strip);
+ // Placar completo (folha "Placar e vitória"): posição, pontos, diferença para o líder e variação na última era.
  const _renderMetrics=renderMetrics;
- renderMetrics=function(){_renderMetrics();const lv=liveScores();
-  if(!lv){strip.innerHTML=`<span class="muted small">🏆 Placar: aparece no fim da 1.ª era.</span>`;return}
+ renderMetrics=function(){_renderMetrics();const lv=liveScores(),strip=$("scoreStrip");
+  if(!lv){strip.innerHTML=`<p class="muted small">O placar aparece no fim da 1.ª era.</p>`;return}
   const top=PTS(lv[0].score),prev=state.timeline.length>1?(()=>{const e=state.timeline.at(-2);const sc=finalScores(e.civs.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied);const m={};e.civs.forEach((r,k)=>m[r.id]=PTS(sc[k].score));return m})():{};
-  strip.innerHTML=`<span class="score-title" title="Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. 1000 pontos = desempenho de referência.">🏆 Placar <span class="muted">(?)</span></span>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
-   return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span> ${x.civ?civLabel(x.civ):escapeHtml(x.name)} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"↑":"↓"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
+  strip.innerHTML=`<p class="small muted" style="margin:0">Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. 1000 pontos = desempenho de referência.</p>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
+   return `<div class="score-row ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${x.civ&&x.id!=="player"?` <span class="muted small">· ${escapeHtml(profileLabel(x.civ))}</span>`:""}</span><span class="pts"><strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"↑":"↓"}${Math.abs(d)}</span>`:""}</span></div>`}).join("")};
  renderSavedSafely(renderAll);
 })();
 
@@ -2442,18 +2689,19 @@ init();
 (function setupTutorial(){
  const TUT_KEY="imperios-tutorial-oferecido",P_START=7,AI_START=9,TARGET=8;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
- const card=n=>document.querySelector(`#metrics .stat:nth-child(${n})`);
+ // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
+ const planCta=name=>SHORT_SCREEN.matches?`Toque em “Planos” e escolha “${name}”.`:`Toque no plano “${name}”.`;
  const STEPS=[
   {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`${civLabel(P(state))} (verde) e o rival ${civLabel(A(state))} disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
-  {t:"Orçamento e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>ouro</strong>: cada território rende, e as Obras e a Ciência somam mais. O <strong>orçamento</strong> é o que você pode investir agora.`},
-  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três áreas:<br>⚔ <strong>Militar</strong>: <strong>Força</strong> para atacar já na próxima era (perde 20% por era).<br>▰ <strong>Obras</strong>: rendem ouro a médio prazo e depois acabam.<br>✦ <strong>Ciência</strong>: rende tarde, mas para sempre.<br>Para atacar na próxima era, invista ao menos ${fmt(needMil(),0)} de ouro em Militar.<br><br>👉 <strong>Toque no plano “Ataque”.</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
-  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir a era”.</strong> Os rivais jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
-  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque em ${regionName(TARGET)} (${TARGET+1}) e depois em “Dar ordem”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
-  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> são resolvidas juntas no fim da era, em ordem sorteada. Se dois atacarem o mesmo território, há <strong>batalha</strong> — vence quem tiver mais Força (somada à Ciência).<br><br>👉 <strong>Toque em “Concluir a era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
-  {t:"Conquista!",target:()=>card(5),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui você também vê quantos faltam para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
-  {t:"As Obras rendem",target:()=>card(3),html:()=>`O <strong>ouro da era</strong> mostra de onde vem o dinheiro: territórios, Obras e Ciência. Cada investimento em Obras cresce até a 4.ª era e depois vai acabando — reinvista para manter o ouro entrando.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
+  {t:"Ouro e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>ouro</strong>: cada território rende, e as Obras e a Ciência somam mais. O <strong>ouro</strong> aqui no topo é o que você pode investir agora; o <strong>+/era</strong> mostra quanto entrou nesta era.`},
+  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três áreas:<br>⚔ <strong>Militar</strong>: <strong>Força</strong> para atacar já na próxima era (perde 20% por era).<br>▰ <strong>Obras</strong>: rendem ouro a médio prazo e depois acabam.<br>✦ <strong>Ciência</strong>: rende tarde, mas para sempre.<br>Para atacar na próxima era, invista ao menos ${fmt(needMil(),0)} de ouro em Militar.<br><br>👉 <strong>${planCta("Ataque")}</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
+  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir era”.</strong> Os rivais jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
+  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque em ${regionName(TARGET)} (${TARGET+1}) e depois em “Atacar”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
+  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> são resolvidas juntas no fim da era, em ordem sorteada. Se dois atacarem o mesmo território, há <strong>batalha</strong> — vence quem tiver mais Força (somada à Ciência).<br><br>👉 <strong>Toque em “Concluir era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
+  {t:"Conquista!",target:()=>$("statTerr"),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui, <strong>terras</strong> mostra quantos você tem e quantos precisa para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
+  {t:"As Obras rendem",target:()=>$("statGold"),html:()=>`O <strong>+/era</strong> ao lado do ouro soma o que rendem os territórios, as Obras e a Ciência (veja cada parte em ☰ → Detalhes da partida). Cada investimento em Obras cresce até a 4.ª era e depois vai acabando — reinvista para manter o ouro entrando.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
   {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`O rival ${civLabel(A(state))} atacou ${escapeHtml(regionName(state.tutorial.attackIdx))} (${state.tutorial.attackIdx+1}), um território seu, e <strong>foi repelido</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem Força suficiente, seus territórios vizinhos a eles viram alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com suas Obras e sua Ciência — o atacante precisa pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde um pouco de Força e não deixe o ouro parado.`},
-  {t:"Como saber quem está ganhando",target:()=>$("scoreStrip"),html:()=>`O <strong>Placar</strong>, abaixo dos indicadores, mostra os <strong>pontos</strong> de cada um e a diferença para o líder (↑↓ = variação na última era). Este painel mostra quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
+  {t:"Como saber quem está ganhando",target:()=>$("scorePill"),html:()=>`O <strong>🏆</strong> no topo mostra sua <strong>posição</strong> no placar e a diferença de <strong>pontos</strong> para o líder. Toque nele (ou em “terras”) para ver o placar completo e quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
  ];
  function scriptedAttack(){
   const tu=state.tutorial;if(tu.attackDone)return;tu.attackDone=true;

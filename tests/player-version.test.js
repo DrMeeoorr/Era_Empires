@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, assertClickable, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, assertClickable, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, menuClick } = require("./helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
 const DEV_ONLY = [
@@ -104,7 +104,7 @@ test("versão do jogador: save antigo com dificuldade 'config' e rivais 'config'
   await concludeEraUI(page);
   assert.equal(await page.evaluate(() => state.era), 2);
   // A próxima partida nova (pela tela de configuração) usa Médio e estilos visíveis.
-  await page.locator("#returnHome").click();
+  await menuClick(page, "#returnHome");
   await page.locator("#homeStart").click();
   assert.equal(await page.locator('#homeDifficulty [data-diff].selected').getAttribute("data-diff"), "medio");
   assert.equal(await page.locator('#homeProfiles select').first().inputValue(), "adaptive");

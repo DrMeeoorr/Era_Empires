@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, MOBILE_SCREENS, dismissModals } = require("./helpers");
+const { launch, openGame, MOBILE_SCREENS, dismissModals, menuClick } = require("./helpers");
 const { waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -15,7 +15,7 @@ const DEFAULT_AI = [1, -1, 75, "neutralFirst"];
 
 /** Pela tela de configuração: escolhe dificuldade/IAs/eras/modo e começa. */
 async function startVia(page, { diff, ai, eras, fast = false }) {
-  if (await page.locator("#homeScreen").isHidden()) await page.locator("#returnHome").click();
+  if (await page.locator("#homeScreen").isHidden()) await menuClick(page, "#returnHome");
   await page.locator("#homeStart").click();
   if (diff) await page.locator(`#homeDifficulty [data-diff="${diff}"]`).click();
   if (ai) await page.locator(`#homeOpponents [data-ai="${ai}"]`).click();
@@ -76,7 +76,7 @@ test("tutorial não grava Fácil/1 IA/30 eras/modo lento nas escolhas do jogador
   await startVia(page, { diff: "medio", ai: 3, eras: 15, fast: true });
   const prevOpp = await page.evaluate(() => opponentChoices.slice());
   // Começa o tutorial a partir da tela inicial.
-  await page.locator("#returnHome").click();
+  await menuClick(page, "#returnHome");
   await page.locator("#homeTutorial").click();
   const ok = page.locator('#modalRoot button:has-text("Começar tutorial")');
   if (await ok.count()) await ok.click();

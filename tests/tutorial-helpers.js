@@ -1,7 +1,7 @@
 // Passos do tutorial jogados pela interface (partilhado pelos testes de fluxo e de bugs conhecidos).
 "use strict";
 const assert = require("node:assert/strict");
-const { dismissModals, concludeEraUI } = require("./helpers");
+const { dismissModals, concludeEraUI, choosePlan } = require("./helpers");
 
 /** Lê o passo atual do balão do tutorial ("Tutorial 3/10"). */
 const tutStep = (page) =>
@@ -40,7 +40,7 @@ async function playTutorial(page, { stopBefore = Infinity, onStep = async () => 
   await page.locator("#advance").click();
   await page.locator("#tutBox .tut-warn").waitFor({ state: "visible" });
   assert.equal(await page.evaluate(() => state.era), 1, "o tutorial deixou concluir a era antes de investir");
-  await page.locator('[data-plan="attack"]').click();
+  await choosePlan(page, "attack");
   await waitStep(page, 4);
   await onStep(4);
   // 4: concluir a era.
@@ -68,7 +68,7 @@ async function playTutorial(page, { stopBefore = Infinity, onStep = async () => 
   await next();
   await page.waitForFunction(() => /volta na era 4/.test(document.getElementById("tutBox").innerText));
   while ((await page.evaluate(() => state.era)) < 4) {
-    await page.locator('[data-plan="balanced"]').click();
+    await choosePlan(page, "balanced");
     await concludeEraUI(page);
   }
   await waitStep(page, 8);
@@ -76,7 +76,7 @@ async function playTutorial(page, { stopBefore = Infinity, onStep = async () => 
   await next();
   await page.waitForFunction(() => /era 5/.test(document.getElementById("tutBox").innerText));
   while ((await page.evaluate(() => state.era)) < 5) {
-    await page.locator('[data-plan="balanced"]').click();
+    await choosePlan(page, "balanced");
     await concludeEraUI(page);
   }
   // 9: ataque roteirizado da IA, sempre repelido.
