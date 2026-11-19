@@ -1291,12 +1291,28 @@ function renderMetrics(){
 }
 
 /* ── Mapa e painel do alvo ── */
+/* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
+   celular. Primeiro reduz a fonte (até 8,5 px), depois aperta o espaço entre letras. */
+function fitRegionNames(){
+ const MIN=8.5;
+ document.querySelectorAll("[data-territory] .rname").forEach(n=>{
+  n.style.fontSize="";n.style.letterSpacing="";
+  const cell=n.closest("[data-territory]"),cs=getComputedStyle(cell);
+  const room=cell.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  if(!(room>0)||n.scrollWidth<=room)return;
+  const base=parseFloat(getComputedStyle(n).fontSize);
+  const size=Math.max(MIN,Math.floor(base*room/n.scrollWidth*10)/10);
+  n.style.fontSize=size+"px";
+  for(let ls=-.04;n.scrollWidth>room&&ls>=-.1;ls-=.02)n.style.letterSpacing=ls.toFixed(2)+"em";
+ });
+}
 function renderMap(){
  const targets=eligibleTargets(state,"player");
  $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
   return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
  $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)} <span class="muted">· ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=selectedTerritory===i?null:i;renderMap()}));
+ fitRegionNames();
  renderAttack();renderEvents();
 }
 // Painel do alvo: uma linha com o território, 3 números (custo, força disponível, chance) e a explicação
@@ -2305,7 +2321,7 @@ function init(){
  $("exportBalanceLab").onclick=exportBalanceLab;
  setupFixedLab();
  setupFtLab();setupExpLab();setupValLab();
- window.addEventListener("resize",()=>{renderCharts();if(state.result)renderResult();redrawExpCharts();drawValChart()});
+ window.addEventListener("resize",()=>{fitRegionNames();renderCharts();if(state.result)renderResult();redrawExpCharts();drawValChart()});
 }
 init();
 
