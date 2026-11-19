@@ -38,3 +38,20 @@ test("localStorage só é usado pelo módulo de armazenamento (storage)", () => 
   }
   assert.deepEqual(offenders, [], "localStorage usado fora do storage");
 });
+
+test("nenhuma função do jogo é substituída em cadeia (sem `f=function(){_f();...}`; usar ganchos)", () => {
+  const files = codeFiles().map((rel) => [rel, stripComments(read(rel))]);
+  const names = new Set();
+  for (const [, src] of files) for (const m of src.matchAll(/(?:^|[\s;}])(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) names.add(m[1]);
+  const offenders = [];
+  for (const [rel, src] of files)
+    for (const n of names) {
+      // Atribuição no início de uma instrução (depois de ; } ou mudança de linha): `renderMap=...`.
+      // Variáveis locais com o mesmo nome em listas (`const a=1,pct=2`) ou valores padrão não contam.
+      const re = new RegExp(`(^|[;}\\n])\\s*${n.replace(/\$/g, "\\$")}\\s*=(?![=>])`, "g");
+      for (const m of src.matchAll(re)) offenders.push(`${rel}: ${n}= … ${src.slice(m.index, m.index + 60).trim()}`);
+    }
+  // Botões com o clique "embrulhado" por outra parte do código (const prev=el.onclick; el.onclick=e=>{prev(e)...}).
+  for (const [rel, src] of files) for (const m of src.matchAll(/=\s*[\w$]+\.onclick\s*;/g)) offenders.push(`${rel}: ${m[0]}`);
+  assert.deepEqual(offenders, []);
+});
