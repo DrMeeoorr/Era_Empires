@@ -47,7 +47,7 @@ for (const [name, opts] of MOBILE_SCREENS) {
 }
 
 test.todo("BUG: Configurações — campo numérico vazio é aceite como 0 em vez de dar erro", async () => {
-  const { context, page } = await openGame(browser, { contextOptions: MOBILE_SCREENS[0][1] });
+  const { context, page } = await openGame(browser, { contextOptions: MOBILE_SCREENS[0][1], dev: true });
   await page.locator("#homeLab").click();
   await page.locator('[data-param="economy.baseIncome"]').fill("");
   await page.locator("#applyConfig").click();

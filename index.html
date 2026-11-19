@@ -3,8 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+// Versão do jogador (padrão) ou de desenvolvimento (?dev=1 no endereço). Corre antes de a página aparecer,
+// para os laboratórios nunca piscarem no ecrã do jogador. Os elementos .dev-only ficam no HTML (o código
+// continua a funcionar), só não são mostrados.
+document.documentElement.classList.toggle("player-build",new URLSearchParams(location.search).get("dev")!=="1");
+</script>
 <title>Impérios — MVP estratégico por eras</title>
 <style>
+.player-build .dev-only{display:none!important}
 :root{--bg:#0b1220;--panel:#121d30;--panel2:#17243a;--line:#2a3b55;--text:#edf3fc;--muted:#9fb0c7;--gold:#f4bd50;--blue:#62a8ff;--green:#56d6a1;--red:#ff737b;--purple:#b49aff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#152642 0,#0b1220 58%);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:9px 12px;color:var(--text);background:#20324d}button:hover{filter:brightness(1.15)}button.primary{background:#d59c2f;color:#1b1b1b;border-color:#f4bd50;font-weight:700}button.good{background:#145a48;border-color:#267c66}button.danger{background:#572936;border-color:#8d4350}button:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1500px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f4bd50,#e87b43);display:grid;place-items:center;color:#1c2431;font-size:24px;font-weight:900}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.6px;color:var(--gold)}h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 12px}h3{font-size:14px;margin:14px 0 8px}.sub{color:var(--muted);margin-top:3px}.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}.tab{background:transparent}.tab.active{background:#e7b64f;color:#1b2430;border-color:#e7b64f;font-weight:700}.view{display:none}.view.active{display:block}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:14px}.cols{grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr)}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:linear-gradient(180deg,rgba(22,35,56,.98),rgba(16,27,44,.98));border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;box-shadow:0 8px 22px #00000012}.metric{padding:14px}.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:24px;font-weight:750;letter-spacing:-.5px;margin:4px 0}.metric .foot{font-size:11px;color:var(--muted)}.gold{color:var(--gold)}.blue{color:var(--blue)}.green{color:var(--green)}.red{color:var(--red)}.purple{color:var(--purple)}.muted{color:var(--muted)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}.spacer{height:12px}.small{font-size:12px}.investment{border:1px solid var(--line);border-radius:11px;padding:12px;margin:10px 0;background:#0e192a}.investment-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.investment input[type=number]{width:105px}.investment input[type=range]{width:100%;accent-color:var(--gold)}input,select{background:#0a1423;color:var(--text);border:1px solid #334762;border-radius:7px;padding:8px;max-width:100%}input[type=checkbox]{accent-color:var(--gold)}label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}.field{margin:8px 0}.field input,.field select{width:100%}.bar{height:8px;border-radius:99px;background:#25344b;overflow:hidden}.bar span{display:block;height:100%;border-radius:99px}.map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}.territory{min-height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:6px;border-radius:9px;border:1px solid #334762;background:#1a2940;color:#dce8f7;font-size:12px}.territory.player{background:#154b47;border-color:#2c9d87}.territory.ai{background:#582a39;border-color:#bd5268}.territory.target{outline:2px solid var(--gold);outline-offset:1px}.territory.selected{box-shadow:inset 0 0 0 2px white}.territory:disabled{opacity:.85}.territory .num{font-size:17px;font-weight:800}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.chart{width:100%;height:220px;display:block}.chartbox{min-width:0}.chart-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px}.chart-legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:5px}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600;background:#132139;position:sticky;top:0}tbody tr:hover{background:#ffffff06}.notice{padding:10px 12px;border:1px solid #66552f;background:#302817;border-radius:9px;color:#f5d894;margin:8px 0}.success{border-color:#276b58;background:#112e2a;color:#a7efd5}.error{border-color:#82404b;background:#351b25;color:#ffc0c5}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 8px;color:var(--muted);font-size:11px}.actions{display:flex;gap:7px;flex-wrap:wrap}.progress{height:8px;background:#293951;border-radius:20px;overflow:hidden}.progress>span{height:100%;display:block;background:var(--gold);width:0;transition:width .15s}.param-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.param{border:1px solid var(--line);padding:10px;border-radius:9px;background:#0e1929}.param label{min-height:30px}.param input{width:100%}.status{font-size:12px;color:var(--muted);min-height:18px;margin-top:7px}.hidden{display:none!important}.log{max-height:280px;overflow:auto}.log-item{padding:8px 0;border-bottom:1px solid #25364d;font-size:12px}.log-item:last-child{border:0}.test{padding:9px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.pass{color:var(--green);font-weight:700}.fail{color:var(--red);font-weight:700}.footer{color:var(--muted);font-size:11px;margin-top:20px;text-align:center}@media(max-width:1050px){.metrics{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}.param-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.wrap{padding:12px}.metrics{grid-template-columns:repeat(2,1fr)}.two,.three{grid-template-columns:1fr}.param-grid{grid-template-columns:1fr}.map{grid-template-columns:repeat(4,minmax(0,1fr))}h1{font-size:21px}.metric .value{font-size:21px}}
 
@@ -97,8 +104,8 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
           <button type="button" class="home-primary" id="homeStart">Nova partida <span aria-hidden="true">→</span></button>
           <button type="button" class="home-secondary" id="homeHowTo">Como jogar</button>
           <button type="button" class="home-secondary hidden" id="homeContinue">Continuar partida</button>
-          <button type="button" class="home-secondary" id="homeCompare">Balanceamento</button>
-          <button type="button" class="home-secondary" id="homeLab">Configurações</button>
+          <button type="button" class="home-secondary dev-only" id="homeCompare">Balanceamento</button>
+          <button type="button" class="home-secondary dev-only" id="homeLab">Configurações</button>
         </div>
       </div>
       <div class="home-art" aria-label="Ilustração conceitual de um mapa com territórios próprios, rivais e neutros">
@@ -142,8 +149,8 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
   </div>
 </section>
 <div class="wrap">
-<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions"><button id="returnHome" type="button">⌂ Início</button><button id="exportHistory" title="Guarda um ficheiro com a partida para enviar como feedback">Exportar</button><button id="restart" class="danger">Reiniciar</button></div></header>
-<div class="tabs">
+<header class="top"><div class="brand"><div class="logo">I</div><div><div class="eyebrow dev-only">Versão completa · laboratórios</div><h1>Impérios</h1></div></div><div class="actions"><button id="returnHome" type="button">⌂ Início</button><button id="exportHistory" class="dev-only" title="Guarda um ficheiro com a partida para enviar como feedback">Exportar</button><button id="restart" class="danger">Reiniciar</button></div></header>
+<div class="tabs dev-only">
 <button class="tab active" data-view="game">Jogo</button><button class="tab" data-view="lab">Configurações</button><button class="tab" data-view="tests">Testes funcionais</button><button class="tab" data-view="balanceLab">Balanceamento</button><button class="tab" data-view="aiLab">Validação das IAs</button>
 </div>
 <div id="game" class="view active">
@@ -189,7 +196,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 </details>
 <div class="actionbar"><div class="left"><span id="actionLeft">Por investir<br><strong id="remaining">0 u.</strong> <span id="allocated" class="small"></span></span><span id="actionEnded" class="hidden"><strong>Partida encerrada</strong></span></div><button class="primary" id="advance">Concluir a era →</button></div>
 </div>
-<div id="lab" class="view">
+<div id="lab" class="view dev-only">
 <div class="card"><div class="section-title"><div><h2>Configurações do jogo</h2><p class="muted small">Edite parâmetros, aplique-os sem alterar retornos já registrados ou reinicie usando a nova configuração.</p></div><span id="configState" class="pill">Configuração aplicada</span></div><div class="notice">Alterações são aplicadas a novas decisões e investimentos. Investimentos existentes preservam uma cópia dos parâmetros usados quando foram criados. Para recalcular toda a partida, marque a opção explícita abaixo e reinicie.</div>
 <div class="notice">A IA agora mantém tesouro próprio, recebe receitas dos territórios e dos seus investimentos, investe usando as mesmas fórmulas e decide quando atacar. Perfil, agressividade e prioridade de alvo podem ser ajustados abaixo.</div><div id="params"></div><div class="field"><label><input type="checkbox" id="recalcExisting"> Recalcular a simulação inteira com os parâmetros atuais (substitui a partida ao aplicar)</label></div>
 <div class="actions"><button class="primary" id="applyConfig">Aplicar configurações</button><button id="restoreConfig">Restaurar padrões</button><button id="saveConfig">Salvar configuração JSON</button><button id="loadConfigBtn">Carregar configuração JSON</button><button class="good" id="restartWithConfig">Reiniciar com configuração atual</button><input type="file" id="configFile" accept=".json,application/json" class="hidden"></div><div id="labStatus" class="status"></div>
@@ -197,7 +204,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 <div class="grid two" style="margin-top:14px"><section class="card"><h2>Avanço rápido de eras</h2><p class="muted small">Executa as mesmas regras de processamento da partida normal. Pode cancelar sem perder eras já concluídas.</p><div class="actions"><button class="quick" data-n="5">+5 eras</button><button class="quick" data-n="10">+10 eras</button><button class="quick" data-n="50">+50 eras</button></div><div class="row" style="margin-top:10px"><input id="customEras" type="number" min="1" step="1" value="100" style="width:120px"><button id="customAdvance">Avançar quantidade</button><button id="cancelAdvance" class="danger" disabled>Cancelar</button></div><div class="progress" style="margin-top:12px"><span id="advanceProgress"></span></div><div id="advanceStatus" class="status">Pronto.</div></section>
 <section class="card"><h2>Estratégias predefinidas</h2><p class="muted small">Simulações independentes com expansão territorial automática para estratégias de teste. Não alteram a partida em andamento.</p><div class="field"><label>Quantidade de eras</label><input id="strategyEras" type="number" min="1" step="1" value="50"></div><div class="actions"><button class="strategy" data-strategy="military">Militar</button><button class="strategy" data-strategy="aggressive">Militar agressiva</button><button class="strategy" data-strategy="infrastructure">Infraestrutura</button><button class="strategy" data-strategy="technology">Tecnologia</button><button class="strategy" data-strategy="techFirst">Tecnologia primeiro</button><button class="strategy" data-strategy="balanced">Equilibrada</button><button class="strategy" data-strategy="growth">Crescimento</button><button class="strategy" data-strategy="custom">Personalizada</button></div><div class="field"><label>Percentuais personalizados (militar / infraestrutura / tecnologia)</label><div class="row"><input id="customMil" type="number" min="0" max="100" value="34"><input id="customInfra" type="number" min="0" max="100" value="33"><input id="customTech" type="number" min="0" max="100" value="33"></div></div><div id="strategyStatus" class="status"></div><div id="strategyResult"></div></section></div>
 </div>
-<div id="tests" class="view">
+<div id="tests" class="view dev-only">
 <div class="card">
  <div class="section-title"><div><h2>Laboratório de testes funcionais</h2><p class="muted small">Verifica se as regras estão implementadas corretamente usando o motor real do jogo. Cada teste tem um identificador estável (categoria + código derivado do nome), para comparar falhas entre versões do HTML.</p></div><span class="pill">Laboratório 1</span></div>
  <div class="row"><button class="primary" id="runTests">Executar todos</button><select id="ftCategory"></select><button id="runCategory">Executar categoria</button><button id="ftRepeat" disabled>Repetir última execução</button><input id="ftFilter" placeholder="Filtrar por nome ou ID" style="min-width:220px"><label class="small" style="margin:0"><input type="checkbox" id="ftOnlyFail"> Só falhas</label><button id="ftExport">Exportar relatório CSV</button></div>
@@ -207,7 +214,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
  <h3>Histórico de execuções</h3><div id="ftHistory" class="small muted">Sem execuções registadas.</div>
 </div>
 </div>
-<div id="balanceLab" class="view">
+<div id="balanceLab" class="view dev-only">
 <div class="card" id="expLab">
  <div class="section-title"><div><h2>Experiências de balanceamento</h2><p class="muted small">Compara cenários em paralelo com as mesmas sementes, perfis, mapa e condições iniciais; todas as civilizações são controladas por IA e usam o motor real. Assim, as diferenças observadas resultam dos parâmetros testados.</p></div><span class="pill">Laboratório 2</span></div>
  <div class="param-grid">
@@ -287,7 +294,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 </div>
 </details>
 </div>
-<div id="aiLab" class="view">
+<div id="aiLab" class="view dev-only">
 <div class="card" id="valLab">
  <div class="section-title"><div><h2>Validação estratégica das IAs</h2><p class="muted small">Verifica se cada perfil adota o comportamento que representa e se transforma os recursos investidos em resultados. Mesmas sementes, mapa e condições para todos os perfis; o consolidado é a média simples entre perfis.</p></div><span class="pill">Laboratório 3</span></div>
  <div class="param-grid">
@@ -325,7 +332,7 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 </div>
 </div>
 </div>
-<div class="footer">MVP local · HTML, CSS e JavaScript puro, sem dependências · Fim de partida (território, eliminação, supremacia, pontuação) · Laboratórios de testes funcionais, balanceamento e validação das IAs · Exportações JSON/CSV</div>
+<div class="footer dev-only">MVP local · HTML, CSS e JavaScript puro, sem dependências · Fim de partida (território, eliminação, supremacia, pontuação) · Laboratórios de testes funcionais, balanceamento e validação das IAs · Exportações JSON/CSV</div>
 </div>
 <script>
 "use strict";
@@ -365,6 +372,8 @@ function effectiveDelay(type, configuredDelay, mode="slow"){
 }
 const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];
 const $=id=>document.getElementById(id);
+// true com ?dev=1: mostra laboratórios, testes e exportação (ver o <script> no <head>).
+const DEV_MODE=typeof document!=="undefined"&&!document.documentElement.classList.contains("player-build");
 // Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 // Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.

@@ -29,8 +29,9 @@ for (const [name, opts] of MOBILE_SCREENS) {
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal na tela inicial");
     await checkButtons(page, [
       ["#homeStart", "Nova partida", true], ["#homeTutorial", "Tutorial", true], ["#homeHowTo", "Como jogar", true],
-      ["#homeCompare", "Balanceamento", true], ["#homeLab", "Configurações", true],
     ], "inicial", smalls);
+    // Versão do jogador (publicada): os atalhos dos laboratórios não aparecem.
+    for (const sel of ["#homeCompare", "#homeLab"]) assert.equal(await page.locator(sel).isVisible(), false, `${sel} visível na versão do jogador`);
     await screenshot(page, `${name}-1-inicial`);
     // "Como jogar" abre e fecha.
     await page.locator("#homeHowTo").click();

@@ -1,6 +1,20 @@
 # Era_Empires
 Game development prototype of civilization inspired game
 
+## Versão do jogador e versão de desenvolvimento
+
+O mesmo `index.html` serve as duas versões:
+
+- **Jogador** (padrão, é o que o site publicado mostra): só o jogo, o tutorial e a configuração da partida.
+  Não aparecem as abas de laboratório, o botão "Exportar", o cabeçalho "Versão completa · laboratórios"
+  nem os botões "Balanceamento"/"Configurações" da tela inicial.
+- **Desenvolvimento**: acrescente `?dev=1` ao endereço (ex.: `index.html?dev=1`) e tudo aparece como antes.
+
+Para jogar no computador basta abrir o `index.html` no navegador (duplo clique). Para a versão de
+desenvolvimento, abra-o e acrescente `?dev=1` ao fim do endereço na barra do navegador.
+
+Por enquanto os laboratórios só ficam **escondidos** na versão do jogador (o código continua no ficheiro).
+
 ## Testes
 
 O jogo tem uma suíte de testes automáticos na pasta `tests/`. Ela abre o `index.html` num navegador
@@ -35,6 +49,7 @@ Para uma verificação rápida só das regras (uns 3 segundos): `npm run test:ra
 | `tests/security.test.js` | Um save com HTML no nome de uma IA, na cor ou no registo de eventos não pode executar código. |
 | `tests/save.test.js` | Save danificado não trava o jogo (vai para `…-corrompido` e começa partida nova com aviso); falha ao salvar mostra aviso ao jogador. |
 | `tests/difficulty.test.js` | Valores de uma dificuldade não "vazam" para outra nem para "Configurações"; o tutorial não grava as suas escolhas (Fácil, 1 IA, 30 eras) nas do jogador. |
+| `tests/player-version.test.js` | Sem `?dev=1` não aparece nada de laboratórios/Exportar/"Versão completa"; com `?dev=1` aparece tudo. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. |
 
 **Se o teste de regressão falhar**

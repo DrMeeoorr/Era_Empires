@@ -64,9 +64,11 @@ async function launch() {
  * Abre o jogo num contexto novo (localStorage limpo).
  * opts.contextOptions: opções do Playwright (dispositivo, viewport...).
  * opts.offerTutorial: false (padrão) marca o tutorial como já oferecido, para não abrir o convite.
+ * opts.dev: true abre a versão de desenvolvimento (?dev=1: laboratórios, testes, Exportar). Por padrão abre
+ *   a versão do jogador, que é a publicada.
  * Devolve {context, page, errors}; `errors` acumula erros de consola e exceções da página.
  */
-async function openGame(browser, { contextOptions = {}, offerTutorial = false } = {}) {
+async function openGame(browser, { contextOptions = {}, offerTutorial = false, dev = false } = {}) {
   const context = await browser.newContext({ deviceScaleFactor: 1, ...contextOptions });
   if (!process.env.GAME_URL) await serveRepo(context);
   if (!offerTutorial) {
@@ -83,7 +85,7 @@ async function openGame(browser, { contextOptions = {}, offerTutorial = false } 
   });
   page.on("pageerror", (e) => errors.push("exceção: " + (e.stack || e.message)));
   page.on("requestfailed", (r) => errors.push("pedido falhou: " + r.url()));
-  await page.goto(GAME_URL);
+  await page.goto(dev ? GAME_URL + (GAME_URL.includes("?") ? "&" : "?") + "dev=1" : GAME_URL);
   await page.waitForFunction(() => typeof state !== "undefined" && !!state && typeof runTests === "function");
   return { context, page, errors };
 }
