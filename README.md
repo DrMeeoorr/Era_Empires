@@ -47,7 +47,7 @@ Para uma verificação rápida só das regras (uns 3 segundos): `npm run test:ra
 | `tests/internal.test.js` | Os 140+ testes internos do jogo (`runTests()`, aba "Testes funcionais"). |
 | `tests/rules.test.js` | Regras extra: mapa, economia, ataques, fim de partida, configuração e gravação. |
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
-| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `5917a5c2` (o valor do jogo original). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Para ver o código e os subcódigos: `npm run fingerprint`. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
 | `tests/game-flow.test.js` | Partida curta completa até à tela de resultado, salvar/recarregar e o tutorial do início ao fim. |
