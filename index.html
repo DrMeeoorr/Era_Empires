@@ -1347,9 +1347,18 @@ const PARAM_GROUPS=[
 function renderParams(){
  const groups=PARAM_GROUPS;
  $("params").innerHTML=groups.map(([title,g,items])=>`<h3>${title}</h3><div class="param-grid">${items.map(p=>paramInput(g,...p)).join("")}</div>`).join("");
- document.querySelectorAll("[data-param]").forEach(el=>el.addEventListener("change",()=>{const [g,k]=el.dataset.param.split(".");configEdited[g][k]=el.type==="checkbox"?el.checked:el.type==="number"?Number(el.value):el.value;$("configState").textContent="Edição pendente";}));
+ document.querySelectorAll("[data-param]").forEach(el=>el.addEventListener("change",()=>{const [g,k]=el.dataset.param.split(".");let v;try{v=paramValue(el)}catch(e){el.setAttribute("aria-invalid","true");setStatus("labStatus",e.message,"error");return}el.removeAttribute("aria-invalid");configEdited[g][k]=v;$("configState").textContent="Edição pendente";}));
 }
-function readParams(){document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");configEdited[g][k]=el.type==="checkbox"?el.checked:el.type==="number"?Number(el.value):el.value});return normalizeConfig(configEdited)}
+// Valor de um campo das Configurações. Campo numérico vazio ou inválido é recusado (Number("") seria 0).
+function paramValue(el){
+ if(el.type==="checkbox")return el.checked;
+ if(el.type!=="number")return el.value;
+ const raw=String(el.value).trim(),n=Number(raw);
+ if(raw===""||!Number.isFinite(n)){const [g,k]=el.dataset.param.split("."),grp=PARAM_GROUPS.find(x=>x[1]===g),item=grp&&grp[2].find(x=>x[0]===k);throw Error(`Campo “${item?item[1]:el.dataset.param}” vazio ou inválido: escreva um número. Nada foi alterado.`)}
+ return n;
+}
+// Lê todos os campos; se algum for inválido, lança erro sem alterar configEdited.
+function readParams(){const next=clone(configEdited);document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");next[g][k]=paramValue(el)});const c=normalizeConfig(next);configEdited=next;return c}
 function applyConfig(){
  const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){configApplied=clone(c);state=newGame();selectedTerritory=null;addLog(state,"Partida reiniciada com recálculo explícito.");}
  else configApplied=clone(c);

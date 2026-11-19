@@ -46,17 +46,6 @@ for (const [name, opts] of MOBILE_SCREENS) {
   });
 }
 
-test.todo("BUG: Configurações — campo numérico vazio é aceite como 0 em vez de dar erro", async () => {
-  const { context, page } = await openGame(browser, { contextOptions: MOBILE_SCREENS[0][1], dev: true });
-  await page.locator("#homeLab").click();
-  await page.locator('[data-param="economy.baseIncome"]').fill("");
-  await page.locator("#applyConfig").click();
-  const r = await page.evaluate(() => ({ base: configApplied.economy.baseIncome, status: document.getElementById("labStatus").className }));
-  await context.close();
-  assert.equal(r.base, 22, `campo vazio virou receita base ${r.base} (devia recusar e manter 22)`);
-  assert.match(r.status, /error/);
-});
-
 test.todo("BUG: depois de uma partida terminada, reabrir o jogo perde as definições escolhidas", async () => {
   const { context, page } = await openGame(browser, { contextOptions: MOBILE_SCREENS[0][1] });
   await page.locator("#homeStart").click();
