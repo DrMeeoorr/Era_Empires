@@ -30,3 +30,12 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
 ## Pendências levantadas pelo arquiteto (19/11/2026)
 - Na versão do jogador, a dificuldade padrão deve ser "Médio" e a opção "⚙ Configurações" / "Definido nas Configurações" deve ficar só com `?dev=1` → entra na Fase 1 do `mobile-ux` (já prevista na revisão de UX).
 - Na partida do tutorial, "Reiniciar" e "Jogar de novo" usam as escolhas de antes do tutorial (comportamento atual aceito até nova decisão).
+
+## 19/11/2026 — Textos pt-BR e nomes
+- Textos do jogador em pt-BR com Ouro/Força/Obras/Ciência: implementados (textos do motor convertidos só na exibição, via `uiText()`).
+- Estilos das IAs (nomes vistos pelo jogador): **Equilibrado, Militar, Agressivo, Construtor** (antes Infraestrutura), **Científico** (antes Tecnológico), **Adaptativo** (antes Adaptativa). Aprovado.
+- Rivais — **Opção A "Cores"**: Rubro ▲, Ocre ●, Anil ◆, Violeta ■, Turquesa ✚; o jogador é "Você" ★. O estilo aparece como etiqueta secundária ("▲ Rubro · Adaptativo").
+- Regiões — lista aprovada, em ordem de leitura do mapa 6×4:
+  Arvela, Brumas, Cardo, Dorna, Esmera, Fenda, Gralha, Hélia, Ivara, Jaspe, Lumen, Musgo,
+  Névoa, Ombral, Pedral, Quartzo, Rochedo, Salgar, Torva, Urzal, Vau, Velar, Xisto, Zênite.
+  No mapa: **nome + número pequeno**.
