@@ -361,6 +361,10 @@ function effectiveDelay(type, configuredDelay, mode="slow"){
 }
 const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];
 const $=id=>document.getElementById(id);
+// Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
+const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+// Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.
+const cssColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:"#888888";
 const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-PT",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
 const money=n=>fmt(n,2)+" u.";
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -1046,15 +1050,15 @@ function loadSavedGame(){
   return {config:normalizeConfig(o.config),state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty:DIFFICULTIES[o.difficulty]?o.difficulty:null};
  }catch(e){return null}
 }
-const civLabel=c=>c.id==="player"?"Você":c.name;
+const civLabel=c=>c.id==="player"?"Você":escapeHtml(c.name);
 
 /* ── Barra de estado ── */
 function stat(k,v,f,color=""){return `<div class="stat"><div class="k">${k}</div><div class="v ${color}">${v}</div><div class="f">${f||""}</div></div>`}
 function renderMetrics(){
  const r=state.pending?.revenue?.player||state.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(state),g.territoryPct);
- $("metrics").innerHTML=[stat("Era",`${state.era}<span class="small muted"> / ${state.maxEras}</span>`,`${state.mode==="fast"?"rápido":"lento"} · ${DIFFICULTIES[state.difficulty]?.name||"Médio"}${configApplied.endgame.supremacyEnabled===false?" · Conquista":""}`,"gold"),stat("Orçamento",money(P(state).treasury),"inclui a receita da era","green"),stat("Receita da era",money(r.total),`territórios ${fmt(r.normal,0)} · infra ${fmt(r.infra,0)} · tec ${fmt(r.tech,0)}`,"blue"),stat("Poder militar",fmt(P(state).military,1),"para ataques","gold"),stat("Territórios",`${countTerritories(state,"player")}<span class="small muted"> / ${min}</span>`,countTerritories(state,"player")>=min?"maioria atingida":`faltam ${min-countTerritories(state,"player")}`),(()=>{const lv=liveScores();if(!lv)return stat("Placar","—","calculado no fim da 1.ª era");const me=lv.find(x=>x.id==="player"),pos=lv.indexOf(me)+1,lead=lv[0];
+ $("metrics").innerHTML=[stat("Era",`${escapeHtml(state.era)}<span class="small muted"> / ${escapeHtml(state.maxEras)}</span>`,`${state.mode==="fast"?"rápido":"lento"} · ${DIFFICULTIES[state.difficulty]?.name||"Médio"}${configApplied.endgame.supremacyEnabled===false?" · Conquista":""}`,"gold"),stat("Orçamento",money(P(state).treasury),"inclui a receita da era","green"),stat("Receita da era",money(r.total),`territórios ${fmt(r.normal,0)} · infra ${fmt(r.infra,0)} · tec ${fmt(r.tech,0)}`,"blue"),stat("Poder militar",fmt(P(state).military,1),"para ataques","gold"),stat("Territórios",`${countTerritories(state,"player")}<span class="small muted"> / ${min}</span>`,countTerritories(state,"player")>=min?"maioria atingida":`faltam ${min-countTerritories(state,"player")}`),(()=>{const lv=liveScores();if(!lv)return stat("Placar","—","calculado no fim da 1.ª era");const me=lv.find(x=>x.id==="player"),pos=lv.indexOf(me)+1,lead=lv[0];
   if(!me)return stat("Placar","—","você foi eliminado","red");
-  return stat("Seus pontos",`${PTS(me.score)}<span class="small muted"> · ${pos}.º</span>`,pos===1?(lv[1]?`você lidera por ${PTS(me.score)-PTS(lv[1].score)}`:"você lidera"):`${lead.name} lidera por ${PTS(lead.score)-PTS(me.score)}`,pos===1?"green":"red")})()].join("");
+  return stat("Seus pontos",`${PTS(me.score)}<span class="small muted"> · ${pos}.º</span>`,pos===1?(lv[1]?`você lidera por ${PTS(me.score)-PTS(lv[1].score)}`:"você lidera"):`${escapeHtml(lead.name)} lidera por ${PTS(lead.score)-PTS(me.score)}`,pos===1?"green":"red")})()].join("");
  $("budgetPill").textContent="Orçamento "+money(P(state).treasury);
  $("territoryPill").textContent=`${countTerritories(state,"player")} seus · ${countTerritories(state,"neutral")} livres`;
 }
@@ -1062,9 +1066,9 @@ function renderMetrics(){
 /* ── Mapa e painel do alvo ── */
 function renderMap(){
  const targets=eligibleTargets(state,"player");
- $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${civ.color}55;border-color:${civ.color}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="Território ${i+1}, ${ownerLabel(state,o)}${target?", alvo possível":""}"${style}><span class="num">${String(i+1).padStart(2,"0")}</span><span class="who">${o==="neutral"?"livre":ownerLabel(state,o)}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
- $("mapLegend").innerHTML=`<span><i class="dot" style="background:${P(state).color}"></i>Você</span>`+aiCivs(state).map(c=>`<span><i class="dot" style="background:${c.color}"></i>${c.name} <span class="muted">· ${profileLabel(c)}</span>${c.active?"":" (eliminada)"}</span>`).join("")+`<span><i class="dot" style="background:#64758e"></i>Livre</span><span><i class="dot" style="background:#f4bd50"></i>Pode atacar</span>`;
+ $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
+  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="Território ${i+1}, ${escapeHtml(ownerLabel(state,o))}${target?", alvo possível":""}"${style}><span class="num">${String(i+1).padStart(2,"0")}</span><span class="who">${o==="neutral"?"livre":escapeHtml(ownerLabel(state,o))}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
+ $("mapLegend").innerHTML=`<span><i class="dot" style="background:${cssColor(P(state).color)}"></i>Você</span>`+aiCivs(state).map(c=>`<span><i class="dot" style="background:${cssColor(c.color)}"></i>${escapeHtml(c.name)} <span class="muted">· ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminada)"}</span>`).join("")+`<span><i class="dot" style="background:#64758e"></i>Livre</span><span><i class="dot" style="background:#f4bd50"></i>Pode atacar</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=selectedTerritory===i?null:i;renderMap()}));
  renderAttack();renderEvents();
 }
@@ -1079,11 +1083,11 @@ function renderAttack(){
  const def=territoryDefense(state,t,configApplied),need=m.conquestCost+def,civ=owner==="neutral"?null:getCiv(state,owner);
  const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de fortificações/tecnologia`:""}`:`defesa ${fmt(def,0)}`;
  const ok=mil+1e-9>=need;btn.disabled=!ok;btn.textContent=`Atacar (${fmt(need,1)} pts)`;
- $("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> · ${civ?"de "+civ.name:"livre"} · ${defTxt} + conquista ${fmt(m.conquestCost,0)} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`Tem ${fmt(mil,1)} pontos · 82% de hipótese de vitória; os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-mil,1)} pontos.</span> Invista em Militar: o poder chega na era seguinte.`}`;
+ $("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"} · ${defTxt} + conquista ${fmt(m.conquestCost,0)} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`Tem ${fmt(mil,1)} pontos · 82% de hipótese de vitória; os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-mil,1)} pontos.</span> Invista em Militar: o poder chega na era seguinte.`}`;
 }
 function renderEvents(){
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
- $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">Era ${e.era}</span> · ${e.text}</div>`).join(""):"";
+ $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">Era ${escapeHtml(e.era)}</span> · ${escapeHtml(e.text)}</div>`).join(""):"";
 }
 
 /* ── Investimentos: botões, planos e valores ── */
@@ -1129,11 +1133,11 @@ function renderCharts(){
  const tl=state.timeline;svgLine($("revenueChart"),[{data:chartData("normal"),color:"#62a8ff"},{data:chartData("infra"),color:"#56d6a1"},{data:chartData("tech"),color:"#b49aff"}]);
  const perCiv=key=>state.civs.map((c,k)=>({color:c.chartColor,data:tl.map(e=>({x:e.era,y:e.civs[k]?.[key]||0}))}));
  svgLine($("territoryChart"),perCiv("territories"));svgLine($("militaryChart"),perCiv("military"));
- const legend=state.civs.map(c=>`<span style="--c:${c.chartColor}">${civLabel(c)}</span>`).join("");$("territoryLegend").innerHTML=legend;$("militaryLegend").innerHTML=legend;
+ const legend=state.civs.map(c=>`<span style="--c:${cssColor(c.chartColor)}">${civLabel(c)}</span>`).join("");$("territoryLegend").innerHTML=legend;$("militaryLegend").innerHTML=legend;
 }
 function renderHistory(){
  const h=state.history;$("historyCount").textContent=h.length;
- $("historyTable").innerHTML=h.slice(-150).reverse().map(r=>`<tr><td>${r.era}</td><td>${money(r.total)}</td><td>${money(r.militaryInvested||0)}</td><td>${money(r.infraInvested||0)}</td><td>${money(r.techInvested||0)}</td><td>${money(r.budget)}</td><td>${r.territories}</td><td>${fmt(r.military,1)}</td></tr>`).join("");
+ $("historyTable").innerHTML=h.slice(-150).reverse().map(r=>`<tr><td>${escapeHtml(r.era)}</td><td>${money(r.total)}</td><td>${money(r.militaryInvested||0)}</td><td>${money(r.infraInvested||0)}</td><td>${money(r.techInvested||0)}</td><td>${money(r.budget)}</td><td>${escapeHtml(r.territories)}</td><td>${fmt(r.military,1)}</td></tr>`).join("");
  const last=state.pending?.revenue?.player||h.at(-1),tot=Math.max(1,last?.total||0);
  $("revenueBreakdown").innerHTML=[["Territórios",last?.normal||0,"#62a8ff","blue"],["Infraestrutura",last?.infra||0,"#56d6a1","green"],["Tecnologia",last?.tech||0,"#b49aff","purple"]].map(([n,v,c,cl])=>`<div class="row between" style="margin-top:6px"><span class="muted">${n}</span><strong class="${cl}">${money(v)}</strong></div><div class="bar"><span style="width:${100*v/tot}%;background:${c}"></span></div>`).join("");
 }
@@ -1142,22 +1146,22 @@ function renderForecast(){
  for(let t=1;t<=12;t++){let e=era+t,ir=0,tr=0;for(const inv of state.investments){if(inv.owner!=="player")continue;if(inv.type==="infrastructure")ir+=infraReturn(inv,e-inv.origin);if(inv.type==="technology")tr+=techReturn(state,inv,e)}infra.push(ir);tech.push(tr)}
  $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Poder disponível: ${fmt(P(state).military,1)}. Perde 20% por era se não for usado.</p></div><div class="log-item"><strong class="green">Infraestrutura</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}.</p></div><div class="log-item"><strong class="purple">Tecnologia</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bónus sobre a receita).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
 }
-function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${e.era}</strong> · ${e.text}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
+function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${escapeHtml(e.era)}</strong> · ${escapeHtml(e.text)}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
 
 /* ── Condições de vitória e fim de partida ── */
 function renderVictory(){
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
  $("victoryPill").textContent=s.result?"Partida encerrada":`${left===1?"Última era":`Faltam ${left} eras`}`;
- const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${c}"></span></div>`;
- const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${profileLabel(c)}</span>`:""}${c.active?"":' <span class="red">· eliminada</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
+ const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
+ const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminada</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
  const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
  const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${Math.ceil(g.supremacyMinEraShare*s.maxEras)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
  const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">★</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
  $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3>${terr}
  <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
- <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":getCiv(s,sup.leader)?.name})`:""}. <span class="muted">${statusTxt}</span></div>
- <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; militar, infraestrutura, tecnologia e saldo dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${i===0?'<span class="gold">★</span> ':""}${x.id==="player"?"Você":x.name}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
+ <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(getCiv(s,sup.leader)?.name)})`:""}. <span class="muted">${statusTxt}</span></div>
+ <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; militar, infraestrutura, tecnologia e saldo dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${i===0?'<span class="gold">★</span> ':""}${x.id==="player"?"Você":escapeHtml(x.name)}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }
 const PTS=x=>Math.round(1000*x);   // pontos mostrados ao jogador (1000 = desempenho de referência)
@@ -1169,14 +1173,14 @@ function scoreSeries(){return state.timeline.map(e=>{const rows=e.civs.map(r=>({
 function advantageEra(winnerIdx,series){let lastNotLead=0;series.forEach((row,i)=>{const max=Math.max(...row);if(row[winnerIdx]<max-1e-9)lastNotLead=i+1});return lastNotLead+1}
 function renderResult(){
  const s=state,b=$("resultBanner"),r=s.result;
- if(!r){if(!P(s).active){b.className="notice error";b.innerHTML=`<strong>Você foi eliminado na era ${P(s).eliminatedEra}.</strong> A partida continua entre os rivais; pode concluir as eras para ver o desfecho.`}else{b.className="hidden";b.innerHTML=""}return}
+ if(!r){if(!P(s).active){b.className="notice error";b.innerHTML=`<strong>Você foi eliminado na era ${escapeHtml(P(s).eliminatedEra)}.</strong> A partida continua entre os rivais; pode concluir as eras para ver o desfecho.`}else{b.className="hidden";b.innerHTML=""}return}
  const won=r.type==="victory"&&r.winners[0]==="player",drawn=r.type==="draw"&&r.winners.includes("player");
  const series=scoreSeries(),wIdx=r.type==="victory"?s.civs.findIndex(c=>c.id===r.winners[0]):-1,advEra=wIdx>=0?advantageEra(wIdx,series):null;
- const advTxt=wIdx>=0?(advEra>r.era?"":`${wIdx===0?"Você assumiu":s.civs[wIdx].name+" assumiu"} a liderança da pontuação na era ${advEra} e não a perdeu mais.`):"";
- const scoreTable=r.scores?`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Civilização</th><th>Pontuação</th><th>Militar</th><th>Infra.</th><th>Tecnologia</th><th>Saldo</th><th>Territórios</th></tr></thead><tbody>${[...r.scores].sort((a,b)=>b.score-a.score).map(x=>`<tr><td>${x.id==="player"?"Você":getCiv(s,x.id)?.name}</td><td><strong>${PTS(x.score)}</strong></td>${["military","infrastructure","technology","treasury","territories"].map(d=>`<td>${fmt(100*(x.parts[d]??0),0)}%</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:"";
+ const advTxt=wIdx>=0?(advEra>r.era?"":`${wIdx===0?"Você assumiu":escapeHtml(s.civs[wIdx].name)+" assumiu"} a liderança da pontuação na era ${advEra} e não a perdeu mais.`):"";
+ const scoreTable=r.scores?`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Civilização</th><th>Pontuação</th><th>Militar</th><th>Infra.</th><th>Tecnologia</th><th>Saldo</th><th>Territórios</th></tr></thead><tbody>${[...r.scores].sort((a,b)=>b.score-a.score).map(x=>`<tr><td>${x.id==="player"?"Você":escapeHtml(getCiv(s,x.id)?.name)}</td><td><strong>${PTS(x.score)}</strong></td>${["military","infrastructure","technology","treasury","territories"].map(d=>`<td>${fmt(100*(x.parts[d]??0),0)}%</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:"";
  const legend=s.civs.map(c=>`<span style="--c:${c.chartColor}">${civLabel(c)}</span>`).join("");
  b.className="notice "+(won?"success":drawn?"":"error");
- b.innerHTML=`<strong style="font-size:17px">${won?"🏆 Vitória!":drawn?"🤝 Empate":"Derrota"}</strong> · ${describeResult(s,r).replace("vitória de Jogador","você venceu").replace("Jogador","você")} <span class="pill">${DIFFICULTIES[s.difficulty]?.name||"Médio"}</span>${advTxt?`<div style="margin-top:4px">${advTxt}</div>`:""}<div style="margin-top:4px">Estilos dos rivais: ${aiCivs(s).map(c=>`<strong>${c.name}</strong> — ${profileLabel(c,true)}${c.hiddenProfile?" (sorteado)":""}`).join(" · ")}.</div>
+ b.innerHTML=`<strong style="font-size:17px">${won?"🏆 Vitória!":drawn?"🤝 Empate":"Derrota"}</strong> · ${escapeHtml(describeResult(s,r).replace("vitória de Jogador","você venceu").replace("Jogador","você"))} <span class="pill">${DIFFICULTIES[s.difficulty]?.name||"Médio"}</span>${advTxt?`<div style="margin-top:4px">${advTxt}</div>`:""}<div style="margin-top:4px">Estilos dos rivais: ${aiCivs(s).map(c=>`<strong>${escapeHtml(c.name)}</strong> — ${escapeHtml(profileLabel(c,true))}${c.hiddenProfile?" (sorteado)":""}`).join(" · ")}.</div>
  <div class="grid two" style="margin-top:10px"><section><div class="small muted">Pontuação ao longo da partida${advEra&&advEra<=r.era?" (linha tracejada: início da vantagem)":""}</div><canvas id="endScoreChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section><section><div class="small muted">Territórios por era</div><canvas id="endTerrChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section></div>${scoreTable}
  <div class="actions" style="margin-top:10px"><button id="newGameAfterEnd" class="primary">Jogar de novo (mesmas definições)</button><button id="changeSettingsAfterEnd">Mudar definições</button></div>`;
  svgLine($("endScoreChart"),s.civs.map((c,k)=>({color:c.chartColor,data:series.map((row,i)=>({x:i+1,y:PTS(row[k])}))})),{markX:advEra&&advEra<=r.era?advEra:null});
@@ -1281,7 +1285,7 @@ function scenarioPreset(kind){
  scenarioLoaded={formatVersion:VERSION,name:kind,config:c,initial:newState(c),eras:Number($("scenarioEras").value)||50,strategy:"balanced"};
 }
 function scenarioObject(){return {formatVersion:VERSION,name:$("scenarioName").value||"Meu cenário",config:normalizeConfig(configEdited),initial:newState(normalizeConfig(configEdited)),eras:safeNum($("scenarioEras").value,1,1e7),strategy:"balanced"}}
-function renderScenarioResult(s,name){const r=s.history[s.history.length-1]||{};$("scenarioResult").innerHTML=`<div class="notice success">${name}: ${s.era} eras, saldo ${money(P(s).treasury)}, receita acumulada ${money(r.cumRevenue||0)}, ${s.owners.filter(o=>o==="player").length} territórios e poder militar ${fmt(P(s).military,1)}.</div>`}
+function renderScenarioResult(s,name){const r=s.history[s.history.length-1]||{};$("scenarioResult").innerHTML=`<div class="notice success">${escapeHtml(name)}: ${s.era} eras, saldo ${money(P(s).treasury)}, receita acumulada ${money(r.cumRevenue||0)}, ${s.owners.filter(o=>o==="player").length} territórios e poder militar ${fmt(P(s).military,1)}.</div>`}
 let aiValidationResults=[],balanceLabResults=[];
 const AI_PROFILE_NAMES={adaptive:"Adaptativa",reference:"Equilibrado",military:"Militar",aggressive:"Agressivo",economist:"Infraestrutura",technologist:"Tecnológico",custom:"Personalizada"};
 function profileExpectedWeights(profile,cfg){
@@ -1752,7 +1756,7 @@ function barChart(canvas,labels,series,opts={}){
  const gw=pw/Math.max(1,labels.length),bw=Math.max(2,Math.min(26,(gw-8)/Math.max(1,series.length)));
  labels.forEach((lab,i)=>{const x0=pad.l+gw*i+(gw-bw*series.length)/2;series.forEach((s,k)=>{const v=s.values[i];if(!Number.isFinite(v))return;const bh=ph*clamp(v/max,0,1);ctx.fillStyle=s.color;ctx.fillRect(x0+k*bw,pad.t+ph-bh,bw-1,bh)});ctx.fillStyle="#9fb0c7";const t=String(lab);ctx.fillText(t.length>14?t.slice(0,13)+"…":t,pad.l+gw*i+2,h-pad.b+14)});
 }
-const legendHtml=items=>items.map(([name,color])=>`<span style="--c:${color}">${name}</span>`).join("");
+const legendHtml=items=>items.map(([name,color])=>`<span style="--c:${cssColor(color)}">${escapeHtml(name)}</span>`).join("");
 
 /* ═══════════════ Laboratório 1: testes funcionais ═══════════════ */
 const TEST_CATS=[["ECO","Economia"],["TEC","Tecnologia"],["MIL","Militar e territorial"],["IA","Inteligência artificial"],["SUP","Supremacia"],["TER","Vitória territorial e eliminação"],["PON","Pontuação final"],["END","Encerramento geral"],["INF","Infraestrutura comum e laboratórios"]];
@@ -1813,7 +1817,7 @@ function parseParamValue(def,raw){if(def.type==="boolean")return !!raw;if(def.ty
 function renderExpTable(){
  const cat=paramCatalog(),defs=expState.params.map(id=>cat.find(c=>c.id===id)).filter(Boolean);
  $("expHead").innerHTML=`<th>Cenário</th>${defs.map(d=>`<th>${d.label}<button class="small" data-exp-delparam="${d.id}" title="Remover coluna" style="padding:1px 6px;margin-left:6px">×</button></th>`).join("")}<th></th>`;
- $("expBody").innerHTML=expState.scenarios.map((s,i)=>`<tr><td><span class="dot" style="background:${SCENARIO_COLORS[i%SCENARIO_COLORS.length]}"></span><input data-exp-name="${i}" value="${s.name.replace(/"/g,"&quot;")}" style="width:230px"></td>${defs.map(d=>{const v=s.values[d.id]??getParam(configApplied,d.id);return `<td>${d.type==="boolean"?`<input type="checkbox" data-exp-cell="${i}|${d.id}" ${v?"checked":""}>`:d.type==="string"?`<select data-exp-cell="${i}|${d.id}">${(PARAM_OPTIONS[d.key]||[]).map(([o,t])=>`<option value="${o}" ${o===v?"selected":""}>${t}</option>`).join("")}</select>`:`<input type="number" step="any" data-exp-cell="${i}|${d.id}" value="${v}" style="width:100px">`}</td>`}).join("")}<td class="row" style="flex-wrap:nowrap"><button class="small" data-exp-dup="${i}" style="padding:4px 8px">Duplicar</button><button class="small danger" data-exp-del="${i}" style="padding:4px 8px" ${expState.scenarios.length<2?"disabled":""}>Remover</button></td></tr>`).join("");
+ $("expBody").innerHTML=expState.scenarios.map((s,i)=>`<tr><td><span class="dot" style="background:${SCENARIO_COLORS[i%SCENARIO_COLORS.length]}"></span><input data-exp-name="${i}" value="${escapeHtml(s.name)}" style="width:230px"></td>${defs.map(d=>{const v=s.values[d.id]??getParam(configApplied,d.id);return `<td>${d.type==="boolean"?`<input type="checkbox" data-exp-cell="${i}|${d.id}" ${v?"checked":""}>`:d.type==="string"?`<select data-exp-cell="${i}|${d.id}">${(PARAM_OPTIONS[d.key]||[]).map(([o,t])=>`<option value="${o}" ${o===v?"selected":""}>${t}</option>`).join("")}</select>`:`<input type="number" step="any" data-exp-cell="${i}|${d.id}" value="${v}" style="width:100px">`}</td>`}).join("")}<td class="row" style="flex-wrap:nowrap"><button class="small" data-exp-dup="${i}" style="padding:4px 8px">Duplicar</button><button class="small danger" data-exp-del="${i}" style="padding:4px 8px" ${expState.scenarios.length<2?"disabled":""}>Remover</button></td></tr>`).join("");
  document.querySelectorAll("[data-exp-name]").forEach(el=>el.onchange=()=>{expState.scenarios[+el.dataset.expName].name=el.value||"Cenário"});
  document.querySelectorAll("[data-exp-cell]").forEach(el=>el.onchange=()=>{const [i,id]=el.dataset.expCell.split("|"),d=cat.find(c=>c.id===id);try{expState.scenarios[+i].values[id]=parseParamValue(d,el.type==="checkbox"?el.checked:el.value);setStatus("expStatus","Cenário atualizado.")}catch(e){setStatus("expStatus",e.message,"error")}});
  document.querySelectorAll("[data-exp-dup]").forEach(b=>b.onclick=()=>{const s=expState.scenarios[+b.dataset.expDup];expState.scenarios.splice(+b.dataset.expDup+1,0,{name:s.name+" (cópia)",values:clone(s.values)});renderExpTable()});
@@ -1857,11 +1861,11 @@ function renderExpResults(){
  R.scenarios.forEach(s=>{s.sum=summarizeRecords(s.recs);s.prof=profileStats(s.recs)});
  const pc=v=>fmt(v,1)+"%";
  const head=`<tr><th>Cenário</th><th>Partidas</th>${fixed?"<th>Condição atingida</th>":""}<th>Supremacia</th><th>Territorial</th><th>Eliminação</th>${fixed?"":"<th>Pontuação</th>"}<th>Empates</th>${fixed?"<th>Sem condição</th>":""}<th>${fixed?"Era média da 1ª condição":"Era média"}</th><th>Mediana</th><th>Mín–máx</th><th>% territórios do vencedor</th><th>Era em que alguém atinge o mínimo territorial</th><th>Sequências iniciadas / partida</th><th>Interrompidas</th><th>Relação ICE média</th><th>Recursos não usados</th><th></th></tr>`;
- const rows=R.scenarios.map(s=>{const m=s.sum,ratios=m.ratioMean.filter(v=>v!=null);return `<tr><td><span class="dot" style="background:${s.color}"></span><strong>${s.name}</strong></td><td>${m.games}</td>${fixed?`<td>${pc(100-m.pct("none"))}</td>`:""}<td>${pc(m.pct("supremacy"))}</td><td>${pc(m.pct("territorial"))}</td><td>${pc(m.pct("elimination"))}</td>${fixed?"":`<td>${pc(m.pct("score"))}</td>`}<td>${pc(m.pct("draw"))}</td>${fixed?`<td>${pc(m.pct("none"))}</td>`:""}<td>${fmt(mean(m.endEras),1)}</td><td>${fmt(median(m.endEras),1)}</td><td>${m.endEras.length?`${Math.min(...m.endEras)}–${Math.max(...m.endEras)}`:"—"}</td><td>${m.winnerTerrShare.length?pc(100*mean(m.winnerTerrShare)):"—"}</td><td>${m.thresholdEra.length?`${fmt(mean(m.thresholdEra),1)} (${pc(100*m.thresholdEra.length/m.games)})`:"nunca"}</td><td>${fmt(m.streaksStarted/m.games,2)}</td><td>${m.streaksStarted?pc(100*m.streaksInterrupted/m.streaksStarted):"—"}</td><td>${ratios.length?fmt(mean(ratios),3):"—"}</td><td>${pc(100*mean(m.unusedShare))}</td><td><button class="small" data-exp-apply="${R.scenarios.indexOf(s)}" style="padding:4px 8px" title="Usar os parâmetros deste cenário no jogo e nos laboratórios">Aplicar à configuração</button></td></tr>`}).join("");
- const mentions=R.scenarios.map(s=>`${s.name}: ${Object.entries(s.sum.reasonMentions).filter(([,v])=>v).map(([k,v])=>`${END_REASON_NAMES[k]} ${v}`).join(", ")||"nenhum"}`).join(" · ");
+ const rows=R.scenarios.map(s=>{const m=s.sum,ratios=m.ratioMean.filter(v=>v!=null);return `<tr><td><span class="dot" style="background:${cssColor(s.color)}"></span><strong>${escapeHtml(s.name)}</strong></td><td>${m.games}</td>${fixed?`<td>${pc(100-m.pct("none"))}</td>`:""}<td>${pc(m.pct("supremacy"))}</td><td>${pc(m.pct("territorial"))}</td><td>${pc(m.pct("elimination"))}</td>${fixed?"":`<td>${pc(m.pct("score"))}</td>`}<td>${pc(m.pct("draw"))}</td>${fixed?`<td>${pc(m.pct("none"))}</td>`:""}<td>${fmt(mean(m.endEras),1)}</td><td>${fmt(median(m.endEras),1)}</td><td>${m.endEras.length?`${Math.min(...m.endEras)}–${Math.max(...m.endEras)}`:"—"}</td><td>${m.winnerTerrShare.length?pc(100*mean(m.winnerTerrShare)):"—"}</td><td>${m.thresholdEra.length?`${fmt(mean(m.thresholdEra),1)} (${pc(100*m.thresholdEra.length/m.games)})`:"nunca"}</td><td>${fmt(m.streaksStarted/m.games,2)}</td><td>${m.streaksStarted?pc(100*m.streaksInterrupted/m.streaksStarted):"—"}</td><td>${ratios.length?fmt(mean(ratios),3):"—"}</td><td>${pc(100*mean(m.unusedShare))}</td><td><button class="small" data-exp-apply="${R.scenarios.indexOf(s)}" style="padding:4px 8px" title="Usar os parâmetros deste cenário no jogo e nos laboratórios">Aplicar à configuração</button></td></tr>`}).join("");
+ const mentions=R.scenarios.map(s=>`${escapeHtml(s.name)}: ${Object.entries(s.sum.reasonMentions).filter(([,v])=>v).map(([k,v])=>`${END_REASON_NAMES[k]} ${v}`).join(", ")||"nenhum"}`).join(" · ");
  $("expResults").innerHTML=`<h3>Comparação entre cenários</h3><div class="notice small">${fixed?"<strong>Duração fixa:</strong> as condições não encerram a partida; as colunas mostram a primeira condição de vitória que <em>teria</em> ocorrido.":"Cada partida conta uma vez no seu desfecho (vitórias com vários motivos não são duplicadas)."} Motivos registados, contando todos os motivos dos vencedores: ${mentions}.</div><div class="tablewrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
  document.querySelectorAll("[data-exp-apply]").forEach(b=>b.onclick=()=>applyScenarioToConfig(+b.dataset.expApply));
- const opts=R.scenarios.map((s,i)=>`<option value="${i}">${s.name}</option>`).join("");$("expResScenario").innerHTML=opts;$("expProfScenario").innerHTML=opts;
+ const opts=R.scenarios.map((s,i)=>`<option value="${i}">${escapeHtml(s.name)}</option>`).join("");$("expResScenario").innerHTML=opts;$("expProfScenario").innerHTML=opts;
  $("expResProfile").innerHTML=`<option value="">Todos os perfis</option>`+R.opts.profiles.map(p=>`<option value="${p}">${profileName(p)}</option>`).join("");
  $("expCharts").classList.remove("hidden");renderExpProfileTable();redrawExpCharts();
 }
@@ -1888,7 +1892,7 @@ function redrawExpCharts(){
  const sl=legendHtml(sc.map(s=>[s.name,s.color]));$("expLegendScen1").innerHTML=sl;$("expLegendScen2").innerHTML=sl;
  const s0=sc[+$("expProfScenario").value||0];
  barChart($("expChartProfiles"),s0.prof.map(a=>profileName(a.profile)),[{name:"Taxa de vitória",color:"#f4bd50",values:s0.prof.map(a=>100*a.winRate)},{name:"Empates",color:"#9fb0c7",values:s0.prof.map(a=>100*a.drawRate)},{name:"Pontuação média",color:"#62a8ff",values:s0.prof.map(a=>100*a.meanScore)}]);
- $("expLegendProfiles").innerHTML=legendHtml([["Taxa de vitória (%)","#f4bd50"],["Empates (%)","#9fb0c7"],["Pontuação média (×100)","#62a8ff"]])+` <span class="muted">· ${s0.name}</span>`;
+ $("expLegendProfiles").innerHTML=legendHtml([["Taxa de vitória (%)","#f4bd50"],["Empates (%)","#9fb0c7"],["Pontuação média (×100)","#62a8ff"]])+` <span class="muted">· ${escapeHtml(s0.name)}</span>`;
  const sr=sc[+$("expResScenario").value||0],pf=$("expResProfile").value,stats=profileStats(sr.recs).filter(a=>!pf||a.profile===pf);
  const series=[["military","#f4bd50"],["infrastructure","#56d6a1"],["technology","#b49aff"],["treasury","#62a8ff"],["revenue","#ff737b"]].map(([d,c])=>({color:c,data:eraAxis.map((e,i)=>{let sum=0,n=0;for(const a of stats){const b=a.byEra[i];if(b){sum+=b[d];n+=b.n}}return {x:e,y:n?sum/n:NaN}})}));
  svgLine($("expChartRes"),series);
@@ -1972,7 +1976,7 @@ function renderValidation(){
  const ident=`<h3>Identidade estratégica</h3><div class="tablewrap"><table><thead><tr><th>Perfil</th><th>Comportamento esperado</th><th>Observado</th><th>Estado</th></tr></thead><tbody>${st.map(a=>{const ex=PROFILE_EXPECTATIONS[a.profile];if(!ex)return "";const r=ex.check(a,st);return `<tr><td><strong>${profileName(a.profile)}</strong></td><td>${ex.text}</td><td class="small">${r.detail}</td><td class="${r.ok?"pass":"fail"}">${r.ok?"COERENTE":"VERIFICAR"}</td></tr>`}).join("")}</tbody></table></div>`;
  const diags=profileDiagnostics(st,V.opts);
  const diagHtml=`<h3>Diagnóstico automático</h3><div class="notice ${diags.length?"":"success"}">${diags.length?diags.map(([who,msg])=>`<div>⚠ <strong>${who}</strong>: ${msg}</div>`).join(""):"Nenhum comportamento inadequado detetado pelos critérios implementados."}<div class="small muted" style="margin-top:6px">Os alertas são pistas para investigação; o laboratório não altera regras nem perfis.</div></div>`;
- $("valResults").innerHTML=`<div class="notice success small">Configuração: <strong>${V.source}</strong> · ${V.recs.length} partidas · ${V.opts.civCount} civilizações · modo ${V.opts.mode==="fast"?"rápido":"lento"} · ${V.opts.kind==="auto"?"encerramento automático":"duração fixa"} · mesmas sementes e rotação de perfis para todos.</div>`+diagHtml+ident+table;
+ $("valResults").innerHTML=`<div class="notice success small">Configuração: <strong>${escapeHtml(V.source)}</strong> · ${V.recs.length} partidas · ${V.opts.civCount} civilizações · modo ${V.opts.mode==="fast"?"rápido":"lento"} · ${V.opts.kind==="auto"?"encerramento automático":"duração fixa"} · mesmas sementes e rotação de perfis para todos.</div>`+diagHtml+ident+table;
  $("valChartPick").innerHTML=[["military","Militar (pontos)"],["infrastructure","Receita de infraestrutura"],["technology","Progresso tecnológico"],["treasury","Tesouraria"],["revenue","Receita total"],["territories","Territórios"],["ice","ICE"]].map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
  $("valChartBox").classList.remove("hidden");drawValChart();
 }
@@ -1990,7 +1994,7 @@ function exportValidation(){
  csvDownload("imperios-validacao-estrategica.csv",rows);
 }
 function valConfigSource(){const v=$("valConfig").value;if(v.startsWith("exp:")){const s=expState.results?.scenarios[+v.slice(4)];if(s)return {name:"cenário "+s.name,cfg:s.cfg,mode:s.mode}}return {name:"configuração aplicada",cfg:configApplied,mode:null}}
-function refreshValConfigOptions(){const el=$("valConfig");if(!el)return;const cur=el.value;el.innerHTML='<option value="applied">Configuração aplicada</option>'+(expState.results?.scenarios||[]).map((s,i)=>`<option value="exp:${i}">Cenário: ${s.name}</option>`).join("");if([...el.options].some(o=>o.value===cur))el.value=cur}
+function refreshValConfigOptions(){const el=$("valConfig");if(!el)return;const cur=el.value;el.innerHTML='<option value="applied">Configuração aplicada</option>'+(expState.results?.scenarios||[]).map((s,i)=>`<option value="exp:${i}">Cenário: ${escapeHtml(s.name)}</option>`).join("");if([...el.options].some(o=>o.value===cur))el.value=cur}
 function setupValLab(){
  refreshValConfigOptions();
  profileChecks("valProfiles");$("valCivs").value=1+configApplied.map.aiCount;$("valSeed").value=configApplied.simulation.seed;
@@ -2098,7 +2102,7 @@ init();
   const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
   btn.textContent="Dar ordem";btn.disabled=true;
   if(state.result||!P(state).active){$("mapStatus").textContent=state.result?"A partida terminou.":"Foi eliminado; já não pode atacar.";return}
-  const ordTxt=ords.length?`<span class="gold">⚔ Ordens desta era: ${ords.map(o=>`território ${o.idx+1} (${fmt(o.need,1)} pts${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</span>. `:"";
+  const ordTxt=ords.length?`<span class="gold">⚔ Ordens desta era: ${ords.map(o=>`território ${escapeHtml(o.idx+1)} (${fmt(o.need,1)} pts${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</span>. `:"";
   const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa <strong>×${fmt(next,1)}</strong>.`:" Pode dar várias ordens por era; cada ataque adicional custa mais (2.º ×2, 3.º ×3…).";
   if(t===null){$("mapStatus").innerHTML=`${ordTxt}Toque num território com <span class="gold">contorno dourado</span> para dar uma ordem de ataque. Poder livre: <strong>${fmt(mil,1)}</strong>.${costTxt}`;return}
   if(ord){btn.disabled=false;btn.textContent="Cancelar ordem";$("mapStatus").innerHTML=`Ordem de ataque ao <strong>território ${t+1}</strong>: resolve-se ao concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} pts${ords.length>1?" e recalcula o custo das outras ordens":""}.`;return}
@@ -2108,7 +2112,7 @@ init();
   const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=m.conquestCost+def,need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
   if(!replacing&&ords.length>=maxO){$("mapStatus").innerHTML=`${ordTxt}Já deu o máximo de ${maxO} ordens nesta era.`;return}
   const ok=avail+1e-9>=need;btn.disabled=!ok;btn.textContent=`${replacing?"Trocar ordem":"Dar ordem"} (${fmt(need,1)} pts)`;
-  $("mapStatus").innerHTML=`${ordTxt}<strong>Território ${t+1}</strong> · ${civ?"de "+civ.name:"livre"} · defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`A ordem resolve-se no fim da era: se um rival atacar o mesmo território há <strong>batalha</strong> (vence a maior força: poder militar + tecnologia); depois, 82% de hipótese de conquistar. Os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-avail,1)} pontos.</span>${mult>1?" Ataques adicionais custam mais.":" Invista em Militar: o poder chega na era seguinte."}`}`;
+  $("mapStatus").innerHTML=`${ordTxt}<strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"} · defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`A ordem resolve-se no fim da era: se um rival atacar o mesmo território há <strong>batalha</strong> (vence a maior força: poder militar + tecnologia); depois, 82% de hipótese de conquistar. Os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-avail,1)} pontos.</span>${mult>1?" Ataques adicionais custam mais.":" Invista em Militar: o poder chega na era seguinte."}`}`;
  };
  const _attackClick=$("attack").onclick;
  $("attack").onclick=()=>{
@@ -2127,7 +2131,7 @@ init();
   const ev=state.log.filter(x=>x.era===era&&/conquist|repelid|batalha|ordem de|ataque|eliminad|saque/i.test(x.text)&&!/ordenou/i.test(x.text)).reverse();
   if(!ev.length)return;
   const mine=x=>/você|Você|Jogador|bem-sucedido|malsucedido|Seu/.test(x.text)||/de Jogador|\(de você\)/.test(x.text);
-  showModal(`<h2>Relatório da era ${era}</h2><p class="small muted">As ordens de todos resolveram-se juntas, numa ordem sorteada.</p><div class="report">${ev.map((e,i)=>`<div class="report-line ${mine(e)?"mine":""}" style="animation-delay:${0.25+i*0.45}s">${e.text}</div>`).join("")}</div><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipReport"> Não mostrar relatórios nesta partida</label>`,
+  showModal(`<h2>Relatório da era ${escapeHtml(era)}</h2><p class="small muted">As ordens de todos resolveram-se juntas, numa ordem sorteada.</p><div class="report">${ev.map((e,i)=>`<div class="report-line ${mine(e)?"mine":""}" style="animation-delay:${0.25+i*0.45}s">${escapeHtml(e.text)}</div>`).join("")}</div><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipReport"> Não mostrar relatórios nesta partida</label>`,
    [{label:"Continuar",cls:"primary",onClick:()=>{if($("skipReport")?.checked){state.ui.skipReport=true;saveGame()}}}]);
  }
  window.showEraReport=showEraReport;
@@ -2138,7 +2142,7 @@ init();
   if(!lv){strip.innerHTML=`<span class="muted small">🏆 Placar: aparece no fim da 1.ª era.</span>`;return}
   const top=PTS(lv[0].score),prev=state.timeline.length>1?(()=>{const e=state.timeline.at(-2);const sc=finalScores(e.civs.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied);const m={};e.civs.forEach((r,k)=>m[r.id]=PTS(sc[k].score));return m})():{};
   strip.innerHTML=`<span class="score-title" title="Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; militar, infraestrutura, tecnologia e saldo 15% cada. 1000 pontos = desempenho de referência.">🏆 Placar <span class="muted">(?)</span></span>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
-   return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${x.civ?.chartColor||"#888"}"><span class="pos">${i+1}.º</span> ${x.id==="player"?"Você":x.name} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
+   return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span> ${x.id==="player"?"Você":escapeHtml(x.name)} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
  renderAll();
 })();
 
