@@ -329,7 +329,10 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 </div>
 <script>
 "use strict";
-const VERSION=4, SEED=74291, SUPPORTED_VERSIONS=[3,4];
+// Formato 5: os investimentos já não guardam a lista de retornos por era (inv.returns, nunca lida) e os
+// militares guardam só o atraso (params.delay) em vez de uma cópia de toda a configuração militar.
+// migrateSavedState converte saves dos formatos 3 e 4.
+const VERSION=5, SEED=74291, SUPPORTED_VERSIONS=[3,4,5];
 const DEFAULTS={
  economy:{initialBudget:120,baseIncome:22,incomeGrowth:0,precision:2,carry:true,fastModeReturnMultiplier:1,adminCostPerTerritory:1,aiIncomeMultiplier:1,aiIncomeMultiplier1v1:-1},
  military:{pointsPerInvestment:0.12,delay:1,conquestCost:5,defenseOwned:8,defenseNeutral:3,winCost:1,lossCost:1,aiMilitary:45,aiInfrastructure:30,aiTechnology:25,aiEnabled:true,aiTarget:"neutralFirst",aiStyle:"adaptive",aiAggression:75,aiReserve:0,decayRate:0.2,defensePerInfraRevenue:0.2,defensePerTechProgress:0.15,defenseSplitExponent:0.5,pillageInvestShare:3,pillageRevenueEras:3,simultaneousOrders:true,battleTechWeight:0.5,maxOrdersPerEra:0,extraOrderCostStep:1},
@@ -477,8 +480,9 @@ function releaseMilitaryInvestments(s,era){
 function makeInvestment(type,amount,era,cfg,owner="player",mode="slow"){
  mode=normMode(mode);
  // O multiplicador afeta apenas investimentos feitos no modo rápido; no lento o fator é sempre 1.
- const returnScale=mode==="fast"?cfg.economy.fastModeReturnMultiplier:1, base={id:null,type,owner,origin:era,amount,mode,returns:[],cumReturn:0};
- if(type==="military")return {...base,points:amount*cfg.military.pointsPerInvestment*returnScale,params:clone(cfg.military)};
+ const returnScale=mode==="fast"?cfg.economy.fastModeReturnMultiplier:1, base={id:null,type,owner,origin:era,amount,mode,cumReturn:0};
+ // Militar: das regras só o atraso é lido mais tarde (militaryAvailable); o resto da configuração não é guardado.
+ if(type==="military")return {...base,points:amount*cfg.military.pointsPerInvestment*returnScale,params:{delay:cfg.military.delay}};
  if(type==="infrastructure"){const params=clone(cfg.infrastructure);params.initialReturn*=returnScale;params.residual*=returnScale;return {...base,params};}
  const params=clone(cfg.technology);params.benefitPerProgress*=returnScale;
  return {...base,progress:amount*cfg.technology.progressPerInvestment,params};
@@ -507,7 +511,7 @@ function pillage(s,victimId,owner,cfg){
    else if(inv.type!=="technology")continue;
    // Junta o saque a um investimento do vencedor com a mesma origem para não multiplicar registos.
    const key=inv.type+"|"+inv.origin+"|"+inv.mode;let n=mine.get(key);
-   if(!n){n={...inv,params:{...inv.params},owner,amount:0,returns:[],cumReturn:0,id:s.nextInvestmentId++};if(n.progress!=null)n.progress=0;mine.set(key,n);add.push(n)}
+   if(!n){n={...inv,params:{...inv.params},owner,amount:0,cumReturn:0,id:s.nextInvestmentId++};if(n.progress!=null)n.progress=0;mine.set(key,n);add.push(n)}
    const moved=inv.amount*f;n.amount+=moved;inv.amount-=moved;if(inv.type==="infrastructure")infra+=moved;
    if(inv.progress!=null){const mp=inv.progress*f;n.progress+=mp;inv.progress-=mp;tech+=mp}
   }
@@ -623,8 +627,8 @@ function collectRevenue(s,civ,era,cfg){
  let infra=0,tech=0;const infraBy=[];
  for(const inv of s.investments){
   if(inv.owner!==civ.id)continue;
-  if(inv.type==="infrastructure"){const ret=infraReturn(inv,era-inv.origin);inv.returns.push({era,value:ret});inv.cumReturn+=ret;infra+=ret;if(ret>0)infraBy.push({origin:inv.origin,age:era-inv.origin,value:ret})}
-  else if(inv.type==="technology"){const ret=techReturn(s,inv,era);inv.returns.push({era,value:ret});inv.cumReturn+=ret;tech+=ret}
+  if(inv.type==="infrastructure"){const ret=infraReturn(inv,era-inv.origin);inv.cumReturn+=ret;infra+=ret;if(ret>0)infraBy.push({origin:inv.origin,age:era-inv.origin,value:ret})}
+  else if(inv.type==="technology"){const ret=techReturn(s,inv,era);inv.cumReturn+=ret;tech+=ret}
  }
  if(cfg.technology.maxBenefit>0)tech=Math.min(tech,cfg.technology.maxBenefit);
  // Bônus tecnológico permanente: o progresso já ativo (após o atraso) acrescenta uma percentagem
@@ -1089,13 +1093,24 @@ function validateSavedState(st){
  if(st.tutorial!=null&&!obj(st.tutorial))return "tutorial inválido";
  return null;
 }
+// Converte um estado salvo de formatos antigos (3, 4) para o atual. Não muda nenhum valor usado pelas regras.
+function migrateSavedState(st){
+ if(!st||typeof st!=="object"||!Array.isArray(st.investments))return st;
+ const v=st.formatVersion;if(v!==undefined&&!SUPPORTED_VERSIONS.includes(v))return st;
+ if(v===undefined||v<5){
+  for(const inv of st.investments){if(!inv||typeof inv!=="object")continue;delete inv.returns;
+   if(inv.type==="military"&&inv.params&&typeof inv.params==="object")inv.params={delay:inv.params.delay}}
+  st.formatVersion=5;
+ }
+ return st;
+}
 // Lê o save: {status:"none"} (não há), {status:"ok",game} ou {status:"invalid",raw,reason}.
 function readSavedGame(){
  let raw=null;try{raw=localStorage.getItem(SAVE_KEY)}catch(e){return {status:"none"}}
  if(!raw)return {status:"none"};
  try{const o=JSON.parse(raw);
   if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
-  const why=validateSavedState(o.state);if(why)return {status:"invalid",raw,reason:why};
+  const why=validateSavedState(migrateSavedState(o.state));if(why)return {status:"invalid",raw,reason:why};
   return {status:"ok",game:{config:normalizeConfig(o.config),state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty:DIFFICULTIES[o.difficulty]?o.difficulty:null}};
  }catch(e){return {status:"invalid",raw,reason:e.message||String(e)}}
 }

@@ -95,3 +95,85 @@ test("quando o navegador recusa gravar, o jogador vê um aviso; o aviso some qua
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+/** Converte (dentro da página) um estado atual para o formato antigo v4: returns por era e cópia de cfg.military. */
+function toV4InPage() {
+  window.__toV4 = (s, cfg) => {
+    const o = JSON.parse(JSON.stringify(s));
+    o.formatVersion = 4;
+    for (const inv of o.investments) {
+      inv.returns = Array.from({ length: Math.max(0, o.era - inv.origin) }, (_, k) => ({ era: inv.origin + k + 1, value: 0.5 }));
+      if (inv.type === "military") inv.params = { ...JSON.parse(JSON.stringify(cfg.military)), delay: inv.params.delay };
+    }
+    return o;
+  };
+}
+
+test("formato 5: investimentos sem 'returns' e militares só com o atraso; tamanho do save controlado", async () => {
+  const { context, page } = await openGame(browser);
+  const r = await page.evaluate(() => {
+    const c = clone(DEFAULTS); c.map.aiCount = 5; c.endgame.maxEras = 150;
+    const s = newState(c, { mode: "slow", endRules: false });
+    for (let i = 0; i < 150; i++) processEra(s, c, { autoStrategy: "balanced" });
+    const mil = s.investments.filter((i) => i.type === "military");
+    return {
+      v: s.formatVersion, anyReturns: s.investments.some((i) => "returns" in i),
+      milKeys: [...new Set(mil.map((i) => Object.keys(i.params).join(",")))],
+      kb: JSON.stringify({ v: 1, savedAt: 0, gameMode: "slow", config: c, state: s, opponentChoices, difficulty: "medio" }).length / 1024,
+    };
+  });
+  await context.close();
+  assert.equal(r.v, 5);
+  assert.equal(r.anyReturns, false);
+  assert.deepEqual(r.milKeys, ["delay"]);
+  // Antes (formato 4) eram ~6300 KB, acima do limite típico de 5 MB do localStorage.
+  assert.ok(r.kb < 2500, `save de 150 eras com 5 IAs tem ${Math.round(r.kb)} KB`);
+});
+
+test("migração: save antigo (v4) abre, é convertido e a partida continua exatamente igual", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.evaluate(toV4InPage);
+  const r = await page.evaluate(() => {
+    gameMode = "slow"; configApplied = clone(DEFAULTS); configApplied.map.aiCount = 2; state = newGame();
+    for (let i = 0; i < 6; i++) playEra({ military: 12, infrastructure: 10, technology: 8 });
+    const now = JSON.parse(JSON.stringify(state)), old = __toV4(state, configApplied);
+    // Continua a mesma partida a partir das duas versões e compara.
+    const cont = (s0) => { state = JSON.parse(JSON.stringify(s0)); migrateSavedState(state); for (let i = 0; i < 8; i++) playEra({ military: 9, infrastructure: 9, technology: 9 }); return JSON.stringify({ t: state.timeline, h: state.history, c: state.civs, o: state.owners, inv: state.investments }); };
+    const same = cont(now) === cont(old);
+    const migrated = migrateSavedState(JSON.parse(JSON.stringify(old)));
+    return { same, equalAfterMigration: JSON.stringify(migrated) === JSON.stringify(now), old, era: now.era };
+  });
+  assert.ok(r.same, "continuar a partida a partir do save v4 deu resultado diferente");
+  assert.ok(r.equalAfterMigration, "o save v4 migrado devia ficar igual ao estado no formato atual");
+  // Pela interface: grava o save v4, recarrega e continua.
+  await page.evaluate(([k, st]) => localStorage.setItem(k, JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: st, opponentChoices, difficulty: "medio" })), [KEYS.save, r.old]);
+  await page.reload();
+  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  const cont = page.locator("#homeContinue");
+  await cont.waitFor({ state: "visible" });
+  assert.match(await cont.innerText(), new RegExp(`era ${r.era}`));
+  const st = await page.evaluate(() => ({ v: state.formatVersion, ret: state.investments.some((i) => "returns" in i), era: state.era }));
+  assert.deepEqual(st, { v: 5, ret: false, era: r.era });
+  await cont.click();
+  await page.evaluate(() => { state.ui.skipReport = true; });
+  await page.locator('[data-plan="balanced"]').click();
+  await page.locator("#advance").click();
+  await page.waitForFunction((e) => state.era === e + 1, r.era);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("migração: saves v3 também são aceites; versões desconhecidas não", async () => {
+  const { context, page } = await openGame(browser);
+  await page.evaluate(toV4InPage);
+  const r = await page.evaluate(() => {
+    configApplied = clone(DEFAULTS); state = newGame(); playEra({ military: 5, infrastructure: 5, technology: 5 });
+    const v3 = __toV4(state, configApplied); v3.formatVersion = 3;
+    const v9 = __toV4(state, configApplied); v9.formatVersion = 9;
+    return { v3: validateSavedState(migrateSavedState(v3)), v3ver: v3.formatVersion, v9: validateSavedState(migrateSavedState(v9)) };
+  });
+  await context.close();
+  assert.equal(r.v3, null);
+  assert.equal(r.v3ver, 5);
+  assert.match(r.v9, /versão/);
+});
