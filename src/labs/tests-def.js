@@ -1,5 +1,5 @@
 // Testes funcionais internos (os 140+ testes de runTests) e a sua execução, sem tocar na tela.
-// Correm no navegador (aba "Testes funcionais", ?dev=1) e no Node (tests/internal-node.test.js).
+// Correm no navegador (aba "Testes funcionais" do dev.html) e no Node (tests/internal-node.test.js).
 import {aiDecide} from "../ai/decide.js";
 import {LAB_PROFILES} from "../ai/profiles.js";
 import {setGameMode,gameMode,setConfigApplied,configApplied,state,applyDifficulty} from "../app/session.js";

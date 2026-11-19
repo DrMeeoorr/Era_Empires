@@ -31,8 +31,6 @@ test("localStorage só é usado pelo módulo de armazenamento (storage)", () => 
   for (const rel of codeFiles()) {
     let src = stripComments(read(rel));
     if (rel === "src/platform/storage.js") continue;
-    // Enquanto o armazenamento estiver dentro do index.html: só o bloco `const storage={...};`.
-    src = src.replace(/const storage=\{[\s\S]*?\n\};/, "");
     const n = (src.match(/\blocalStorage\b/g) || []).length;
     if (n) offenders.push(`${rel}: ${n}×`);
   }
@@ -92,4 +90,47 @@ test("a interface do jogo (src/ui), a sessão (src/app) e a plataforma não depe
   for (const rel of codeFiles().filter((f) => /^src\/(ui|app|platform)\//.test(f)))
     for (const t of importsOf(rel)) if (t.startsWith("src/labs/") || t === "src/legacy.js" || t.startsWith("src/main-")) offenders.push(`${rel} importa ${t}`);
   assert.deepEqual(offenders, []);
+});
+
+// ── Versão do jogador (index.html) e de desenvolvimento (dev.html) ──
+
+test("index.html é exatamente o gerado a partir de dev.html (npm run build:jogador)", () => {
+  const { buildPlayerHtml } = require("../tools/build-player-html.js");
+  const expected = buildPlayerHtml(read("dev.html"));
+  assert.ok(read("index.html") === expected, "index.html desatualizado: edite dev.html e rode `npm run build:jogador`");
+  assert.ok(!/dev-only|labs\.css|main-dev\.js/.test(expected));
+});
+
+/** Todos os módulos importados (estática ou dinamicamente) a partir de `entry`, com o caminho de cada um. */
+function moduleGraph(entry, { dynamic = true } = {}) {
+  const seen = new Map([[entry, [entry]]]), queue = [entry];
+  while (queue.length) {
+    const f = queue.shift();
+    const src = stripComments(read(f));
+    const specs = [...src.matchAll(/(?:^|[\s;])(?:import|export)\s[^"'`]*?from\s*["']([^"']+)["']|^\s*import\s*["']([^"']+)["']/gm)].map((m) => m[1] || m[2]);
+    if (dynamic) specs.push(...[...src.matchAll(/import\s*\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1]));
+    for (const s of specs) {
+      const t = path.posix.normalize(path.posix.join(path.posix.dirname(f), s));
+      if (!seen.has(t)) { seen.set(t, [...seen.get(f), t]); queue.push(t); }
+    }
+  }
+  return seen;
+}
+
+test("o código do jogador (src/main-player.js) não inclui nada de src/labs/", () => {
+  // Inclui o src/debug-player.js (só carregado pelos testes automáticos).
+  const g = moduleGraph("src/main-player.js");
+  const bad = [...g].filter(([f]) => f.startsWith("src/labs/") || f === "src/debug-dev.js" || f === "src/main-dev.js").map(([, chain]) => chain.join(" → "));
+  assert.deepEqual(bad, []);
+  assert.ok(g.has("src/ui/game.js") && g.has("src/core/era.js"));
+});
+
+test("as variáveis de depuração (src/debug-dev.js / debug-player.js) cobrem todos os módulos", () => {
+  const SKIP = new Set(["src/core/index.js", "src/ai/index.js", "src/app/debug.js", "src/ui/boot.js", "src/main-player.js", "src/main-dev.js", "src/debug-player.js", "src/debug-dev.js"]);
+  const all = codeFiles().filter((f) => f.startsWith("src/") && !SKIP.has(f));
+  const direct = (f) => new Set(importsOf(f));
+  const dev = direct("src/debug-dev.js"), player = direct("src/debug-player.js");
+  assert.deepEqual(all.filter((f) => !dev.has(f)), [], "faltam em src/debug-dev.js");
+  assert.deepEqual(all.filter((f) => !f.startsWith("src/labs/") && !player.has(f)), [], "faltam em src/debug-player.js");
+  assert.deepEqual([...player].filter((f) => f.startsWith("src/labs/")), [], "src/debug-player.js não pode importar os laboratórios");
 });

@@ -1,6 +1,6 @@
-// Versões reforçadas de testes internos fracos de defineTests() (index.html).
+// Versões reforçadas de testes internos fracos de defineTests() (src/labs/tests-def.js).
 // Os testes internos continuam a correr em internal.test.js; estes NÃO os substituem ainda.
-// Quando index.html puder ser editado, os internos devem ser trocados por estas versões
+// Os internos devem ser trocados por estas versões
 // (lista em tests/README.md, secção "Testes internos a trocar").
 "use strict";
 const { test, before, after } = require("node:test");
@@ -11,7 +11,8 @@ const PIXEL = MOBILE_SCREENS[0][1];
 let browser, ctx;
 before(async () => {
   browser = await launch();
-  ctx = await openGame(browser);
+  // Os casos de regras usam o motor dos laboratórios (runGame), que só existe na versão de desenvolvimento.
+  ctx = await openGame(browser, { dev: true });
 });
 after(async () => browser && browser.close());
 

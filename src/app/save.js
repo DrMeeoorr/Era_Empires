@@ -5,8 +5,24 @@ import {gameMode,configApplied,state,opponentChoices,currentDifficulty,aiConfigB
 import {SUPPORTED_VERSIONS,MAX_AI,normalizeConfig,DIFFICULTIES,validAiBase,pickAiDifficulty,DEFAULTS} from "../core/config.js";
 import {storage} from "../platform/storage.js";
 
-/* ── Guardar a partida no navegador ── */
-export const SAVE_KEY="imperios-completo-partida", SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";
+/* ── Guardar a partida no aparelho ──
+   Cada versão tem a sua chave: a do jogador (index.html) e a de desenvolvimento (dev.html), para os testes e os
+   laboratórios nunca estragarem a partida do jogador. A chave antiga (LEGACY_SAVE_KEY), partilhada pelas duas
+   versões antes da separação, é movida para a do jogador ao abrir a versão do jogador (migrateLegacySaveKey). */
+export const SAVE_KEYS={player:"imperios-jogador-partida",dev:"imperios-dev-partida"},LEGACY_SAVE_KEY="imperios-completo-partida";
+export let SAVE_KEY=SAVE_KEYS.player;
+export let SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";
+// Escolhe a chave da versão ("player" ou "dev"); chamada no arranque, antes de ler o save.
+export function useSaveSlot(slot){SAVE_KEY=SAVE_KEYS[slot]||SAVE_KEYS.player;SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";return SAVE_KEY}
+// Partida guardada na chave antiga e ainda nada na nova: copia-a para a nova e só depois apaga a antiga.
+// Devolve true se moveu. Se a cópia falhar, a chave antiga fica como estava (nada se perde).
+export async function migrateLegacySaveKey(){
+ try{
+  if(await storage.get(SAVE_KEY)!==null)return false;
+  const old=await storage.get(LEGACY_SAVE_KEY);if(old===null)return false;
+  await storage.set(SAVE_KEY,old);await storage.remove(LEGACY_SAVE_KEY);return true;
+ }catch(e){return false}
+}
 // Grava a partida. Se o navegador recusar (espaço cheio, armazenamento bloqueado), avisa o jogador
 // com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
 // Devolve uma promessa: true se gravou, false se falhou (o aviso já foi mostrado).

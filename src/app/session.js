@@ -18,9 +18,10 @@ export let selectedTerritory=null;
 // Modo escolhido na interface para a PRÓXIMA partida. O motor nunca lê esta variável:
 // cada estado guarda o seu próprio modo (state.mode) e cada investimento guarda inv.mode.
 export let gameMode="slow";
-// true com ?dev=1: mostra laboratórios, testes e exportação (ver o <script> no <head>).
+// true na versão de desenvolvimento (dev.html): laboratórios, testes e exportação. O index.html (jogador)
+// tem <html class="player-build">; o dev.html não. Sem DOM (Node) é false, como no jogador.
 export const DEV_MODE=typeof document!=="undefined"&&!document.documentElement.classList.contains("player-build");
-// Versão do jogador: começa no "Médio"; "Configurações" (valores dos laboratórios) só existe com ?dev=1.
+// Versão do jogador: começa no "Médio"; "Configurações" (valores dos laboratórios) só existe no dev.html.
 // Saves antigos com dificuldade "config" continuam a abrir e a jogar normalmente.
 export const DEFAULT_DIFFICULTY=DEV_MODE?"config":"medio";
 export let currentDifficulty=DEFAULT_DIFFICULTY;
@@ -36,7 +37,7 @@ export const OPPONENT_OPTIONS=[["random","🎲 Aleatório (revelado no fim)"],["
 // Na versão do jogador o padrão é "Adaptativa" (o mesmo estilo que "Definido nas Configurações" usa por padrão).
 export const DEFAULT_OPPONENT=DEV_MODE?"config":"adaptive";
 export let opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];
-// Opções mostradas ao jogador: sem "Definido nas Configurações" fora do ?dev=1.
+// Opções mostradas ao jogador: sem "Definido nas Configurações" fora do dev.html.
 export const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
 export function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}

@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, assertClickable, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, menuClick } = require("./helpers");
+const { launch, openGame, assertClickable, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, menuClick, KEYS, GAME_URL, DEV_URL } = require("./helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
 const DEV_ONLY = [
@@ -90,11 +90,11 @@ test("versão do jogador: dificuldade padrão Médio, sem '⚙ Configurações' 
 
 test("versão do jogador: save antigo com dificuldade 'config' e rivais 'config' abre e continua sem erro", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
-  await page.evaluate(() => {
+  await page.evaluate((key) => {
     configApplied = clone(DEFAULTS); configApplied.map.aiCount = 2; currentDifficulty = "config";
     const s = newGame(); s.difficulty = "config";
-    localStorage.setItem("imperios-completo-partida", JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: s, opponentChoices: ["config", "config", "config"], difficulty: "config", aiBase: pickAiDifficulty(DEFAULTS) }));
-  });
+    localStorage.setItem(key, JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: s, opponentChoices: ["config", "config", "config"], difficulty: "config", aiBase: pickAiDifficulty(DEFAULTS) }));
+  }, KEYS.save);
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   assert.equal(await page.evaluate(() => currentDifficulty), "config", "a partida salva perdeu a dificuldade");
@@ -108,6 +108,70 @@ test("versão do jogador: save antigo com dificuldade 'config' e rivais 'config'
   await page.locator("#homeStart").click();
   assert.equal(await page.locator('#homeDifficulty [data-diff].selected').getAttribute("data-diff"), "medio");
   assert.equal(await page.locator('#homeProfiles select').first().inputValue(), "adaptive");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+// ── Duas páginas: index.html (jogador) e dev.html (desenvolvimento) ──
+
+test("versão do jogador não baixa os laboratórios: nada de src/labs/, labs.css nem do HTML das abas", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  const urls = await page.evaluate(() => performance.getEntriesByType("resource").map((e) => e.name));
+  const own = urls.filter((u) => /\/(src|styles)\//.test(u)).map((u) => new URL(u).pathname);
+  assert.ok(own.some((u) => u.endsWith("/src/main-player.js")), "main-player.js não foi carregado: " + own.join(", "));
+  assert.deepEqual(own.filter((u) => /\/src\/labs\/|labs\.css|main-dev|debug-dev/.test(u)), [], "o jogador baixou código dos laboratórios");
+  assert.equal(await page.evaluate(() => typeof runTests), "undefined", "runTests existe na versão do jogador");
+  for (const sel of [".tabs", "#lab", "#tests", "#balanceLab", "#aiLab", ".footer", "#exportHistory", "#homeCompare", "#homeLab", ".eyebrow", '[data-diff="config"]'])
+    assert.equal(await page.locator(sel).count(), 0, `${sel} existe no HTML do jogador`);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("index.html?dev=1 (links antigos) abre dev.html, a versão de desenvolvimento", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.goto(GAME_URL + (GAME_URL.includes("?") ? "&" : "?") + "dev=1#x");
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
+  const u = new URL(page.url());
+  assert.ok(u.pathname.endsWith("/dev.html"), "não foi para dev.html: " + page.url());
+  assert.equal(u.search, "", "o ?dev=1 devia sair do endereço");
+  assert.equal(u.hash, "#x");
+  assert.equal(await page.evaluate(() => DEV_MODE), true);
+  assert.equal(await page.evaluate(() => typeof runTests), "function");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("saves: a partida da chave antiga passa para a do jogador; jogador e dev guardam em chaves separadas", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  // Partida antiga (antes da separação) na era 4, guardada na chave antiga.
+  const old = await page.evaluate(() => {
+    configApplied = clone(DEFAULTS); configApplied.map.aiCount = 2;
+    const s = newGame(); for (let i = 0; i < 3; i++) { finishEra(s, configApplied, { playerAllocation: { military: 5, infrastructure: 5, technology: 5 } }); beginEra(s, configApplied); }
+    return JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: s, opponentChoices: ["adaptive", "adaptive"], difficulty: "medio" });
+  });
+  await page.evaluate(([k, l, v]) => { localStorage.removeItem(k); localStorage.setItem(l, v); }, [KEYS.save, KEYS.legacySave, old]);
+  await page.reload();
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
+  assert.equal(await page.evaluate(() => state.era), 4, "a partida antiga não foi retomada");
+  const keys = await page.evaluate((k) => ({ player: localStorage.getItem(k.save), legacy: localStorage.getItem(k.legacySave), dev: localStorage.getItem(k.saveDev) }), KEYS);
+  assert.equal(keys.player, old, "a partida não foi copiada para a chave do jogador");
+  assert.equal(keys.legacy, null, "a chave antiga devia sair depois de copiada");
+  assert.equal(keys.dev, null);
+  assert.match(await page.locator("#homeContinue").innerText(), /era 4/);
+  // A versão de desenvolvimento (mesma origem) começa a sua própria partida e não mexe na do jogador.
+  await page.goto(DEV_URL);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
+  assert.equal(await page.evaluate(() => state.era), 1, "dev.html abriu a partida do jogador");
+  await page.evaluate(async () => { for (let i = 0; i < 2; i++) playEra({ military: 1, infrastructure: 1, technology: 1 }); await saveGame(); });
+  const after = await page.evaluate((k) => ({ player: localStorage.getItem(k.save), dev: localStorage.getItem(k.saveDev) }), KEYS);
+  assert.equal(after.player, old, "dev.html alterou a partida do jogador");
+  assert.equal(JSON.parse(after.dev).state.era, 3);
+  // Se já há partida na chave nova, a antiga não a substitui.
+  await page.goto(GAME_URL);
+  await page.evaluate(([l]) => localStorage.setItem(l, "{lixo"), [KEYS.legacySave]);
+  await page.reload();
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
+  assert.equal(await page.evaluate(() => state.era), 4);
   assert.deepEqual(errors, []);
   await context.close();
 });

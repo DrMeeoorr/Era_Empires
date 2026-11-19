@@ -14,12 +14,28 @@ ao atualizar o Playwright do ambiente de desenvolvimento, atualize-a também (`n
 No CI (`CI=true`) o teste de desempenho usa um limite de 600 ms em vez de 200 ms
 (ajustável com `PERF_BUDGET_MS`). Quando falha, `tests/artifacts/` é enviado como artefato.
 
-## Testes internos a trocar (próxima rodada, em `defineTests()` do `index.html`)
+## Como os testes chegam às funções do jogo
+
+O jogo é feito de módulos ES (`src/`), que não criam variáveis globais. Para os testes continuarem a escrever
+`state`, `newGame()`, `runTests()`… dentro de `page.evaluate`, o `openGame()` de `helpers.js` define
+`window.__IMPERIOS_TEST__ = true` antes de a página abrir; o jogo então expõe as exportações de todos os módulos
+como variáveis globais (e em `window.__imperios`) — ver `src/app/debug.js`. Escrever numa delas (ex.:
+`state = newGame()`) chama a função `set…` do módulo dono (`setState`). Fora dos testes isso só acontece no
+`dev.html`.
+
+- `openGame(browser)` abre a versão do **jogador** (`index.html`): não tem `runTests()` nem os laboratórios.
+- `openGame(browser, { dev: true })` abre a versão de **desenvolvimento** (`dev.html`): tudo, incluindo
+  `runTests()`, `runGame()` e as abas. Os testes de regras que usam o motor dos laboratórios usam esta.
+- Espere sempre por `window.__imperiosReady === true` depois de `page.reload()` (o arranque é assíncrono, porque
+  o save é lido do armazenamento assíncrono).
+- Chaves do save: `KEYS.save` (jogador), `KEYS.saveDev` (dev) e `KEYS.legacySave` (chave antiga, migrada).
+- `saveGame()` e `loadSavedGame()` devolvem promessas (use `await`).
+
+## Testes internos a trocar (próxima rodada, em `defineTests()` de `src/labs/tests-def.js`)
 
 `tests/reinforced.test.js` tem versões reforçadas destes testes internos. Os internos continuam a
-correr (não foram desativados); quando o `index.html` puder ser editado, trocar cada um pela versão
-reforçada (ou portá-la para dentro de `defineTests()`), mantendo o mesmo nome/categoria em
-`TEST_CAT_BY_NAME`:
+correr (não foram desativados); trocar cada um pela versão reforçada (ou portá-la para dentro de
+`defineTests()`, hoje em `src/labs/tests-def.js`), mantendo o mesmo nome/categoria em `TEST_CAT_BY_NAME`:
 
 | Teste interno (nome exato) | Problema | Versão reforçada |
 | --- | --- | --- |

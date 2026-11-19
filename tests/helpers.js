@@ -34,11 +34,16 @@ async function serveRepo(context) {
 }
 const SHOTS_DIR = path.join(__dirname, "artifacts");
 
-// Chaves de localStorage usadas pelo jogo.
+// Chaves de localStorage usadas pelo jogo. Cada versão guarda a partida na sua chave (src/app/save.js);
+// a chave antiga (antes da separação jogador/dev) é movida para a do jogador ao abrir index.html.
 const KEYS = {
-  save: "imperios-completo-partida",
+  save: "imperios-jogador-partida",
+  saveDev: "imperios-dev-partida",
+  legacySave: "imperios-completo-partida",
   tutorialOffered: "imperios-tutorial-oferecido",
 };
+// Versão de desenvolvimento: dev.html ao lado do index.html (index.html?dev=1 redireciona para lá).
+const DEV_URL = GAME_URL.replace(/index\.html(?=$|[?#])/, "dev.html");
 
 // Telas de celular exigidas. deviceScaleFactor 1: capturas leves (só para verificação).
 const MOBILE_SCREENS = [
@@ -64,8 +69,8 @@ async function launch() {
  * Abre o jogo num contexto novo (localStorage limpo).
  * opts.contextOptions: opções do Playwright (dispositivo, viewport...).
  * opts.offerTutorial: false (padrão) marca o tutorial como já oferecido, para não abrir o convite.
- * opts.dev: true abre a versão de desenvolvimento (?dev=1: laboratórios, testes, Exportar). Por padrão abre
- *   a versão do jogador, que é a publicada.
+ * opts.dev: true abre a versão de desenvolvimento (dev.html: laboratórios, testes internos, Exportar). Por padrão
+ *   abre a versão do jogador (index.html), que é a publicada; nela não há runTests() nem os laboratórios.
  * Devolve {context, page, errors}; `errors` acumula erros de consola e exceções da página.
  */
 async function openGame(browser, { contextOptions = {}, offerTutorial = false, dev = false } = {}) {
@@ -88,8 +93,8 @@ async function openGame(browser, { contextOptions = {}, offerTutorial = false, d
   });
   page.on("pageerror", (e) => errors.push("exceção: " + (e.stack || e.message)));
   page.on("requestfailed", (r) => errors.push("pedido falhou: " + r.url()));
-  await page.goto(dev ? GAME_URL + (GAME_URL.includes("?") ? "&" : "?") + "dev=1" : GAME_URL);
-  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state && typeof runTests === "function");
+  await page.goto(dev ? DEV_URL : GAME_URL);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   return { context, page, errors };
 }
 
@@ -178,6 +183,6 @@ async function screenshot(page, name) {
 }
 
 module.exports = {
-  playwright, chromium, devices, ROOT, GAME_URL, KEYS, MOBILE_SCREENS, SHOTS_DIR,
+  playwright, chromium, devices, ROOT, GAME_URL, DEV_URL, KEYS, MOBILE_SCREENS, SHOTS_DIR,
   launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, menuClick, choosePlan,
 };

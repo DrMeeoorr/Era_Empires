@@ -10,7 +10,8 @@ const MIN_INTERNAL_TESTS = 140;
 let browser, ctx;
 before(async () => {
   browser = await launch();
-  ctx = await openGame(browser);
+  // Os testes internos (runTests) fazem parte dos laboratórios: só existem na versão de desenvolvimento (dev.html).
+  ctx = await openGame(browser, { dev: true });
 });
 after(async () => browser && browser.close());
 

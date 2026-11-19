@@ -56,8 +56,6 @@ export function initHome(){
  };
  const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
- $("homeCompare").onclick=()=>openTab("balanceLab");
- $("homeLab").onclick=()=>openTab("lab");
  $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0;runHook("returnHome")};
  sync();
 }
