@@ -84,7 +84,7 @@ async function playTutorial(page, { stopBefore = Infinity, onStep = async () => 
   await onStep(9);
   const atk = await page.evaluate(() => ({ idx: state.tutorial.attackIdx, owner: state.owners[state.tutorial.attackIdx], text: document.getElementById("tutBox").innerText }));
   assert.equal(atk.owner, "player", "o ataque roteirizado do tutorial tomou um território do jogador");
-  assert.match(atk.text, /foi repelida|Os rivais também atacam/);
+  assert.match(atk.text, /foi repelid[oa]|Os rivais também atacam/);
   await next();
   await waitStep(page, 10);
   await onStep(10);

@@ -133,6 +133,20 @@ details.card summary{min-height:48px}
 .tut-box.more .tut-text{-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
 .tut-cta{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(244,189,80,.12);border-left:3px solid #f4bd50;font-size:14px;line-height:1.4}
 @media (max-width:640px){.tut-box{padding:10px 12px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}.tut-box h3{font-size:16px;margin:4px 0}.tut-text{font-size:13.5px;line-height:1.45}.tut-actions{margin-top:8px}}
+/* ===== Nomes: regiões no mapa (nome + número pequeno) e símbolos dos rivais ===== */
+.map{container-type:inline-size}
+.territory{gap:2px;min-width:0}
+/* Fonte proporcional à largura do quadrado (1/6 do mapa): o nome mais largo (7 letras) cabe até em 320 px. */
+.territory{padding-left:1px;padding-right:1px}
+.territory .rname{font-weight:750;font-size:clamp(8.5px,calc(3.83cqi - 1.84px),14px);line-height:1.15;white-space:nowrap;max-width:100%;letter-spacing:-.02em}
+.territory .who{display:flex;gap:4px;align-items:baseline;justify-content:center;line-height:1.1;overflow:visible}
+.territory .tnum{font-size:clamp(9px,1.95cqi,11.5px);color:#b3c1d4;font-variant-numeric:tabular-nums}
+.territory .csym{font-size:clamp(11px,2.7cqi,15px);color:#fff}
+.csym{font-weight:700}
+/* Livre e "Pode atacar" na legenda: quadrado como no mapa (o círculo ● é o símbolo do Ocre). */
+.dot.sq{border-radius:2px;width:10px;height:10px;vertical-align:-1px;box-sizing:border-box}
+/* Sobre fundos coloridos (resultado) e nas legendas dos gráficos (cor própria), o símbolo usa a cor do texto. */
+.notice .csym,.chart-legend .csym{color:inherit!important}
 </style>
 </head>
 <body>
@@ -188,7 +202,7 @@ details.card summary{min-height:48px}
         </div>
         <div class="home-settings">
           <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip selected" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button><button type="button" class="chip dev-only" data-diff="config">⚙ Configurações</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
-          <div><label>Rivais (IA)</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de rivais"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
+          <div><label>Rivais</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de rivais"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
           <div><label>Estilo de cada rival</label><div id="homeProfiles" class="profile-rows"></div></div>
           <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:48px" aria-label="Limite de eras"></div></div>
           <div><label>Vitória</label><div class="chips" id="homeVictoryMode" role="group" aria-label="Modo de vitória"><button type="button" class="chip selected" id="homeClassic" aria-pressed="true">Clássico</button><button type="button" class="chip" id="homeConquest" aria-pressed="false">⚔ Conquista</button></div><div class="small muted" id="homeVictoryDesc" style="margin-top:4px"></div></div>
@@ -401,8 +415,20 @@ const DEFAULTS={
   scoreCapMilitary:1.5,scoreCapInfrastructure:1.5,scoreCapTechnology:1.5,scoreCapTreasury:1.5,scoreCapTerritory:1.5,scoreTieMargin:0.01,extendForSupremacy:false}
 };
 const MAX_AI=5, MAP_COLS=6;
-const CIV_COLORS=["#2c9d87","#bd5268","#c98a2e","#5b7fd6","#9a5cc4","#3fa3a8"];
+// Rival 5 (Turquesa): azul-turquesa mais claro e mais azul que o verde-jade do jogador (antes #3fa3a8, parecido).
+const CIV_COLORS=["#2c9d87","#bd5268","#c98a2e","#5b7fd6","#9a5cc4","#3cb8e0"];
 const CHART_COLORS=["#f4bd50","#ff737b","#e88a43","#62a8ff","#b49aff","#72d0df"];
+// Nomes vistos pelo jogador (docs/decisoes.md, "Textos pt-BR e nomes"). Só exibição: o motor e as simulações
+// dos laboratórios continuam com "Jogador"/"IA n" e "território N" (entram na impressão digital).
+// Rivais "Cores", por ordem de assento: o nome é dado em newGame(); o jogador aparece como "Você" ★.
+const RIVAL_NAMES=["Rubro","Ocre","Anil","Violeta","Turquesa"];
+const CIV_SYMBOLS=["★","▲","●","◆","■","✚"];
+// Regiões do mapa 6×4, em ordem de leitura (índice 0 = Arvela … 23 = Zênite).
+const REGION_NAMES=["Arvela","Brumas","Cardo","Dorna","Esmera","Fenda","Gralha","Hélia","Ivara","Jaspe","Lumen","Musgo","Névoa","Ombral","Pedral","Quartzo","Rochedo","Salgar","Torva","Urzal","Vau","Velar","Xisto","Zênite"];
+const regionName=i=>REGION_NAMES[i]||"Território "+(i+1);
+// Nome do rival (saves antigos têm "IA"/"IA 2": passam a mostrar o nome da cor do mesmo assento).
+const civName=c=>!c?"":c.id==="player"?"Você":/^IA( \d+)?$/.test(c.name||"")&&RIVAL_NAMES[c.index-1]?RIVAL_NAMES[c.index-1]:String(c.name??c.id);
+const civSym=c=>CIV_SYMBOLS[c?.index]||"●";
 const clone=o=>JSON.parse(JSON.stringify(o));
 let configDefault=clone(DEFAULTS), configEdited=clone(DEFAULTS), configApplied=clone(DEFAULTS);
 let state, busy=false,cancelRequested=false, selectedTerritory=null, compareResults=[],lastStrategyResult=null,scenarioLoaded=null;
@@ -455,7 +481,12 @@ const UI_TEXT_RULES=[
  [/\(de Jogador\)/g,"(seu)"],[/\(neutro\)/g,"(livre)"],
  [/vitória de Jogador por/g,"você venceu por"],[/\bJogador\b/g,"você"],
  [/Ordem de Você contra/g,"Sua ordem contra"],[/venceu Você/g,"venceu você"],[/pontuação final por recursos/g,"pontuação final"],
- [/eliminação dos adversários/g,"eliminação dos rivais"]
+ [/eliminação dos adversários/g,"eliminação dos rivais"],
+ // "território 9" → nome da região (Ivara). Os rivais têm nomes masculinos (o Rubro, o Ocre...).
+ [/\bpelo território (\d+)/g,(m,n)=>"por "+regionName(n-1)],
+ [/\b(ao|o) território (\d+)/g,(m,p,n)=>(p==="ao"?"a ":"")+regionName(n-1)],
+ [/\b[Tt]erritório (\d+)/g,(m,n)=>regionName(n-1)],
+ [/e foi eliminada\./g,"e foi eliminado."]
 ];
 const uiText=t=>UI_TEXT_RULES.reduce((s,[re,to])=>s.replace(re,to),String(t??""));
 // Campos de investimento: mostram vírgula decimal (formato do Brasil) e aceitam "12,5", "12.5" e "1.250" (milhar).
@@ -1148,7 +1179,7 @@ let opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];
 const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
 function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}
-function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)]});opp.forEach((o,i)=>{if(s.civs[i+1])s.civs[i+1].hiddenProfile=o.hidden});s.difficulty=currentDifficulty;beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
+function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)]});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
 function profileOf(c){return c.profile||configApplied.military.aiStyle||"adaptive"}
 // Nomes de estilo mostrados ao jogador (os laboratórios continuam a usar LAB_PROFILE_NAME).
 const PLAYER_PROFILE_NAME={reference:"Equilibrado",military:"Militar",aggressive:"Agressivo",technologist:"Científico",economist:"Construtor",adaptive:"Adaptativo"};
@@ -1244,7 +1275,9 @@ function renderSavedSafely(render){
   render();
  }
 }
-const civLabel=c=>c.id==="player"?"Você":escapeHtml(c.name);
+// Nome do jogador/rival com o símbolo (★ ▲ ● ◆ ■ ✚) na cor do mapa: não depende só da cor.
+const civSymHtml=c=>`<span class="csym" style="color:${cssColor(c.color)}" aria-hidden="true">${civSym(c)}</span>`;
+const civLabel=c=>`${civSymHtml(c)} ${escapeHtml(civName(c))}`;
 
 /* ── Barra de estado ── */
 function stat(k,v,f,color=""){return `<div class="stat"><div class="k">${k}</div><div class="v ${color}">${v}</div><div class="f">${f||""}</div></div>`}
@@ -1261,8 +1294,8 @@ function renderMetrics(){
 function renderMap(){
  const targets=eligibleTargets(state,"player");
  $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="Território ${i+1}, ${escapeHtml(ownerLabel(state,o))}${target?", alvo possível":""}"${style}><span class="num">${String(i+1).padStart(2,"0")}</span><span class="who">${o==="neutral"?"livre":escapeHtml(ownerLabel(state,o))}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
- $("mapLegend").innerHTML=`<span><i class="dot" style="background:${cssColor(P(state).color)}"></i>Você</span>`+aiCivs(state).map(c=>`<span><i class="dot" style="background:${cssColor(c.color)}"></i>${escapeHtml(c.name)} <span class="muted">· ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminada)"}</span>`).join("")+`<span><i class="dot" style="background:#64758e"></i>Livre</span><span><i class="dot" style="background:#f4bd50"></i>Pode atacar</span>`;
+  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
+ $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)} <span class="muted">· ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=selectedTerritory===i?null:i;renderMap()}));
  renderAttack();renderEvents();
 }
@@ -1271,6 +1304,8 @@ function renderMap(){
 const ATTACK_CHANCE="82%";
 const infoTip=(html,label="Como funciona")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> ${label}</summary><div>${html}</div></details>`;
 const targetNums=(cost,have)=>`<div class="tgt-nums"><span>Custo <b>${fmt(cost,1)}</b></span><span>Sua força <b class="${have+1e-9>=cost?"":"red"}">${fmt(have,1)}</b></span><span>Chance <b>${ATTACK_CHANCE}</b></span></div>`;
+// Região no painel do alvo: nome + número pequeno (o mesmo do mapa).
+const regionHtml=t=>`<strong>${escapeHtml(regionName(t))}</strong> <span class="muted small">${t+1}</span>`;
 const setAttackBtn=(btn,text,enabled)=>{btn.textContent=text;btn.disabled=!enabled};
 function renderAttack(){
  const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military;
@@ -1278,12 +1313,12 @@ function renderAttack(){
  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar.";return}
  if(t===null){$("mapStatus").innerHTML=`Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> é seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> não faz fronteira com o seu império. Escolha um com contorno dourado.`;return}
+ if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${regionHtml(t)} · seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
+ if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${regionHtml(t)} não faz fronteira com o seu império. Escolha um com contorno dourado.`;return}
  const def=territoryDefense(state,t,configApplied),need=m.conquestCost+def,civ=owner==="neutral"?null:getCiv(state,owner);
  const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras/Ciência`:""}`:`defesa ${fmt(def,0)}`;
  const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar (${fmt(need,1)})`:`Faltam ${fmt(need-mil,1)} de força`,ok);
- $("mapStatus").innerHTML=`<div><strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"}</div>${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
+ $("mapStatus").innerHTML=`<div>${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}</div>${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
 }
 function renderEvents(){
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
@@ -1354,20 +1389,20 @@ function renderVictory(){
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
  $("victoryPill").textContent=s.result?"Partida encerrada":`${left===1?"Última era":`Faltam ${left} eras`}`;
  const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
- const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminada</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
+ const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
  const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
  const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${Math.ceil(g.supremacyMinEraShare*s.maxEras)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
- const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">★</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
+ const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">· líder</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
  $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3>${terr}
  <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
- <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(getCiv(s,sup.leader)?.name)})`:""}. <span class="muted">${statusTxt}</span></div>
- <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${i===0?'<span class="gold">★</span> ':""}${x.id==="player"?"Você":escapeHtml(x.name)}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
+ <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
+ <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }
 const PTS=x=>Math.round(1000*x);   // pontos mostrados ao jogador (1000 = desempenho de referência)
 // Placar atual: pontuação final calculada com os dados do fim da última era (civilizações ativas).
 function liveScores(){const e=state.timeline.at(-1);if(!e)return null;const act=e.civs.filter(r=>r.active!==false&&getCiv(state,r.id)?.active);if(!act.length)return null;
- return finalScores(act.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied).map(x=>({...x,name:x.id==="player"?"você":getCiv(state,x.id)?.name||x.id,civ:getCiv(state,x.id)})).sort((a,b)=>b.score-a.score)}
+ return finalScores(act.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied).map(x=>({...x,name:x.id==="player"?"você":civName(getCiv(state,x.id))||x.id,civ:getCiv(state,x.id)})).sort((a,b)=>b.score-a.score)}
 // Pontuação de cada civilização ao longo da partida (mesma fórmula da pontuação final).
 function scoreSeries(){return state.timeline.map(e=>{const rows=e.civs.map(r=>({id:r.id,dims:r.dims}));const sc=finalScores(rows,e.era,configApplied);return e.civs.map((r,k)=>r.active?sc[k].score:0)})}
 function advantageEra(winnerIdx,series){let lastNotLead=0;series.forEach((row,i)=>{const max=Math.max(...row);if(row[winnerIdx]<max-1e-9)lastNotLead=i+1});return lastNotLead+1}
@@ -1376,11 +1411,11 @@ function renderResult(){
  if(!r){if(!P(s).active){b.className="notice error";b.innerHTML=`<strong>Você foi eliminado na era ${escapeHtml(P(s).eliminatedEra)}.</strong> A partida continua entre os rivais; você pode concluir as eras para ver o final.`}else{b.className="hidden";b.innerHTML=""}return}
  const won=r.type==="victory"&&r.winners[0]==="player",drawn=r.type==="draw"&&r.winners.includes("player");
  const series=scoreSeries(),wIdx=r.type==="victory"?s.civs.findIndex(c=>c.id===r.winners[0]):-1,advEra=wIdx>=0?advantageEra(wIdx,series):null;
- const advTxt=wIdx>=0?(advEra>r.era?"":`${wIdx===0?"Você assumiu":escapeHtml(s.civs[wIdx].name)+" assumiu"} a liderança da pontuação na era ${advEra} e não a perdeu mais.`):"";
- const scoreTable=r.scores?`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Civilização</th><th>Pontuação</th><th>Força</th><th>Obras</th><th>Ciência</th><th>Ouro</th><th>Territórios</th></tr></thead><tbody>${[...r.scores].sort((a,b)=>b.score-a.score).map(x=>`<tr><td>${x.id==="player"?"Você":escapeHtml(getCiv(s,x.id)?.name)}</td><td><strong>${PTS(x.score)}</strong></td>${["military","infrastructure","technology","treasury","territories"].map(d=>`<td>${fmt(100*(x.parts[d]??0),0)}%</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:"";
+ const advTxt=wIdx>=0?(advEra>r.era?"":`${wIdx===0?"Você assumiu":escapeHtml(civName(s.civs[wIdx]))+" assumiu"} a liderança da pontuação na era ${advEra} e não a perdeu mais.`):"";
+ const scoreTable=r.scores?`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Civilização</th><th>Pontuação</th><th>Força</th><th>Obras</th><th>Ciência</th><th>Ouro</th><th>Territórios</th></tr></thead><tbody>${[...r.scores].sort((a,b)=>b.score-a.score).map(x=>`<tr><td>${getCiv(s,x.id)?civLabel(getCiv(s,x.id)):escapeHtml(x.id)}</td><td><strong>${PTS(x.score)}</strong></td>${["military","infrastructure","technology","treasury","territories"].map(d=>`<td>${fmt(100*(x.parts[d]??0),0)}%</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:"";
  const legend=s.civs.map(c=>`<span style="--c:${c.chartColor}">${civLabel(c)}</span>`).join("");
  b.className="notice "+(won?"success":drawn?"":"error");
- b.innerHTML=`<strong style="font-size:17px">${won?"🏆 Vitória!":drawn?"🤝 Empate":"Derrota"}</strong> · ${escapeHtml(uiText(describeResult(s,r)))} <span class="pill">${DIFFICULTIES[s.difficulty]?.name||"Médio"}</span>${advTxt?`<div style="margin-top:4px">${advTxt}</div>`:""}<div style="margin-top:4px">Estilos dos rivais: ${aiCivs(s).map(c=>`<strong>${escapeHtml(c.name)}</strong> — ${escapeHtml(profileLabel(c,true))}${c.hiddenProfile?" (sorteado)":""}`).join(" · ")}.</div>
+ b.innerHTML=`<strong style="font-size:17px">${won?"🏆 Vitória!":drawn?"🤝 Empate":"Derrota"}</strong> · ${escapeHtml(uiText(describeResult(s,r)))} <span class="pill">${DIFFICULTIES[s.difficulty]?.name||"Médio"}</span>${advTxt?`<div style="margin-top:4px">${advTxt}</div>`:""}<div style="margin-top:4px">Estilos dos rivais: ${aiCivs(s).map(c=>`${civSymHtml(c)} <strong>${escapeHtml(civName(c))}</strong> jogou como ${escapeHtml(profileLabel(c,true))}${c.hiddenProfile?" (sorteado)":""}`).join(" · ")}.</div>
  <div class="grid two" style="margin-top:10px"><section><div class="small muted">Pontuação ao longo da partida${advEra&&advEra<=r.era?" (linha tracejada: início da vantagem)":""}</div><canvas id="endScoreChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section><section><div class="small muted">Territórios por era</div><canvas id="endTerrChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section></div>${scoreTable}
  <div class="actions" style="margin-top:10px"><button id="newGameAfterEnd" class="primary">Jogar de novo (mesmas escolhas)</button><button id="changeSettingsAfterEnd">Mudar escolhas</button></div>`;
  svgLine($("endScoreChart"),s.civs.map((c,k)=>({color:c.chartColor,data:series.map((row,i)=>({x:i+1,y:PTS(row[k])}))})),{markX:advEra&&advEra<=r.era?advEra:null});
@@ -2244,7 +2279,7 @@ function init(){
  });
  document.querySelectorAll("[data-plan]").forEach(b=>b.onclick=()=>applyPlan(b.dataset.plan));
  $("advance").onclick=concludeEra;
- $("attack").onclick=()=>{if(selectedTerritory===null)return;const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);selectedTerritory=null;saveGame();renderAll();$("mapStatus").innerHTML=r.ok?(r.win?`<span class="green"><strong>Você conquistou o território ${t+1}!</strong></span>`:`<span class="red"><strong>O ataque ao território ${t+1} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason))};
+ $("attack").onclick=()=>{if(selectedTerritory===null)return;const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);selectedTerritory=null;saveGame();renderAll();$("mapStatus").innerHTML=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason))};
  $("restart").onclick=()=>showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}]);
  $("exportHistory").onclick=exportHistory;
  $("details").addEventListener("toggle",renderCharts);
@@ -2286,7 +2321,7 @@ init();
   return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty)}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
- const renderProfiles=()=>{if(!DEV_MODE)opponentChoices=opponentChoices.map(v=>v==="config"?"adaptive":v);$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>IA ${choice.ai===1?"":i+1}</span><select data-prof="${i}" aria-label="Estilo da IA ${i+1}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
+ const renderProfiles=()=>{if(!DEV_MODE)opponentChoices=opponentChoices.map(v=>v==="config"?"adaptive":v);$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
@@ -2334,18 +2369,18 @@ init();
   const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
   setAttackBtn(btn,"Escolha um alvo",false);
   if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar.";return}
-  const ordTxt=ords.length?`<div class="gold small">⚔ Ordens desta era: ${ords.map(o=>`território ${escapeHtml(o.idx+1)} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</div>`:"";
+  const ordTxt=ords.length?`<div class="gold small">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</div>`:"";
   const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Você pode dar várias ordens por era; cada ataque a mais custa mais (2.º ×2, 3.º ×3…).";
   const howOrders=`As ordens de todos são resolvidas juntas no fim da era: se um rival atacar o mesmo território, há <strong>batalha</strong> (vence quem tiver mais Força, somada à Ciência); depois, ${ATTACK_CHANCE} de chance de conquistar. A Força é gasta mesmo se o ataque falhar.`;
   if(t===null){$("mapStatus").innerHTML=`${ordTxt}<div>Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</div>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
-  if(ord){setAttackBtn(btn,"Cancelar ordem",true);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> · ordem dada (${fmt(ord.need,1)}).</div>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} de Força${ords.length>1?" e recalcula o custo das outras ordens":""}.`)}`;return}
+  if(ord){setAttackBtn(btn,"Cancelar ordem",true);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · ordem dada (${fmt(ord.need,1)}).</div>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} de Força${ords.length>1?" e recalcula o custo das outras ordens":""}.`)}`;return}
   const owner=state.owners[t];
-  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> é seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.</div>`;return}
-  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> não faz fronteira com o seu império. Escolha um com contorno dourado.</div>`;return}
+  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.</div>`;return}
+  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} não faz fronteira com o seu império. Escolha um com contorno dourado.</div>`;return}
   const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=m.conquestCost+def,need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
   if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${ordTxt}<div>Você já deu o máximo de ${maxO} ordens nesta era.</div>`;return}
   const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Dar ordem"} (${fmt(need,1)})`:`Faltam ${fmt(need-avail,1)} de força`,ok);
-  $("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"}${mult>1?` · ${ords.length+1}.º ataque ×${fmt(mult,1)}`:""}</div>${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
+  $("mapStatus").innerHTML=`${ordTxt}<div>${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}${mult>1?` · ${ords.length+1}.º ataque ×${fmt(mult,1)}`:""}</div>${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
  };
   // Depois de tocar num território, o painel do alvo (e o botão "Dar ordem") sobe para cima da barra fixa de baixo.
  const revealTargetPanel=()=>{const panel=document.querySelector(".target-panel"),bar=document.querySelector(".actionbar");if(!panel||selectedTerritory===null)return;
@@ -2356,8 +2391,8 @@ init();
  $("attack").onclick=()=>{
   if(!sim())return _attackClick();
   if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg;
-  if(ord){cancelOrder(state,"player",t);msg=`Ordem para o território ${t+1} cancelada; Força devolvida.`}
-  else{const r=orderAttack(state,t,"player",configApplied);msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar o território ${t+1} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
+  if(ord){cancelOrder(state,"player",t);msg=`Ordem contra ${escapeHtml(regionName(t))} cancelada; Força devolvida.`}
+  else{const r=orderAttack(state,t,"player",configApplied);msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
   selectedTerritory=null;saveGame();renderAll();$("mapStatus").innerHTML=msg};
  const _renderMap=renderMap;
  renderMap=function(){_renderMap();if(!sim())return;myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}})};
@@ -2380,7 +2415,7 @@ init();
   if(!lv){strip.innerHTML=`<span class="muted small">🏆 Placar: aparece no fim da 1.ª era.</span>`;return}
   const top=PTS(lv[0].score),prev=state.timeline.length>1?(()=>{const e=state.timeline.at(-2);const sc=finalScores(e.civs.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied);const m={};e.civs.forEach((r,k)=>m[r.id]=PTS(sc[k].score));return m})():{};
   strip.innerHTML=`<span class="score-title" title="Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. 1000 pontos = desempenho de referência.">🏆 Placar <span class="muted">(?)</span></span>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
-   return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span> ${x.id==="player"?"Você":escapeHtml(x.name)} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
+   return `<span class="score-chip ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span> ${x.civ?civLabel(x.civ):escapeHtml(x.name)} <strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"↑":"↓"}${Math.abs(d)}</span>`:""}</span>`}).join("")};
  renderSavedSafely(renderAll);
 })();
 
@@ -2393,16 +2428,16 @@ init();
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  const card=n=>document.querySelector(`#metrics .stat:nth-child(${n})`);
  const STEPS=[
-  {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`Você (verde) e uma IA disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
+  {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`${civLabel(P(state))} (verde) e o rival ${civLabel(A(state))} disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
   {t:"Orçamento e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>ouro</strong>: cada território rende, e as Obras e a Ciência somam mais. O <strong>orçamento</strong> é o que você pode investir agora.`},
   {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três áreas:<br>⚔ <strong>Militar</strong>: <strong>Força</strong> para atacar já na próxima era (perde 20% por era).<br>▰ <strong>Obras</strong>: rendem ouro a médio prazo e depois acabam.<br>✦ <strong>Ciência</strong>: rende tarde, mas para sempre.<br>Para atacar na próxima era, invista ao menos ${fmt(needMil(),0)} de ouro em Militar.<br><br>👉 <strong>Toque no plano “Ataque”.</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
-  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir a era”.</strong> As IAs jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
-  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque no território ${TARGET+1} e depois em “Dar ordem”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
+  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir a era”.</strong> Os rivais jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
+  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque em ${regionName(TARGET)} (${TARGET+1}) e depois em “Dar ordem”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
   {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> são resolvidas juntas no fim da era, em ordem sorteada. Se dois atacarem o mesmo território, há <strong>batalha</strong> — vence quem tiver mais Força (somada à Ciência).<br><br>👉 <strong>Toque em “Concluir a era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
   {t:"Conquista!",target:()=>card(5),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui você também vê quantos faltam para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
   {t:"As Obras rendem",target:()=>card(3),html:()=>`O <strong>ouro da era</strong> mostra de onde vem o dinheiro: territórios, Obras e Ciência. Cada investimento em Obras cresce até a 4.ª era e depois vai acabando — reinvista para manter o ouro entrando.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
-  {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`A IA atacou o seu território ${state.tutorial.attackIdx+1} e <strong>foi repelida</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem Força suficiente, seus territórios vizinhos a eles viram alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com suas Obras e sua Ciência — o atacante precisa pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde um pouco de Força e não deixe o ouro parado.`},
-  {t:"Como saber quem está ganhando",target:()=>$("scoreStrip"),html:()=>`O <strong>Placar</strong>, abaixo dos indicadores, mostra os <strong>pontos</strong> de cada um e a diferença para o líder (▲▼ = variação na última era). Este painel mostra quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
+  {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`O rival ${civLabel(A(state))} atacou ${escapeHtml(regionName(state.tutorial.attackIdx))} (${state.tutorial.attackIdx+1}), um território seu, e <strong>foi repelido</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem Força suficiente, seus territórios vizinhos a eles viram alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com suas Obras e sua Ciência — o atacante precisa pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde um pouco de Força e não deixe o ouro parado.`},
+  {t:"Como saber quem está ganhando",target:()=>$("scoreStrip"),html:()=>`O <strong>Placar</strong>, abaixo dos indicadores, mostra os <strong>pontos</strong> de cada um e a diferença para o líder (↑↓ = variação na última era). Este painel mostra quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
  ];
  function scriptedAttack(){
   const tu=state.tutorial;if(tu.attackDone)return;tu.attackDone=true;
@@ -2483,7 +2518,7 @@ init();
  // Durante as etapas de ação, não deixa concluir a era antes do tempo.
  const _conclude=concludeEra;concludeEra=function(){const tu=cur();
   if(tu&&!tu.waitEra&&tu.step<=2){draw("Primeiro coloque pelo menos "+fmt(needMil(),0)+" de ouro em Militar (plano “Ataque”).");return}
-  if(tu&&!tu.waitEra&&tu.step===4){draw("Primeiro dê a ordem de ataque ao território "+(TARGET+1)+".");return}
+  if(tu&&!tu.waitEra&&tu.step===4){draw("Primeiro dê a ordem de ataque a "+regionName(TARGET)+" ("+(TARGET+1)+").");return}
   return _conclude()};
  $("advance").onclick=concludeEra;
  const _renderAll=renderAll;renderAll=function(){_renderAll();if(cur())setTimeout(()=>{if(focused||box.hidden===false)draw()},0)};
