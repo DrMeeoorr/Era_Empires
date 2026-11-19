@@ -45,18 +45,3 @@ for (const [name, opts] of MOBILE_SCREENS) {
     assert.deepEqual(problems, [], "elementos destacados tapados pelo balão do tutorial");
   });
 }
-
-test.todo("BUG: depois de uma partida terminada, reabrir o jogo perde as definições escolhidas", async () => {
-  const { context, page } = await openGame(browser, { contextOptions: MOBILE_SCREENS[0][1] });
-  await page.locator("#homeStart").click();
-  await page.locator('#homeOpponents [data-ai="3"]').click();
-  await page.locator('#homeEraPresets [data-eras="15"]').click();
-  await page.locator('#homeDifficulty [data-diff="dificil"]').click();
-  await page.locator("#setupStart").click();
-  await page.evaluate(() => { while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
-  await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
-  const r = await page.evaluate(() => ({ ai: configApplied.map.aiCount, eras: configApplied.endgame.maxEras, difficulty: currentDifficulty }));
-  await context.close();
-  assert.deepEqual(r, { ai: 3, eras: 15, difficulty: "dificil" });
-});

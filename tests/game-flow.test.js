@@ -108,6 +108,48 @@ test("salvar e recarregar: o progresso continua depois de recarregar a página",
   await context.close();
 });
 
+test("salvar e recarregar: depois de uma partida terminada, reabrir o jogo mantém as escolhas do jogador", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.locator("#homeStart").click();
+  await page.locator("#modeFast").click();
+  await page.locator('#homeOpponents [data-ai="3"]').click();
+  await page.locator('[data-prof="1"]').selectOption("military");
+  await page.locator('#homeEraPresets [data-eras="15"]').click();
+  await page.locator("#homeConquest").click();
+  await page.locator('#homeDifficulty [data-diff="dificil"]').click();
+  await page.locator("#setupStart").click();
+  const read = () => page.evaluate(() => ({
+    ai: configApplied.map.aiCount, eras: configApplied.endgame.maxEras, supremacy: configApplied.endgame.supremacyEnabled,
+    difficulty: currentDifficulty, mode: gameMode, style: opponentChoices[1],
+  }));
+  const chosen = await read();
+  assert.deepEqual(chosen, { ai: 3, eras: 15, supremacy: false, difficulty: "dificil", mode: "fast", style: "military" });
+  await page.evaluate(() => { while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
+  await page.reload();
+  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  assert.equal(await page.evaluate(() => !!state.result), false, "partida terminada foi retomada");
+  assert.deepEqual(await read(), chosen);
+  assert.equal(await page.evaluate(() => state.civs.length), 4, "a partida nova já usa as 3 IAs escolhidas");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("salvar e recarregar: partida do tutorial terminada volta às escolhas de antes do tutorial", async () => {
+  const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
+  await page.locator("#homeStart").click();
+  await page.locator('#homeOpponents [data-ai="2"]').click();
+  await page.locator('#homeEraPresets [data-eras="15"]').click();
+  await page.locator('#homeDifficulty [data-diff="dificil"]').click();
+  await page.locator("#setupStart").click();
+  await page.evaluate(() => { startTutorial(); while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
+  await page.reload();
+  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  const r = await page.evaluate(() => ({ ai: configApplied.map.aiCount, eras: configApplied.endgame.maxEras, difficulty: currentDifficulty, result: !!state.result, tutorial: !!state.tutorial }));
+  assert.deepEqual(r, { ai: 2, eras: 15, difficulty: "dificil", result: false, tutorial: false });
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test("salvar e recarregar: partida terminada não é retomada e save corrompido não quebra o jogo", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   // Partida terminada: força o fim rápido por simulação e grava.

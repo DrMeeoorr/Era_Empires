@@ -2127,7 +2127,14 @@ function setupValLab(){
 function init(){
  const read=readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true}else state=newGame();
+ if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true}
+ else if(saved){
+  // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
+  // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
+  try{configApplied=saved.config;gameMode=saved.gameMode;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;state=saved.state;restoreSetupAfterTutorial();state=newGame()}
+  catch(e){configApplied=clone(configDefault);gameMode="slow";currentDifficulty="config";aiConfigBase=pickAiDifficulty(configDefault);opponentChoices=["config","config","config"];state=newGame()}
+ }
+ else state=newGame();
  renderSavedSafely(()=>{renderParams();renderAll()});
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
