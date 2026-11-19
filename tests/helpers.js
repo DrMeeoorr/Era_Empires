@@ -71,6 +71,9 @@ async function launch() {
 async function openGame(browser, { contextOptions = {}, offerTutorial = false, dev = false } = {}) {
   const context = await browser.newContext({ deviceScaleFactor: 1, ...contextOptions });
   if (!process.env.GAME_URL) await serveRepo(context);
+  // O jogo é feito de módulos: as funções e o estado (state, runTests, newGame...) só ficam acessíveis como
+  // variáveis globais quando os testes o pedem (ver src/app/debug.js).
+  await context.addInitScript(() => { window.__IMPERIOS_TEST__ = true; });
   if (!offerTutorial) {
     await context.addInitScript((k) => {
       try {

@@ -55,3 +55,24 @@ test("nenhuma função do jogo é substituída em cadeia (sem `f=function(){_f()
   for (const [rel, src] of files) for (const m of src.matchAll(/=\s*[\w$]+\.onclick\s*;/g)) offenders.push(`${rel}: ${m[0]}`);
   assert.deepEqual(offenders, []);
 });
+
+// Regra de ouro: as regras (src/core) e as IAs (src/ai) não dependem da interface, da sessão, dos
+// laboratórios nem da plataforma, e não usam o navegador; assim podem ser testadas e simuladas no Node.
+test("regra de ouro: src/core e src/ai não importam ui/app/labs/platform nem usam o DOM", () => {
+  const files = codeFiles().filter((f) => f.startsWith("src/core/") || f.startsWith("src/ai/"));
+  assert.ok(files.length >= 10, "esperava os módulos de src/core e src/ai");
+  const offenders = [];
+  const ALLOWED = /^src\/(core|ai)\//;
+  const DOM = /\b(document|window|localStorage|sessionStorage|location|navigator|matchMedia|requestAnimationFrame|getComputedStyle|HTMLElement|globalThis)\b/;
+  for (const rel of files) {
+    const src = stripComments(read(rel));
+    for (const m of src.matchAll(/(?:^|[\s;])(?:import|export)\s[^"'`]*?from\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)/g)) {
+      const spec = m[1] || m[2];
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(rel), spec));
+      if (!spec.startsWith(".") || !ALLOWED.test(target)) offenders.push(`${rel} importa ${spec}`);
+    }
+    const dom = src.replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, "\"\"").match(DOM);
+    if (dom) offenders.push(`${rel} usa ${dom[0]}`);
+  }
+  assert.deepEqual(offenders, []);
+});
