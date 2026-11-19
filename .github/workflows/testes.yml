@@ -1,0 +1,49 @@
+# Roda a suíte de testes (npm test) em cada push e pull request, em qualquer branch.
+# O package.json não tem dependências (localmente o Playwright vem do ambiente), por isso aqui o
+# Playwright é instalado sem alterar o package.json (--no-save), na mesma versão usada no desenvolvimento.
+name: Testes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_VERSION: "1.63.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Playwright ${{ env.PLAYWRIGHT_VERSION }} (sem alterar o package.json)
+        run: npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+
+      - name: Instalar o Chromium e as dependências do sistema
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Conferir a versão do Playwright
+        run: node -e "const v=require('playwright/package.json').version;console.log('playwright',v);if(v!==process.env.PLAYWRIGHT_VERSION)process.exit(1)"
+
+      - name: npm test
+        run: npm test
+
+      - name: Enviar capturas de tela (só se falhar)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts
+          path: tests/artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

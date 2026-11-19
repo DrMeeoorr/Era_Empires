@@ -17,6 +17,10 @@ Por enquanto os laboratórios só ficam **escondidos** na versão do jogador (o 
 
 ## Testes
 
+[![Testes](https://github.com/DrMeeoorr/Era_Empires/actions/workflows/testes.yml/badge.svg)](https://github.com/DrMeeoorr/Era_Empires/actions/workflows/testes.yml)
+
+**Execução automática:** o GitHub Actions (`.github/workflows/testes.yml`) roda `npm test` em cada push e pull request, em qualquer branch; o selo acima fica verde quando todos os testes passam. Se falhar, as capturas de `tests/artifacts/` ficam disponíveis para download na página da execução.
+
 O jogo tem uma suíte de testes automáticos na pasta `tests/`. Ela abre o `index.html` num navegador
 invisível (Chromium, via [Playwright](https://playwright.dev)) e verifica se nada quebrou.
 
@@ -50,6 +54,7 @@ Para uma verificação rápida só das regras (uns 3 segundos): `npm run test:ra
 | `tests/save.test.js` | Save danificado não trava o jogo (vai para `…-corrompido` e começa partida nova com aviso); falha ao salvar mostra aviso ao jogador. |
 | `tests/difficulty.test.js` | Valores de uma dificuldade não "vazam" para outra nem para "Configurações"; o tutorial não grava as suas escolhas (Fácil, 1 IA, 30 eras) nas do jogador. |
 | `tests/player-version.test.js` | Sem `?dev=1` não aparece nada de laboratórios/Exportar/"Versão completa"; com `?dev=1` aparece tudo. |
+| `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Ver `tests/README.md`. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. |
 
 **Se o teste de regressão falhar**
