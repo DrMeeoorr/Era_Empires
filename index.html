@@ -704,7 +704,8 @@ function aiDecide(s,civ,cfg,era){
    if(priority==="strongest")return b.i-a.i;
    return (a.o==="neutral"?0:1)-(b.o==="neutral"?0:1)||a.i-b.i;
   });
-  const t=targets[0],required=attackNeed(s,t.i,civ.id,cfg);
+  // IA prudente: só dá a 1ª ordem com o custo cheio (sem desconto tecnológico), mas paga o custo com desconto.
+  const t=targets[0],required=cfg.military.conquestCost+territoryDefense(s,t.i,cfg);
   if(civ.military+1e-9>=required){const result=cfg.military.simultaneousOrders?orderAttack(s,t.i,civ.id,cfg):attackTerritory(s,t.i,civ.id,cfg,true);action=result.ok?(result.queued?`${civ.name} ordenou ataque ao território ${t.i+1}`:result.win?`${civ.name} conquistou território ${t.i+1}`:`${civ.name} atacou território ${t.i+1} e foi repelida`):`${civ.name}: ${result.reason}`;}
   else action=`${civ.name} acumulando poder militar (precisa ${fmt(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.
