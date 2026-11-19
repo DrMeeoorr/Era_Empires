@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS, menuClick, choosePlan } = require("./helpers");
 
 // Alvos de toque: as diretrizes Android pedem 48 dp. Os botões marcados como principais têm de ter
 // pelo menos 48 px de altura e de largura; os restantes abaixo disso são listados como aviso.
@@ -64,16 +64,35 @@ for (const [name, opts] of MOBILE_SCREENS) {
     assert.ok(adv && adv.y >= 0 && adv.y + adv.height <= vp.height + 1, `"Concluir a era" fora da tela no topo da página: y=${adv && adv.y}`);
     await screenshot(page, `${name}-3-jogo`);
     const target = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
+    const short = vp.height <= 700;
+    // UX Fase 2: Início/Reiniciar ficam no menu ☰; Como jogar no "?"; Resto/Zerar na folha "Ajuste fino";
+    // em telas baixas (≤ 700 px) os planos ficam na folha "Planos ▾". Todos continuam com ≥ 48 px.
     await checkButtons(page, [
-      ["#returnHome", "Início", true], ["#restart", "Reiniciar", true],
+      ["#menuBtn", "Menu ☰", true], ["#helpBtn", "Como jogar (?)", true], ["#scorePill", "Placar", true], ["#statTerr", "Terras", true],
       // O mapa tem 6 colunas: no Galaxy S9+ (320 px de largura) cada território fica com ~42 px de largura.
       [`[data-territory="${target}"]`, "território vizinho", true, 40],
-      ['[data-plan="balanced"]', "plano Equilibrado", true], ['[data-plan="attack"]', "plano Ataque", true], ['[data-plan="clear"]', "Limpar", true],
-      ['[data-area="mil"] [data-step="1"]', "+ militar", true], ['[data-area="mil"] [data-zero]', "0 (zerar) militar", true], ['[data-area="mil"] [data-rest]', "Resto militar", true], ['#howTo summary', "Como jogar", true], ['#details summary', "Detalhes da partida", true], ['[data-area="infra"] [data-step="1"]', "+ infraestrutura", true], ['[data-area="tech"] [data-step="1"]', "+ tecnologia", true],
+      ['[data-area="mil"] [data-step="1"]', "+ militar", true], ['[data-area="infra"] [data-step="1"]', "+ obras", true], ['[data-area="tech"] [data-step="1"]', "+ ciência", true],
+      ['[data-area="mil"] [data-step="-1"]', "− militar", true], ["#fineBtn", "Ajuste fino", true],
       ["#advance", "Concluir a era", true],
     ], "jogo", smalls);
+    assert.equal(await page.locator("#plansBtn").isVisible(), short, `botão "Planos ▾" ${short ? "escondido" : "visível"} com ${vp.height} px de altura`);
+    if (short) {
+      await page.locator("#plansBtn").click();
+      await checkButtons(page, [['[data-plan="balanced"]', "plano Equilibrado", true], ['[data-plan="attack"]', "plano Ataque", true], ['[data-plan="clear"]', "Limpar", true]], "folha Planos", smalls);
+      await page.keyboard.press("Escape");
+    } else {
+      await checkButtons(page, [['[data-plan="balanced"]', "plano Equilibrado", true], ['[data-plan="attack"]', "plano Ataque", true], ['[data-plan="clear"]', "Limpar", true]], "jogo", smalls);
+    }
+    await page.locator("#fineBtn").click();
+    await checkButtons(page, [['[data-area="mil"] [data-zero]', "Zerar militar", true], ['[data-area="mil"] [data-rest]', "Resto militar", true], ['[data-area="tech"] [data-rest]', "Resto ciência", true], ["#fineSheet [data-close]", "Fechar folha", true]], "folha Ajuste fino", smalls);
+    await page.keyboard.press("Escape");
+    await page.locator("#menuBtn").click();
+    await checkButtons(page, [
+      ["#returnHome", "Início", true], ["#restart", "Reiniciar", true],
+      ['#menuSheet [data-open="howTo"]', "Como jogar", true], ['#menuSheet [data-open="details"]', "Detalhes da partida", true], ['#menuSheet [data-open="scoreSheet"]', "Placar e vitória", true],
+    ], "menu", smalls);
     // "Reiniciar" fica discreto (não vermelho) e pede confirmação antes de apagar a partida.
-    assert.equal(await page.locator("#restart").evaluate((e) => e.classList.contains("danger")), false, "Reiniciar em vermelho no topo");
+    assert.equal(await page.locator("#restart").evaluate((e) => e.classList.contains("danger")), false, "Reiniciar em vermelho no menu");
     await page.locator("#restart").click();
     await page.locator('#modalRoot button:has-text("Cancelar")').click();
     assert.equal(await page.evaluate(() => state.era), 1);
@@ -82,13 +101,14 @@ for (const [name, opts] of MOBILE_SCREENS) {
     const alloc = await page.evaluate(() => readAlloc());
     assert.ok(alloc[0] > 0, "o botão + militar não alterou o investimento");
     await concludeEraUI(page); // deixa saldo por investir → aviso "Concluir mesmo assim"
-    await page.locator('[data-plan="attack"]').click();
+    await choosePlan(page, "attack");
     await concludeEraUI(page);
     assert.equal(await page.evaluate(() => state.era), 3);
     await page.evaluate(() => window.scrollTo(0, 0));
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal depois de jogar eras");
     // Detalhes da partida (gráficos e histórico) também cabem na largura.
-    await page.locator("#details summary").click();
+    await menuClick(page, '#menuSheet [data-open="details"]');
+    await page.locator("#details").waitFor({ state: "visible" });
     await page.waitForTimeout(200);
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal com os detalhes abertos");
     await screenshot(page, `${name}-4-detalhes`);
@@ -98,26 +118,27 @@ for (const [name, opts] of MOBILE_SCREENS) {
   });
 }
 
-// Ao tocar num território, o botão "Dar ordem" aparece por cima da barra fixa de baixo (sem rolar à mão)
-// e, quando desabilitado, diz o motivo dentro dele.
+// UX Fase 2: ao tocar num território abre-se a folha de ataque (por cima da barra de baixo). O botão fica
+// inteiro na tela e não tapado; quando desabilitado, diz o motivo dentro dele e oferece "Investir em Militar".
 for (const [name, opts] of MOBILE_SCREENS) {
-  test(`celular ${name}: botão "Dar ordem" visível acima da barra fixa e com o motivo quando desabilitado`, async () => {
+  test(`celular ${name}: folha de ataque com o botão visível e o motivo quando desabilitado`, async () => {
     const { context, page, errors } = await openGame(browser, { contextOptions: { ...opts, reducedMotion: "reduce" } });
     await page.locator("#homeStart").click();
     await page.locator("#setupStart").click();
     await page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1);
-    await page.evaluate(() => window.scrollTo(0, 0));
     const t = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
     await page.locator(`[data-territory="${t}"]`).click({ noWaitAfter: true });
-    await page.waitForTimeout(300);
+    await page.locator("#attackSheet").waitFor({ state: "visible" });
     const geo = await page.evaluate(() => {
-      const b = document.getElementById("attack").getBoundingClientRect(), bar = document.querySelector(".actionbar").getBoundingClientRect();
-      return { top: b.top, bottom: b.bottom, barTop: bar.top, h: innerHeight, text: document.getElementById("attack").textContent, disabled: document.getElementById("attack").disabled };
+      const btn = document.getElementById("attack"), b = btn.getBoundingClientRect();
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return { top: b.top, bottom: b.bottom, h: innerHeight, height: b.height, onTop: hit === btn || btn.contains(hit), text: btn.textContent, disabled: btn.disabled };
     });
-    assert.ok(geo.top >= 0 && geo.bottom <= geo.barTop + 1, `botão escondido: ${JSON.stringify(geo)}`);
+    assert.ok(geo.top >= 0 && geo.bottom <= geo.h + 1 && geo.onTop && geo.height >= 48, `botão escondido ou tapado: ${JSON.stringify(geo)}`);
     assert.equal(geo.disabled, true);
-    assert.match(geo.text, /^Faltam [\d.,]+ de força$/);
-    const status = await page.locator("#mapStatus").innerText();
+    assert.match(geo.text, /^Faltam [\d.,]+ de Força$/);
+    assert.ok(await page.locator("#attackInvest").isVisible(), 'atalho "Investir em Militar" não aparece');
+    const status = (await page.locator("#mapStatus").innerText()).replace(/\s+/g, " ");
     assert.match(status, /Custo/); assert.match(status, /Sua força/); assert.match(status, /Chance 82%/);
     await screenshot(page, `${name}-5-alvo`);
     assert.deepEqual(errors, []);

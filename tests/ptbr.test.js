@@ -6,7 +6,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick } = require("./helpers");
 const { playTutorial } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -61,15 +61,21 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
   await page.locator("#setupStart").click();
   await page.waitForFunction(() => document.getElementById("homeScreen").hidden);
 
-  // Jogo: investimentos, Como jogar e Detalhes abertos; aviso de ouro parado; Reiniciar.
-  await page.evaluate(() => { document.getElementById("howTo").open = true; document.getElementById("details").open = true; renderAll(); });
+  // Jogo: investimentos; Como jogar, Detalhes, Placar e Ajuste fino (UX Fase 2: são folhas, uma de cada vez,
+  // por isso cada uma é aberta e verificada separadamente); aviso de ouro parado; Reiniciar.
   await page.locator('[data-plan="balanced"]').click();
-  check("jogo (era 1, investimentos, Como jogar, Detalhes)", await bodyText(page), problems);
+  check("jogo (era 1, investimentos)", await bodyText(page), problems);
+  for (const [open, label] of [["#helpBtn", "Como jogar"], ['#menuSheet [data-open="details"]', "Detalhes"], ["#scorePill", "Placar e vitória"], ["#fineBtn", "Ajuste fino"], ["#menuBtn", "Menu"]]) {
+    await menuClick(page, open);
+    await page.waitForFunction(() => !!document.querySelector(".sheet:not([hidden])"));
+    check(`jogo (${label})`, await bodyText(page), problems);
+    await page.keyboard.press("Escape");
+  }
   await page.locator('[data-plan="clear"]').click();
   await page.locator("#advance").click();
   check("aviso de ouro por investir", await bodyText(page), problems);
   await dismissModals(page, { max: 1 });
-  await page.locator("#restart").click();
+  await menuClick(page, "#restart");
   check("modal Reiniciar", await bodyText(page), problems);
   await page.locator('#modalRoot button:has-text("Cancelar")').click();
 
@@ -80,11 +86,14 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
   await page.locator(`[data-territory="${t}"]`).click();
   await page.locator("#mapStatus details").evaluate((d) => (d.open = true));
   check("painel de ataque", await bodyText(page), problems);
-  await page.locator(`[data-territory="${t}"]`).click();
+  // UX Fase 2: a folha de ataque fecha com Esc antes de tocar noutra região.
+  await page.keyboard.press("Escape");
   await page.locator('[data-territory="20"]').click();
   check("painel de ataque (fora do alcance)", await bodyText(page), problems);
+  await page.keyboard.press("Escape");
   await page.locator('[data-territory="0"]').click();
   check("painel de ataque (território seu)", await bodyText(page), problems);
+  await page.keyboard.press("Escape");
   await page.locator(`[data-territory="${t}"]`).click();
   await page.locator("#attack").click();
   check("ordem dada", await bodyText(page), problems);
