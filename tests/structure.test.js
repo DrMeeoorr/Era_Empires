@@ -76,3 +76,20 @@ test("regra de ouro: src/core e src/ai não importam ui/app/labs/platform nem us
   }
   assert.deepEqual(offenders, []);
 });
+
+/** Importações relativas de um módulo, como caminhos a partir da raiz (ex.: "src/ui/map.js"). */
+function importsOf(rel) {
+  const src = stripComments(read(rel)), out = [];
+  for (const m of src.matchAll(/(?:^|[\s;])(?:import|export)\s[^"'`]*?from\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)|^\s*import\s*["']([^"']+)["']/gm)) {
+    const spec = m[1] || m[2] || m[3];
+    out.push(spec.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(rel), spec)) : spec);
+  }
+  return out;
+}
+
+test("a interface do jogo (src/ui), a sessão (src/app) e a plataforma não dependem dos laboratórios", () => {
+  const offenders = [];
+  for (const rel of codeFiles().filter((f) => /^src\/(ui|app|platform)\//.test(f)))
+    for (const t of importsOf(rel)) if (t.startsWith("src/labs/") || t === "src/legacy.js" || t.startsWith("src/main-")) offenders.push(`${rel} importa ${t}`);
+  assert.deepEqual(offenders, []);
+});

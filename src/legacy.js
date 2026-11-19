@@ -1,47 +1,75 @@
-// Impérios — código do jogo que ainda não foi dividido em módulos (interface, gravação e laboratórios).
-// Os passos 9 e 10 da reorganização dividem este ficheiro em src/ui, src/app e src/labs.
-import * as ns_core_index from "./core/index.js";
-import * as ns_ai_index from "./ai/index.js";
-import * as ns_app_session from "./app/session.js";
-import * as ns_app_save from "./app/save.js";
+// Impérios — laboratórios (versão de desenvolvimento) que ainda estão neste ficheiro, o arranque do jogo e as
+// variáveis globais de depuração. O passo 10 da reorganização divide-o em src/labs/*, src/main-player.js e src/main-dev.js.
+import * as ns_ai_decide from "./ai/decide.js";
+import * as ns_ai_profiles from "./ai/profiles.js";
 import * as ns_app_hooks from "./app/hooks.js";
-import * as ns_platform_storage from "./platform/storage.js";
-import * as ns_platform_files from "./platform/files.js";
-import * as ns_ui_format from "./ui/format.js";
-import * as ns_ui_dom from "./ui/dom.js";
-import * as ns_labs_settings from "./labs/settings.js";
+import * as ns_app_save from "./app/save.js";
+import * as ns_app_session from "./app/session.js";
+import * as ns_app_setup from "./app/setup.js";
+import * as ns_core_config from "./core/config.js";
+import * as ns_core_economy from "./core/economy.js";
+import * as ns_core_endgame from "./core/endgame.js";
+import * as ns_core_era from "./core/era.js";
+import * as ns_core_format from "./core/format.js";
+import * as ns_core_map from "./core/map.js";
+import * as ns_core_match from "./core/match.js";
+import * as ns_core_military from "./core/military.js";
+import * as ns_core_names from "./core/names.js";
+import * as ns_core_references from "./core/references.js";
+import * as ns_core_rng from "./core/rng.js";
+import * as ns_core_state from "./core/state.js";
+import * as ns_core_util from "./core/util.js";
 import * as ns_labs_ai_checks from "./labs/ai-checks.js";
 import * as ns_labs_engine from "./labs/engine.js";
 import * as ns_labs_experiment from "./labs/experiment.js";
-import * as ns_labs_validation from "./labs/validation.js";
+import * as ns_labs_settings from "./labs/settings.js";
 import * as ns_labs_tests_def from "./labs/tests-def.js";
+import * as ns_labs_validation from "./labs/validation.js";
 import * as ns_legacy from "./legacy.js";
+import * as ns_platform_files from "./platform/files.js";
+import * as ns_platform_storage from "./platform/storage.js";
+import * as ns_ui_allocation from "./ui/allocation.js";
+import * as ns_ui_charts from "./ui/charts.js";
+import * as ns_ui_dom from "./ui/dom.js";
+import * as ns_ui_format from "./ui/format.js";
+import * as ns_ui_game from "./ui/game.js";
+import * as ns_ui_home from "./ui/home.js";
+import * as ns_ui_hud from "./ui/hud.js";
+import * as ns_ui_labels from "./ui/labels.js";
+import * as ns_ui_map from "./ui/map.js";
+import * as ns_ui_modal from "./ui/modal.js";
+import * as ns_ui_panels from "./ui/panels.js";
+import * as ns_ui_report from "./ui/report.js";
+import * as ns_ui_sheets from "./ui/sheets.js";
+import * as ns_ui_toast from "./ui/toast.js";
+import * as ns_ui_tutorial from "./ui/tutorial.js";
 import {exposeGlobals} from "./app/debug.js";
-import {LAB_PROFILE_NAME,AI_PROFILE_NAMES,LAB_PROFILES} from "./ai/profiles.js";
-import {hooks,runHook,onHook} from "./app/hooks.js";
-import {quarantineSave,saveGame,readSavedGame} from "./app/save.js";
-import {configApplied,state,profileOf,setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,currentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,selectedTerritory,busy,playEra,gameMode,rememberAiBase,setBusy,setCancelRequested,cancelRequested,DEV_MODE,opponentChoices,visibleOpponentOptions} from "./app/session.js";
-import {pickAiDifficulty,DIFFICULTIES,effectiveDelay,normalizeConfig,VERSION,SUPPORTED_VERSIONS,DEFAULTS,MAX_AI,CIV_COLORS} from "./core/config.js";
-import {infraReturn,techReturn} from "./core/economy.js";
-import {territorialMinimum,territoryBase,finalScores,describeResult,END_REASON_NAMES} from "./core/endgame.js";
+import {AI_PROFILE_NAMES,LAB_PROFILE_NAME,LAB_PROFILES} from "./ai/profiles.js";
+import {onHook} from "./app/hooks.js";
+import {configApplied,state,gameMode,rememberAiBase,setConfigApplied,setState,newGame,setSelectedTerritory,busy,setBusy,setCancelRequested,cancelRequested,playEra,configDefault,DEV_MODE} from "./app/session.js";
+import {VERSION,normalizeConfig,SUPPORTED_VERSIONS,DEFAULTS,MAX_AI} from "./core/config.js";
+import {describeResult,END_REASON_NAMES} from "./core/endgame.js";
 import {simulate,processEra} from "./core/era.js";
-import {countTerritories,eligibleTargets,adjacentOwned} from "./core/map.js";
 import {runFixedGame,fixedGameSeed} from "./core/match.js";
-import {territoryDefense,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack} from "./core/military.js";
-import {civSym,civName,regionName,RIVAL_NAMES} from "./core/names.js";
 import {REF_DIMS,calibrateReferences,REF_SETS,validateReferences} from "./core/references.js";
-import {P,aiCivs,getCiv,addLog,newState,A} from "./core/state.js";
-import {clone,clamp,safeNum} from "./core/util.js";
+import {addLog,P,newState,A} from "./core/state.js";
+import {clone,safeNum,clamp} from "./core/util.js";
 import {profileExpectedWeights,pct,runAiControlProbe,aiProbe} from "./labs/ai-checks.js";
 import {estimateRows,ROW_WARN,buildJobs,runGameJobs,summarizeRecords,profileStats,mean,median,profileName,consolidateProfiles,OUTCOME_KEYS,RC} from "./labs/engine.js";
-import {paramCatalog,expState,SCENARIO_COLORS,getParam,parseParamValue,setExpCancel,expCancel,scenarioConfig,exportExp} from "./labs/experiment.js";
-import {setConfigEdited,PARAM_GROUPS,paramInput,configEdited,PARAM_OPTIONS} from "./labs/settings.js";
+import {paramCatalog,expState,SCENARIO_COLORS,getParam,parseParamValue,setExpCancel,scenarioConfig,expCancel,exportExp} from "./labs/experiment.js";
+import {PARAM_GROUPS,paramInput,configEdited,setConfigEdited,PARAM_OPTIONS} from "./labs/settings.js";
 import {executeTests,testRegistry,ftHistory,TEST_CATS,ftResults,ftLastRun,loadFtHistory} from "./labs/tests-def.js";
-import {setValCancel,valCancel,valState,profileDiagnostics,PROFILE_EXPECTATIONS} from "./labs/validation.js";
+import {setValCancel,valState,valCancel,profileDiagnostics,PROFILE_EXPECTATIONS} from "./labs/validation.js";
 import {download,csvDownload} from "./platform/files.js";
-import {storage} from "./platform/storage.js";
+import {watchShortScreen} from "./ui/allocation.js";
+import {svgLine,barChart,legendHtml} from "./ui/charts.js";
 import {$,setStatus} from "./ui/dom.js";
-import {cssColor,escapeHtml,fmt,money,uiText,parseAmount,fmtInput} from "./ui/format.js";
+import {money,fmt,escapeHtml,cssColor} from "./ui/format.js";
+import {renderAll,initGame} from "./ui/game.js";
+import {initHome} from "./ui/home.js";
+import {renderMetrics} from "./ui/hud.js";
+import {initSheets} from "./ui/sheets.js";
+import {initTutorial} from "./ui/tutorial.js";
 export let compareResults=[];
 export let lastStrategyResult=null;
 export let scenarioLoaded=null;
@@ -63,292 +91,6 @@ export function fixedProfileSummary(games){
  const acc={};for(const g of games){const last=g.timeline.at(-1);if(!last)continue;for(const r of last.civs){const a=acc[r.profile]??={n:0,territories:0,military:0,infrastructure:0,technology:0,treasury:0,revenue:0};a.n++;a.territories+=r.territories;for(const [d] of REF_DIMS)a[d]+=r.dims[d]}}
  return Object.entries(acc).map(([profile,a])=>({profile,n:a.n,territories:a.territories/a.n,...Object.fromEntries(REF_DIMS.map(([d])=>[d,a[d]/a.n]))}));
 }
-// Nomes de estilo mostrados ao jogador (os laboratórios continuam a usar LAB_PROFILE_NAME).
-export const PLAYER_PROFILE_NAME={reference:"Equilibrado",military:"Militar",aggressive:"Agressivo",technologist:"Científico",economist:"Construtor",adaptive:"Adaptativo"};
-export const playerProfileName=p=>PLAYER_PROFILE_NAME[p]||LAB_PROFILE_NAME[p]||p;
-export function profileLabel(c,reveal=false){if(c.id==="player")return "";if(c.hiddenProfile&&!reveal&&!state.result)return "estilo oculto";return playerProfileName(profileOf(c))}
-export function showSaveWarning(err){
- if(typeof document==="undefined")return;let el=document.getElementById("saveWarning");
- if(!err){if(el)el.hidden=true;return}
- if(!el){el=document.createElement("div");el.id="saveWarning";el.className="save-warning";el.setAttribute("role","alert");document.body.appendChild(el)}
- const full=err&&(err.name==="QuotaExceededError"||err.code===22);
- el.innerHTML=`<span>⚠ <strong>Não foi possível salvar a partida.</strong> ${full?"O espaço de armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se você fechar o jogo agora, pode perder o progresso desde o último salvamento.</span><button type="button" aria-label="Fechar aviso">✕</button>`;
- el.querySelector("button").onclick=()=>{el.hidden=true};el.hidden=false;
-}
-// savedRaw: o texto do save carregado ao abrir o jogo (para pôr de lado se falhar ao desenhar).
-export let savedGameLoaded=false,saveProblem=null,savedRaw=null;
-export function noticeBrokenSave(){setTimeout(()=>showModal(`<h2>Não foi possível continuar a partida salva</h2><p class="small muted">Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.</p>`,[{label:"Entendi",cls:"primary"}]),350)}
-// Primeiro desenho com um save carregado: se falhar, o save é posto de lado e começa uma partida nova.
-export function renderSavedSafely(render){
- try{render()}catch(e){
-  if(!savedGameLoaded)throw e;
-  savedGameLoaded=false;try{quarantineSave(savedRaw||JSON.stringify({v:1,state}))}catch(_){}
-  setConfigApplied(clone(configDefault));setConfigEdited(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setSelectedTerritory(null);setState(newGame());
-  if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
-  render();
- }
-}
-// Nome do jogador/rival com o símbolo (★ ▲ ● ◆ ■ ✚) na cor do mapa: não depende só da cor.
-export const civSymHtml=c=>`<span class="csym" style="color:${cssColor(c.color)}" aria-hidden="true">${civSym(c)}</span>`;
-export const civLabel=c=>`${civSymHtml(c)} ${escapeHtml(civName(c))}`;
-/* ── Barra de recursos (topo) ── */
-// Números curtos para a barra: sem casas decimais a partir de 100.
-export const hudNum=v=>fmt(v,Math.abs(v)>=100?0:1);
-export function renderMetrics(){
- const s=state,me=P(s),r=s.pending?.revenue?.player||s.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(s),g.territoryPct),mine=countTerritories(s,"player");
- const pct=clamp(100*s.era/Math.max(1,s.maxEras),0,100);
- $("statEra").innerHTML=`<div class="hud-era-t"><span>Era</span><span class="of"><b>${escapeHtml(s.era)}</b>/${escapeHtml(s.maxEras)}</span></div><div class="hud-prog" role="progressbar" aria-label="Eras jogadas" aria-valuemin="0" aria-valuemax="${escapeHtml(s.maxEras)}" aria-valuenow="${escapeHtml(s.era)}"><span style="width:${pct}%"></span></div>`;
- $("statGold").innerHTML=`<span class="hud-ico gold-ico" aria-hidden="true">$</span><span class="hud-v"><b>${hudNum(me.treasury)} <small>ouro</small></b><span class="k"><span class="green">+${hudNum(r.total)}</span>/era</span></span>`;
- $("statGold").title=`Ouro para investir agora (já com o ouro desta era). Esta era rendeu ${money(r.total)}: territórios ${fmt(r.normal,1)} · Obras ${fmt(r.infra,1)} · Ciência ${fmt(r.tech,1)}.`;
- $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">Força</span></span>`;
- $("statForce").title="Força para atacar (perde 20% por era se não for usada).";
- $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">terras</span></span>`;
- $("statTerr").setAttribute("aria-label",`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`);
- const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");
- if(!lv){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap none">—</span>`;pill.setAttribute("aria-label","Placar: aparece no fim da 1.ª era. Abrir placar e condições de vitória")}
- else if(!meS){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap down">fora</span>`;pill.setAttribute("aria-label","Placar: você foi eliminado. Abrir placar")}
- else{const pos=lv.indexOf(meS)+1,lead=lv[0],d=pos===1?(lv[1]?PTS(meS.score)-PTS(lv[1].score):0):PTS(lead.score)-PTS(meS.score);
-  pill.innerHTML=`<span aria-hidden="true">🏆</span> ${pos}.º <span class="gap ${pos===1?"up":"down"}">${pos===1?"+":"−"}${d}</span>`;
-  pill.setAttribute("aria-label",`Placar: você está em ${pos}.º${pos===1?(lv[1]?`, ${d} pontos à frente`:""):`, ${d} pontos atrás de ${lead.name}`}. Abrir placar e condições de vitória`)}
- $("matchInfo").textContent=`${s.maxEras} eras · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · modo ${s.mode==="fast"?"rápido":"lento"}${g.supremacyEnabled===false?" · Conquista":""} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
- // Placar completo (folha "Placar e vitória"): posição, pontos, diferença para o líder e variação na última era.
- const strip=$("scoreStrip");
- if(!lv){strip.innerHTML=`<p class="muted small">O placar aparece no fim da 1.ª era.</p>`;return}
-  const top=PTS(lv[0].score),prev=state.timeline.length>1?(()=>{const e=state.timeline.at(-2);const sc=finalScores(e.civs.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied);const m={};e.civs.forEach((r,k)=>m[r.id]=PTS(sc[k].score));return m})():{};
-  strip.innerHTML=`<p class="small muted" style="margin:0">Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. 1000 pontos = desempenho de referência.</p>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
-   return `<div class="score-row ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${x.civ&&x.id!=="player"?` <span class="muted small">· ${escapeHtml(profileLabel(x.civ))}</span>`:""}</span><span class="pts"><strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"↑":"↓"}${Math.abs(d)}</span>`:""}</span></div>`}).join("")
-}
-/* ── Mapa e painel do alvo ── */
-/* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
-   celular. Primeiro reduz a fonte (até 8,5 px), depois aperta o espaço entre letras. */
-export function fitRegionNames(){
- const MIN=8.5;
- document.querySelectorAll("[data-territory] .rname").forEach(n=>{
-  n.style.fontSize="";n.style.letterSpacing="";
-  const cell=n.closest("[data-territory]"),cs=getComputedStyle(cell);
-  const room=cell.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
-  if(!(room>0)||n.scrollWidth<=room)return;
-  const base=parseFloat(getComputedStyle(n).fontSize);
-  const size=Math.max(MIN,Math.floor(base*room/n.scrollWidth*10)/10);
-  n.style.fontSize=size+"px";
-  for(let ls=-.04;n.scrollWidth>room&&ls>=-.1;ls-=.02)n.style.letterSpacing=ls.toFixed(2)+"em";
- });
-}
-// Legenda mais larga que a tela: marca para esmaecer a borda (indica que rola para o lado).
-export function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
-export function renderMap(){
- const targets=eligibleTargets(state,"player");
- $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
- $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
- document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);setSelectedTerritory(i);renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
- fitRegionNames();markLegend();
- renderAttack();renderEvents();
- if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
-}
-// Folha de ataque: região + dono, 3 números (Custo, Sua força, Chance), botão com o motivo quando não dá,
-// atalho "Investir em Militar" e a explicação longa atrás de "Por quê?".
-export const ATTACK_CHANCE="82%";
-export const infoTip=(html,label="Por quê?")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> O ataque acontece no fim da era. <u>${label}</u></summary><div>${html}</div></details>`;
-export const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>Custo</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>Sua força</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>Chance</span> <b>${ATTACK_CHANCE}</b></div></div>`;
-// Região no painel do alvo: nome + número pequeno (o mesmo do mapa).
-export const regionHtml=t=>`<strong>${escapeHtml(regionName(t))}</strong> <span class="muted small">${t+1}</span>`;
-export const tgtTitle=html=>`<h2 class="tgt-title" id="attackTitle">${html}</h2>`;
-export const setAttackBtn=(btn,text,enabled,{cancel=false,invest=false}={})=>{btn.textContent=text;btn.disabled=!enabled;btn.classList.toggle("cancel",cancel);const inv=$("attackInvest");if(inv)inv.hidden=!invest};
-// Ordens simultâneas: a ordem fica marcada no mapa e o resultado sai no relatório do fim da era.
-export const simOrders=()=>!!configApplied.military.simultaneousOrders,myOrders=()=>(state.orders||[]).filter(o=>o.owner==="player"),myOrder=t=>myOrders().find(o=>o.idx===t);
-// Painel do alvo com ordens simultâneas (configuração padrão): a ordem é resolvida no fim da era.
-export function renderOrderAttack(){
- const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
- setAttackBtn(btn,"Escolha um alvo",false);
- if(t===null&&isSheetOpen("attackSheet"))closeSheet();
- if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
- const ordTxt=ords.length?`<p class="tgt-orders">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</p>`:"";
- const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Você pode dar várias ordens por era; cada ataque a mais custa mais (2.º ×2, 3.º ×3…).";
- const howOrders=`As ordens de todos são resolvidas juntas no fim da era: se um rival atacar o mesmo território, há <strong>batalha</strong> (vence quem tiver mais Força, somada à Ciência); depois, ${ATTACK_CHANCE} de chance de conquistar. A Força é gasta mesmo se o ataque falhar.`;
- if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}${ordTxt}<p class="tgt-sub">Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</p>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
- if(ord){setAttackBtn(btn,"Cancelar ordem",true,{cancel:true});$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ordem dada`)}${ordTxt}<p class="tgt-sub">${fmt(ord.need,1)} de Força reservada. Cancelar devolve a Força${ords.length>1?" e recalcula o custo das outras ordens":""}.</p>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. ${howOrders}`)}`;return}
- const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras e Ciência reforçam a defesa.</p>`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}${ordTxt}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha um com contorno dourado.</p>`;return}
- const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=m.conquestCost+def,need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
- if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${ordTxt}<p class="tgt-sub">Você já deu o máximo de ${maxO} ordens nesta era.</p>`;return}
- const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Atacar"} · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-avail,1)} de Força`,ok,{invest:!ok&&mult<=1});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
-}
-export function renderAttack(){
- if(simOrders())return renderOrderAttack();
- const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military;
- setAttackBtn(btn,"Escolha um alvo",false);
- if(t===null&&isSheetOpen("attackSheet"))closeSheet();
- if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
- if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}<p class="tgt-sub">Toque em um território com <span class="gold">contorno dourado</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.</p>`;return}
- const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras e Ciência reforçam a defesa.</p>`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha um com contorno dourado.</p>`;return}
- const def=territoryDefense(state,t,configApplied),need=m.conquestCost+def,civ=owner==="neutral"?null:getCiv(state,owner);
- const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras/Ciência`:""}`:`defesa ${fmt(def,0)}`;
- const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-mil,1)} de Força`,ok,{invest:!ok});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
-}
-// Botão "Atacar" do painel do alvo (ataque imediato quando as ordens simultâneas estão desligadas).
-export function attackSelected(){
- if(simOrders())return orderSelected();
- if(selectedTerritory===null)return;
- const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))
-}
-// Botão do painel com ordens simultâneas: dá ou cancela a ordem contra o território escolhido.
-export function orderSelected(){
- if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg,bad=false;
- if(ord){cancelOrder(state,"player",t);msg=`Ordem contra ${escapeHtml(regionName(t))} cancelada; Força devolvida.`}
- else{const r=orderAttack(state,t,"player",configApplied);bad=!r.ok;msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
- setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();$("mapStatus").innerHTML=msg;showToast(msg,bad)}
-export function renderEvents(){
- if(!$("lastEvents"))return;
- const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
- $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">Era ${escapeHtml(e.era)}</span> · ${escapeHtml(uiText(e.text))}</div>`).join(""):"";
-}
-/* ── Investimentos: botões, planos e valores ── */
-export const AREAS=[["mil","military"],["infra","infrastructure"],["tech","technology"]];
-export const PLANS={balanced:[34,33,33],attack:[65,25,10],economy:[20,65,15],tech:[20,20,60],clear:[0,0,0]};
-export const round2=v=>Math.floor(v*100+1e-6)/100;
-// Resto: o que falta, arredondado ao cêntimo mais próximo sem passar do disponível.
-export const restOf=avail=>{const r=Math.round(avail*100)/100;return r>avail+1e-9?r-0.01:r};
-export function readAlloc(){return AREAS.map(([k])=>Math.max(0,parseAmount($(k+"Spend").value)))}
-export function setAlloc(vals){AREAS.forEach(([k],i)=>{$(k+"Spend").value=fmtInput(vals[i])});renderAllocation()}
-export function applyPlan(name){const b=P(state).treasury,w=PLANS[name];const a=round2(b*w[0]/100),i=round2(b*w[1]/100),t=name==="clear"?0:Math.max(0,restOf(b-a-i));setAlloc([a,i,t])}
-export function stepArea(idx,dir){const b=P(state).treasury,v=readAlloc(),others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),step=Math.max(1,round2(b*0.1));v[idx]=clamp(round2(v[idx]+dir*step),0,round2(Math.max(0,b-others)));setAlloc(v)}
-export function restArea(idx){const b=P(state).treasury,v=readAlloc(),others=v.reduce((s,x,j)=>s+(j===idx?0:x),0);v[idx]=restOf(Math.max(0,b-others));setAlloc(v)}
-export function renderAllocation(statusMessage=null){
- const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=Math.max(0,b-sum),c=configApplied;
- const shownLeft=left<0.01?0:left,ended=!!state.result,over=sum>b+1e-8;
- $("actionLeft").classList.toggle("hidden",ended);$("actionEnded").classList.toggle("hidden",!ended);
- if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?"O total passa do ouro disponível":shownLeft===0?`<span aria-hidden="true">✓</span> tudo investido`:`sobram <strong>${fmt(shownLeft,2)}</strong> de ouro`;
- $("advance").classList.toggle("done-all",!ended&&shownLeft===0&&!over&&!statusMessage);
- AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?clamp(100*vals[i]/b,0,100):0)+"%";$(k+"Fine").textContent=fmt(vals[i],2)});
- $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);
- const milGain=vals[0]*c.military.pointsPerInvestment,infraGain=vals[1]*c.infrastructure.initialReturn,techGain=vals[2]*c.technology.progressPerInvestment*c.technology.benefitPerProgress,techEra=state.era+effectiveDelay("technology",c.technology.delay,state.mode);
- $("milForecast").textContent=`+${fmt(milGain,1)} de Força na próxima era. Curto prazo: a Força não usada perde 20% por era.`;
- $("infraForecast").textContent=`Rende cerca de ${money(infraGain)} por era a partir da próxima, crescendo até a 4.ª era e depois acabando.`;
- $("techForecast").textContent=`Rende ${money(techGain)} por era, para sempre, a partir da era ${techEra}.`;
- $("milPrev").innerHTML=vals[0]>0?`<span class="gold">+${fmt(milGain,1)}</span> de Força`:"curto prazo";
- $("infraPrev").innerHTML=vals[1]>0?`<span class="green">+${fmt(infraGain,2)}</span>/era`:"médio prazo";
- $("techPrev").innerHTML=vals[2]>0?`<span class="purple">+${fmt(techGain,2)}</span>/era<span class="wide"> · era ${techEra}</span>`:"longo prazo";
- $("advTitle").textContent=ended?"Jogar de novo →":`Concluir era ${state.era}`;
- $("advance").setAttribute("aria-label",ended?"Jogar de novo":`Concluir era ${state.era}: ${$("actionLeft").textContent.trim()}`);
- $("advance").disabled=busy||(!ended&&over);
- document.querySelectorAll("#investCard button, #investCard input, #fineSheet button, #plans button").forEach(el=>{if(!el.matches("[data-open]"))el.disabled=ended||!P(state).active});
-}
-/* ── Gráficos ── */
-export function svgLine(canvas,series,opts={}){
- const ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,w=canvas.clientWidth||300,h=canvas.clientHeight||220;if(!w)return;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
- const pad={l:38,r:10,t:14,b:26},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;ctx.strokeStyle="#293951";ctx.fillStyle="#9fb0c7";ctx.font="10px system-ui";ctx.lineWidth=1;
- const all=series.flatMap(s=>s.data.map(p=>p.y)).filter(Number.isFinite),max=Math.max(opts.minMax??1,...all),min=Math.min(0,...all),range=max-min||1;
- for(let i=0;i<=4;i++){let y=pad.t+ph*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(fmt(max-(max-min)*i/4,range<5?2:0),2,y+3)}
- const n=Math.max(1,...series.map(s=>s.data.length));
- if(opts.markX){const x=pad.l+(n<=1?0:(opts.markX-1)/(n-1))*pw;ctx.save();ctx.strokeStyle="#f4bd50";ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();ctx.restore()}
- series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();let started=false;s.data.forEach((p,i)=>{let x=pad.l+(n<=1?0:i/(n-1))*pw,y=pad.t+ph-(p.y-min)/range*ph;if(!Number.isFinite(y))return;if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)});ctx.stroke()});
- ctx.fillStyle="#9fb0c7";ctx.textAlign="center";ctx.fillText("Era",pad.l+pw/2,h-5);if(n>1){ctx.fillText("1",pad.l,h-5);ctx.fillText(String(n),w-pad.r-4,h-5)}ctx.textAlign="start";
-}
-export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
-export function renderCharts(){
- if(!$("details").open)return;
- const tl=state.timeline;svgLine($("revenueChart"),[{data:chartData("normal"),color:"#62a8ff"},{data:chartData("infra"),color:"#56d6a1"},{data:chartData("tech"),color:"#b49aff"}]);
- const perCiv=key=>state.civs.map((c,k)=>({color:c.chartColor,data:tl.map(e=>({x:e.era,y:e.civs[k]?.[key]||0}))}));
- svgLine($("territoryChart"),perCiv("territories"));svgLine($("militaryChart"),perCiv("military"));
- const legend=state.civs.map(c=>`<span style="--c:${cssColor(c.chartColor)}">${civLabel(c)}</span>`).join("");$("territoryLegend").innerHTML=legend;$("militaryLegend").innerHTML=legend;
-}
-export function renderHistory(){
- const h=state.history;$("historyCount").textContent=h.length;
- $("historyTable").innerHTML=h.slice(-150).reverse().map(r=>`<tr><td>${escapeHtml(r.era)}</td><td>${fmt(r.total,2)}</td><td>${fmt(r.militaryInvested||0,2)}</td><td>${fmt(r.infraInvested||0,2)}</td><td>${fmt(r.techInvested||0,2)}</td><td>${fmt(r.budget,2)}</td><td>${escapeHtml(r.territories)}</td><td>${fmt(r.military,1)}</td></tr>`).join("");
- const last=state.pending?.revenue?.player||h.at(-1),tot=Math.max(1,last?.total||0);
- $("revenueBreakdown").innerHTML=[["Territórios",last?.normal||0,"#62a8ff","blue"],["Obras",last?.infra||0,"#56d6a1","green"],["Ciência",last?.tech||0,"#b49aff","purple"]].map(([n,v,c,cl])=>`<div class="row between" style="margin-top:6px"><span class="muted">${n}</span><strong class="${cl}">${money(v)}</strong></div><div class="bar"><span style="width:${100*v/tot}%;background:${c}"></span></div>`).join("");
-}
-export function renderForecast(){
- const era=state.era;let infra=[],tech=[];
- for(let t=1;t<=12;t++){let e=era+t,ir=0,tr=0;for(const inv of state.investments){if(inv.owner!=="player")continue;if(inv.type==="infrastructure")ir+=infraReturn(inv,e-inv.origin);if(inv.type==="technology")tr+=techReturn(state,inv,e)}infra.push(ir);tech.push(tr)}
- $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Força disponível: ${fmt(P(state).military,1)}. Perde 20% por era se não for usada.</p></div><div class="log-item"><strong class="green">Obras</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}</p></div><div class="log-item"><strong class="purple">Ciência</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bônus sobre todo o ouro da era).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
-}
-export function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${escapeHtml(e.era)}</strong> · ${escapeHtml(uiText(e.text))}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
-/* ── Condições de vitória e fim de partida ── */
-// Relatório da era: ataques, batalhas, conquistas e saques revelados um a um.
-export function showEraReport(era){
- if(state.ui?.skipReport)return;
- const ev=state.log.filter(x=>x.era===era&&/conquist|repelid|batalha|ordem de|ataque|eliminad|saque/i.test(x.text)&&!/ordenou/i.test(x.text)).reverse();
- if(!ev.length)return;
- const mine=x=>/você|Você|Jogador|bem-sucedido|malsucedido|Seu/.test(x.text)||/de Jogador|\(de você\)/.test(x.text);
- showModal(`<h2>Relatório da era ${escapeHtml(era)}</h2><p class="small muted">As ordens de todos foram resolvidas juntas, em ordem sorteada.</p><div class="report">${ev.map((e,i)=>`<div class="report-line ${mine(e)?"mine":""}" style="animation-delay:${0.25+i*0.45}s">${escapeHtml(uiText(e.text))}</div>`).join("")}</div><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipReport"> Não mostrar relatórios nesta partida</label>`,
-  [{label:"Continuar",cls:"primary",onClick:()=>{if($("skipReport")?.checked){state.ui.skipReport=true;saveGame()}}}]);
-}
-export function renderVictory(){
- const s=state,cfg=configApplied,g=cfg.endgame;
- const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
- $("victoryPill").textContent=s.result?"Partida encerrada":`${left===1?"Última era":`Faltam ${left} eras`}`;
- const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
- const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
- const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
- const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${Math.ceil(g.supremacyMinEraShare*s.maxEras)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
- const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">· líder</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
- $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3>${terr}
- <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
- <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
- <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
- renderResult();
-}
-export const PTS=x=>Math.round(1000*x);   // pontos mostrados ao jogador (1000 = desempenho de referência)
-// Placar atual: pontuação final calculada com os dados do fim da última era (civilizações ativas).
-export function liveScores(){const e=state.timeline.at(-1);if(!e)return null;const act=e.civs.filter(r=>r.active!==false&&getCiv(state,r.id)?.active);if(!act.length)return null;
- return finalScores(act.map(r=>({id:r.id,dims:r.dims})),e.era,configApplied).map(x=>({...x,name:x.id==="player"?"você":civName(getCiv(state,x.id))||x.id,civ:getCiv(state,x.id)})).sort((a,b)=>b.score-a.score)}
-// Pontuação de cada civilização ao longo da partida (mesma fórmula da pontuação final).
-export function scoreSeries(){return state.timeline.map(e=>{const rows=e.civs.map(r=>({id:r.id,dims:r.dims}));const sc=finalScores(rows,e.era,configApplied);return e.civs.map((r,k)=>r.active?sc[k].score:0)})}
-export function advantageEra(winnerIdx,series){let lastNotLead=0;series.forEach((row,i)=>{const max=Math.max(...row);if(row[winnerIdx]<max-1e-9)lastNotLead=i+1});return lastNotLead+1}
-export function renderResult(){
- const s=state,b=$("resultBanner"),r=s.result;
- if(!r){if(!P(s).active){b.className="notice error";b.innerHTML=`<strong>Você foi eliminado na era ${escapeHtml(P(s).eliminatedEra)}.</strong> A partida continua entre os rivais; você pode concluir as eras para ver o final.`}else{b.className="hidden";b.innerHTML=""}return}
- const won=r.type==="victory"&&r.winners[0]==="player",drawn=r.type==="draw"&&r.winners.includes("player");
- const series=scoreSeries(),wIdx=r.type==="victory"?s.civs.findIndex(c=>c.id===r.winners[0]):-1,advEra=wIdx>=0?advantageEra(wIdx,series):null;
- const advTxt=wIdx>=0?(advEra>r.era?"":`${wIdx===0?"Você assumiu":escapeHtml(civName(s.civs[wIdx]))+" assumiu"} a liderança da pontuação na era ${advEra} e não a perdeu mais.`):"";
- const scoreTable=r.scores?`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Civilização</th><th>Pontuação</th><th>Força</th><th>Obras</th><th>Ciência</th><th>Ouro</th><th>Territórios</th></tr></thead><tbody>${[...r.scores].sort((a,b)=>b.score-a.score).map(x=>`<tr><td>${getCiv(s,x.id)?civLabel(getCiv(s,x.id)):escapeHtml(x.id)}</td><td><strong>${PTS(x.score)}</strong></td>${["military","infrastructure","technology","treasury","territories"].map(d=>`<td>${fmt(100*(x.parts[d]??0),0)}%</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:"";
- const legend=s.civs.map(c=>`<span style="--c:${c.chartColor}">${civLabel(c)}</span>`).join("");
- b.className="notice "+(won?"success":drawn?"":"error");
- b.innerHTML=`<strong style="font-size:17px">${won?"🏆 Vitória!":drawn?"🤝 Empate":"Derrota"}</strong> · ${escapeHtml(uiText(describeResult(s,r)))} <span class="pill">${DIFFICULTIES[s.difficulty]?.name||"Médio"}</span>${advTxt?`<div style="margin-top:4px">${advTxt}</div>`:""}<div style="margin-top:4px">Estilos dos rivais: ${aiCivs(s).map(c=>`${civSymHtml(c)} <strong>${escapeHtml(civName(c))}</strong> jogou como ${escapeHtml(profileLabel(c,true))}${c.hiddenProfile?" (sorteado)":""}`).join(" · ")}.</div>
- <div class="grid two" style="margin-top:10px"><section><div class="small muted">Pontuação ao longo da partida${advEra&&advEra<=r.era?" (linha tracejada: início da vantagem)":""}</div><canvas id="endScoreChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section><section><div class="small muted">Territórios por era</div><canvas id="endTerrChart" class="chart" style="height:180px"></canvas><div class="chart-legend">${legend}</div></section></div>${scoreTable}
- <div class="actions" style="margin-top:10px"><button id="newGameAfterEnd" class="primary">Jogar de novo (mesmas escolhas)</button><button id="changeSettingsAfterEnd">Mudar escolhas</button></div>`;
- svgLine($("endScoreChart"),s.civs.map((c,k)=>({color:c.chartColor,data:series.map((row,i)=>({x:i+1,y:PTS(row[k])}))})),{markX:advEra&&advEra<=r.era?advEra:null});
- svgLine($("endTerrChart"),s.civs.map((c,k)=>({color:c.chartColor,data:s.timeline.map(e=>({x:e.era,y:e.civs[k].territories}))})));
- $("newGameAfterEnd").onclick=startNewGame;$("changeSettingsAfterEnd").onclick=()=>window.openSetup&&window.openSetup(true);
-}
-/* ── Aviso de orçamento parado ── */
-export function showModal(html,buttons){
- $("modalRoot").innerHTML=`<div class="modal-back" role="dialog" aria-modal="true"><div class="modal">${html}<div class="actions" style="margin-top:14px">${buttons.map((b,i)=>`<button data-mb="${i}" class="${b.cls||""}">${b.label}</button>`).join("")}</div></div></div>`;
- buttons.forEach((b,i)=>$("modalRoot").querySelector(`[data-mb="${i}"]`).onclick=()=>{const keep=b.onClick?.();if(keep!==true)$("modalRoot").innerHTML=""});
- $("modalRoot").querySelector('[data-mb="0"]').focus();
-}
-export function concludeEra(){
- if(hooks.beforeConclude.some(fn=>fn()===false))return;
- if(state.result){startNewGame();return}
- const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
- if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"})};
- if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
-  showModal(`<h2>Você ainda tem ${money(left)} para investir</h2><p class="small muted">O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.</p><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
-   [{label:"Voltar e investir",cls:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}]);
-  return;
- }
- go();
-}
-// O tutorial joga com Fácil/1 IA/30 eras/modo lento, mas guarda as escolhas anteriores do jogador em
-// state.tutorial.prevSetup; a próxima partida nova (Jogar de novo, Reiniciar...) volta a elas.
-export function tutorialPrevSetup(){const p=state?.tutorial?.prevSetup;return p&&typeof p==="object"?p:null}
-export function restoreSetupAfterTutorial(){
- const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
- try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
-  c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;const n=normalizeConfig(c);
-  setConfigApplied(n);setGameMode(p.mode==="fast"?"fast":"slow");setCurrentDifficulty(diff);applyDifficulty(diff);runHook("configChanged");
- }catch(e){}
-}
-export function startNewGame(){restoreSetupAfterTutorial();setState(newGame());setSelectedTerritory(null);saveGame();renderAll();window.scrollTo({top:0})}
-export function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts();runHook("afterRender")}
 export function exportHistory(){download(`imperios-partida-era${state.era}.json`,JSON.stringify({formatVersion:VERSION,exportedAt:new Date().toISOString(),gameMode,config:configApplied,state},null,2))}
 export function renderParams(){
  const groups=PARAM_GROUPS;
@@ -537,16 +279,6 @@ export function readSimOpts(prefix){
  return {kind:$(prefix+"Kind").value==="fixed"?"fixed":"auto",games:num("Games",1,5000),eras:num("Eras",1,300),civCount:num("Civs",2,1+MAX_AI),baseSeed:num("Seed",0,4294967295),mode:["fast","both"].includes($(prefix+"Mode").value)?$(prefix+"Mode").value:"slow",profiles};
 }
 export function profileChecks(containerId){$(containerId).innerHTML=LAB_PROFILES.map(([v,n])=>`<label><input type="checkbox" value="${v}" checked> ${n}</label>`).join("")}
-/* ── Gráfico de barras agrupadas (canvas) ── */
-export function barChart(canvas,labels,series,opts={}){
- const ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,w=canvas.clientWidth||300,h=canvas.clientHeight||220;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
- const pad={l:38,r:8,t:12,b:34},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,all=series.flatMap(s=>s.values).filter(Number.isFinite),max=opts.max??Math.max(1,...all);
- ctx.font="10px system-ui";ctx.strokeStyle="#293951";ctx.fillStyle="#9fb0c7";
- for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(fmt(max*(1-i/4),0)+(opts.unit||""),2,y+3)}
- const gw=pw/Math.max(1,labels.length),bw=Math.max(2,Math.min(26,(gw-8)/Math.max(1,series.length)));
- labels.forEach((lab,i)=>{const x0=pad.l+gw*i+(gw-bw*series.length)/2;series.forEach((s,k)=>{const v=s.values[i];if(!Number.isFinite(v))return;const bh=ph*clamp(v/max,0,1);ctx.fillStyle=s.color;ctx.fillRect(x0+k*bw,pad.t+ph-bh,bw-1,bh)});ctx.fillStyle="#9fb0c7";const t=String(lab);ctx.fillText(t.length>14?t.slice(0,13)+"…":t,pad.l+gw*i+2,h-pad.b+14)});
-}
-export const legendHtml=items=>items.map(([name,color])=>`<span style="--c:${cssColor(color)}">${escapeHtml(name)}</span>`).join("");
 // Corre os testes e, se a aba "Testes funcionais" estiver ligada (versão de desenvolvimento), mostra o resultado.
 export let ftLabReady=false;
 export function runFtTests(filter,label){const r=executeTests(filter,label);if(ftLabReady){$("ftRepeat").disabled=false;renderFtLab()}return r}
@@ -721,116 +453,6 @@ export function setupValLab(){
  $("cancelVal").onclick=()=>{setValCancel(true);setStatus("valStatus","Cancelamento pedido...")};
  $("exportVal").onclick=exportValidation;$("valChartPick").onchange=drawValChart;
 }
-/* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
-   Uma folha de cada vez. Fecham com toque fora, Esc, o botão ✕ e o botão voltar do navegador/Android
-   (a folha aberta ocupa uma entrada do histórico). Enquanto há uma folha aberta, o resto da tela fica inerte
-   e o foco fica preso dentro dela; ao fechar, o foco volta para quem a abriu. */
-export const SHEET_HOOKS={
- attackSheet:{onClose:()=>{if(selectedTerritory!==null){setSelectedTerritory(null);renderMap()}}},
- details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
- scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
-};
-export const FOCUSABLE='button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
-export let sheetOpen=null,sheetReturn=null,sheetHist=false,sheetIgnorePop=0;
-export function isSheetOpen(id){return id?sheetOpen===id:!!sheetOpen}
-export function setInertBehind(on){
- const keep=el=>el.classList.contains("sheet")||el.classList.contains("sheet-scrim");
- [...document.querySelectorAll(".wrap > *"),...document.querySelectorAll("#game > *")].forEach(el=>{if(el.id==="game"||keep(el))return;if(on)el.inert=true;else el.inert=false});
- const tut=$("tutBox");if(tut)tut.inert=on;
-}
-export function openSheet(id,opener){
- const el=$(id);if(!el||sheetOpen===id)return;
- if(sheetOpen)closeSheet({swap:true});
- else sheetReturn=opener||document.activeElement;
- sheetOpen=id;el.hidden=false;$("sheetScrim").hidden=false;setInertBehind(true);
- document.querySelectorAll(`[data-open="${id}"]`).forEach(b=>b.setAttribute("aria-expanded","true"));
- if(!sheetHist){try{history.pushState({imperiosSheet:id},"");sheetHist=true}catch(e){}}
- el.scrollTop=0;SHEET_HOOKS[id]?.onOpen?.();
- el.focus({preventScroll:true});
-}
-export function closeSheet({swap=false,fromPop=false,focus=true}={}){
- const id=sheetOpen;if(!id)return;sheetOpen=null;
- $(id).hidden=true;document.querySelectorAll(`[data-open="${id}"]`).forEach(b=>b.setAttribute("aria-expanded","false"));
- SHEET_HOOKS[id]?.onClose?.();
- if(swap)return;
- $("sheetScrim").hidden=true;setInertBehind(false);
- if(fromPop)sheetHist=false;
- else if(sheetHist){sheetHist=false;sheetIgnorePop++;try{history.back()}catch(e){sheetIgnorePop--}}
- let r=sheetReturn;sheetReturn=null;if(typeof r==="function")r=r();
- if(focus&&r&&r.isConnected&&r.offsetParent!==null)r.focus({preventScroll:true});
-}
-// .open nas folhas (como nos antigos <details> "Como jogar" e "Detalhes"): ler diz se está aberta, escrever abre/fecha.
-document.querySelectorAll(".sheet").forEach(el=>Object.defineProperty(el,"open",{configurable:true,get(){return sheetOpen===el.id},set(v){if(v)openSheet(el.id);else if(sheetOpen===el.id)closeSheet()}}));
-window.addEventListener("popstate",()=>{
- if(sheetIgnorePop>0){sheetIgnorePop--;if(sheetOpen&&!sheetHist){try{history.pushState({imperiosSheet:sheetOpen},"");sheetHist=true}catch(e){}}return}
- if(sheetOpen)closeSheet({fromPop:true});
-});
-document.addEventListener("click",e=>{
- const o=e.target.closest("[data-open]");if(o&&!o.disabled){e.preventDefault();openSheet(o.dataset.open,o);return}
- if(e.target.closest("[data-close]")||e.target.id==="sheetScrim")closeSheet();
-});
-document.addEventListener("keydown",e=>{
- if(!sheetOpen||$("modalRoot").firstChild)return;
- if(e.key==="Escape"){e.preventDefault();closeSheet();return}
- if(e.key!=="Tab")return;
- const el=$(sheetOpen),f=[...el.querySelectorAll(FOCUSABLE)].filter(x=>x.offsetParent!==null&&!x.closest("[hidden]"));if(!f.length){e.preventDefault();el.focus();return}
- const first=f[0],last=f.at(-1),a=document.activeElement;
- if(e.shiftKey&&(a===first||a===el||!el.contains(a))){e.preventDefault();last.focus()}
- else if(!e.shiftKey&&(a===last||!el.contains(a))){e.preventDefault();first.focus()}
-});
-// Aviso rápido no topo (ordem dada, ataque cancelado...): some sozinho ou com um toque.
-export let toastTimer=null;
-export function showToast(html,bad=false){
- let t=$("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";t.setAttribute("role","status");t.setAttribute("aria-live","polite");t.hidden=true;t.onclick=()=>{t.hidden=true};document.body.appendChild(t)}
- t.innerHTML=`<span>${html}</span>`;t.classList.toggle("bad",bad);t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},3500);
-}
-// Planos rápidos: chips na gaveta em telas altas; em telas baixas (≤ 700 px) ficam na folha "Planos ▾".
-export const SHORT_SCREEN=matchMedia("(max-height:700px)");
-export function placePlans(){const plans=$("plans"),slot=$(SHORT_SCREEN.matches?"plansSheetSlot":"plansInline");if(plans&&slot&&plans.parentElement!==slot)slot.appendChild(plans);if(!SHORT_SCREEN.matches&&sheetOpen==="planSheet")closeSheet({focus:false})}
-SHORT_SCREEN.addEventListener?.("change",placePlans);
-// Tela da era sem rolagem: só na versão do jogador, com a aba Jogo à vista e sem resultado (a tela de resultado
-// ainda rola; Fase 3). Com ?dev=1 o cabeçalho e as abas ficam por cima e a página rola como antes.
-export function updateFit(){const g=$("game");document.documentElement.classList.toggle("game-fit",!DEV_MODE&&!!g&&g.classList.contains("active")&&!state?.result);if(state?.result&&sheetOpen==="attackSheet")closeSheet({focus:false})}
-// Mostra uma vista (Jogo ou, na versão de desenvolvimento, um laboratório) e marca a aba correspondente.
-export function showView(view){
- document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.view===view));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===view));closeSheet({focus:false});updateFit();if(view==="game")fitRegionNames();runHook("viewShown",view);
-}
-/* ── Arranque, em partes: jogo, tela inicial, tutorial e (só com ?dev=1) laboratórios ── */
-// Jogo: carrega o save (ou começa uma partida), desenha e liga os controles da tela da era.
-export async function initGame(){
- onHook("saveStatus",showSaveWarning);
- const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
- if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
- else if(saved){
-  // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
-  // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
-  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
-  catch(e){setConfigApplied(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setState(newGame())}
- }
- else{applyDifficulty(currentDifficulty);setState(newGame())}
- renderSavedSafely(renderAll);
- document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
- AREAS.forEach(([k],idx)=>{
-  const input=$(k+"Spend");
-  input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
-  input.addEventListener("focus",()=>{if(parseAmount(input.value)===0)input.select()});
-  const ctrl=input.parentElement,fine=document.querySelector(`.fine-row[data-area="${k}"]`);
-  input.addEventListener("keydown",e=>{if(e.key==="Enter")input.blur()});
-  ctrl.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>stepArea(idx,Number(b.dataset.step)));
-  fine.querySelector("[data-rest]").onclick=()=>restArea(idx);fine.querySelector("[data-zero]").onclick=()=>{const v=readAlloc();v[idx]=0;setAlloc(v)};
- });
- document.querySelectorAll("[data-plan]").forEach(b=>b.onclick=()=>{applyPlan(b.dataset.plan);if(sheetOpen==="planSheet")closeSheet({focus:false})});
- placePlans();
- // "Investir em Militar" (folha de ataque sem Força suficiente): fecha a folha e leva ao + do Militar.
- $("attackInvest").onclick=()=>{closeSheet({focus:false});const row=document.querySelector('[data-row="mil"]'),plus=document.querySelector('[data-area="mil"] [data-step="1"]');row.classList.remove("flash");void row.offsetWidth;row.classList.add("flash");plus.focus({preventScroll:true})};
- $("advance").onclick=concludeEra;
- $("attack").onclick=attackSelected;
- // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
- $("restart").onclick=()=>{closeSheet({focus:false});showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}])};
- onHook("afterEra",era=>setTimeout(()=>showEraReport(era),60));
- window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult()});
-}
 // Laboratórios (versão de desenvolvimento): editor de configuração, testes funcionais, balanceamento, IAs.
 export async function initLabs(){
  // Com os laboratórios, Início e Reiniciar ficam no cabeçalho (na versão do jogador estão no menu ☰).
@@ -868,194 +490,22 @@ export async function initLabs(){
 // Os laboratórios só são ligados na versão de desenvolvimento (?dev=1).
 // window.__imperiosReady fica true quando tudo está pronto (os testes automáticos esperam por isso).
 (async function boot(){
+ initSheets();watchShortScreen();
  await initGame();
  initHome();
  await initTutorial();
  if(DEV_MODE&&$("lab"))await initLabs();
  window.__imperiosReady=true;
 })();
-// Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
-export function initHome(){
- const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
- // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
- // fromGame=true repõe as escolhas da partida atual; a partir da tela inicial mantém as escolhas em curso.
- // Escolhas atuais; durante/depois do tutorial, as que o jogador tinha antes de o começar.
- // Na versão do jogador, "Configurações" (de um save antigo) aparece como "Médio" na próxima partida.
- const shownDiff=d=>DIFFICULTIES[d]&&(DEV_MODE||d!=="config")?d:"medio";
- const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY)};
-  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty)}};
- const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
- let choice=currentChoice();
- const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
- const sync=()=>{
-  $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
-  $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
-  document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
-  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.classList.toggle("selected",Number(b.dataset.eras)===choice.eras));$("homeMaxEras").value=choice.eras;
-  for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("homeVictoryDesc").textContent=choice.conquest?"Sem supremacia: vence quem conquistar 70% dos territórios ou eliminar os rivais; no limite de eras, decide a pontuação.":"Maioria territorial, eliminação ou supremacia (na fase final); no limite de eras, decide a pontuação.";
-  renderProfiles();
-  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>{const on=b.dataset.diff===choice.difficulty;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeDiffDesc").textContent=DIFFICULTIES[choice.difficulty]?.desc||"";
-  const styleName=v=>v==="random"?"aleatório":v==="config"?"das Configurações":playerProfileName(v).toLowerCase();
-  const styles=Array.from({length:choice.ai},(_,i)=>styleName(opponentChoices[i]||"random"));const uniq=[...new Set(styles)];
-  $("setupSummary").innerHTML=`<strong>${choice.ai===1?"1 rival":choice.ai+" rivais"}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${choice.eras} eras${choice.conquest?" · Conquista":""} · modo ${choice.mode==="fast"?"rápido":"lento"}`;
-  const inProgress=state&&!state.result&&(state.era>1||state.history.length>0);
-  $("homeContinue").classList.toggle("hidden",!inProgress);
-  if(inProgress)$("homeContinue").textContent=`Continuar partida (era ${state.era} de ${state.maxEras})`;
- };
- document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>b.onclick=()=>{choice.difficulty=b.dataset.diff;sync()});
- $("modeSlow").onclick=()=>{choice.mode="slow";sync()};$("modeFast").onclick=()=>{choice.mode="fast";sync()};
- document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>b.onclick=()=>{choice.ai=Number(b.dataset.ai);sync()});
- document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{choice.eras=Number(b.dataset.eras);sync()});
- $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
- $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
- const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
- $("homeStart").onclick=()=>openSetup(false);
- $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false};
- $("homeHowTo").onclick=()=>showModal(`<h2>Como jogar</h2>${$("howTo").querySelector(".grid").innerHTML}`,[{label:"Entendi",cls:"primary"}]);
- $("setupStart").onclick=()=>{
-  const inProgress=state&&!state.result&&(state.era>1||state.history.length>0);
-  if(inProgress)showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
- };
- const openTab=v=>{home.hidden=true;showView(v)};
- $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
- $("homeCompare").onclick=()=>openTab("balanceLab");
- $("homeLab").onclick=()=>openTab("lab");
- $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0;runHook("returnHome")};
- sync();
-}
-/* ── Tutorial: partida guiada (1 IA, roteiro controlado; depois jogo livre no Fácil) ──
-   O estado do tutorial vive em state.tutorial={step,waitEra,attackDone} e é guardado com a partida.
-   Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
-   e state.forcedAttack (resultado do próximo ataque de uma civilização). */
-export async function initTutorial(){
- const TUT_KEY="imperios-tutorial-oferecido",P_START=7,AI_START=9,TARGET=8;
- const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
- // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
- const planCta=name=>SHORT_SCREEN.matches?`Toque em “Planos” e escolha “${name}”.`:`Toque no plano “${name}”.`;
- const STEPS=[
-  {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`${civLabel(P(state))} (verde) e o rival ${civLabel(A(state))} disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
-  {t:"Ouro e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>ouro</strong>: cada território rende, e as Obras e a Ciência somam mais. O <strong>ouro</strong> aqui no topo é o que você pode investir agora; o <strong>+/era</strong> mostra quanto entrou nesta era.`},
-  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três áreas:<br>⚔ <strong>Militar</strong>: <strong>Força</strong> para atacar já na próxima era (perde 20% por era).<br>▰ <strong>Obras</strong>: rendem ouro a médio prazo e depois acabam.<br>✦ <strong>Ciência</strong>: rende tarde, mas para sempre.<br>Para atacar na próxima era, invista ao menos ${fmt(needMil(),0)} de ouro em Militar.<br><br>👉 <strong>${planCta("Ataque")}</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
-  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir era”.</strong> Os rivais jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
-  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque em ${regionName(TARGET)} (${TARGET+1}) e depois em “Atacar”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
-  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> são resolvidas juntas no fim da era, em ordem sorteada. Se dois atacarem o mesmo território, há <strong>batalha</strong> — vence quem tiver mais Força (somada à Ciência).<br><br>👉 <strong>Toque em “Concluir era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
-  {t:"Conquista!",target:()=>$("statTerr"),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui, <strong>terras</strong> mostra quantos você tem e quantos precisa para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
-  {t:"As Obras rendem",target:()=>$("statGold"),html:()=>`O <strong>+/era</strong> ao lado do ouro soma o que rendem os territórios, as Obras e a Ciência (veja cada parte em ☰ → Detalhes da partida). Cada investimento em Obras cresce até a 4.ª era e depois vai acabando — reinvista para manter o ouro entrando.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
-  {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`O rival ${civLabel(A(state))} atacou ${escapeHtml(regionName(state.tutorial.attackIdx))} (${state.tutorial.attackIdx+1}), um território seu, e <strong>foi repelido</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem Força suficiente, seus territórios vizinhos a eles viram alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com suas Obras e sua Ciência — o atacante precisa pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde um pouco de Força e não deixe o ouro parado.`},
-  {t:"Como saber quem está ganhando",target:()=>$("scorePill"),html:()=>`O <strong>🏆</strong> no topo mostra sua <strong>posição</strong> no placar e a diferença de <strong>pontos</strong> para o líder. Toque nele (ou em “terras”) para ver o placar completo e quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
- ];
- function scriptedAttack(){
-  const tu=state.tutorial;if(tu.attackDone)return;tu.attackDone=true;
-  const ai=A(state);if(!ai?.active)return;
-  const mine=state.owners.map((o,i)=>o==="player"&&eligibleTargets(state,ai.id).some(t=>t.i===i)?i:-1).filter(i=>i>=0);if(!mine.length)return;
-  const idx=mine[0];tu.attackIdx=idx;const need=configApplied.military.conquestCost+territoryDefense(state,idx,configApplied);
-  ai.military=Math.max(ai.military,need);state.forcedAttack={owner:ai.id,win:false};state.aiAvoid=null;
-  attackTerritory(state,idx,ai.id,configApplied,true);state.aiAvoid={player:true};saveGame();renderAll();
- }
- function startTutorial(){
-  scrolledStep=-1;
-  storage.set(TUT_KEY,"1").catch(()=>{});
-  // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
-  const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false};
-  setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
-  // O rival do tutorial é sempre "Equilibrado" (definido abaixo em ai.profile); opponentChoices do jogador não muda.
-  setState(newGame());
-  // Posições do tutorial: você no 8, a IA no 10, o território 9 livre entre os dois.
-  state.owners=state.owners.map(()=> "neutral");state.owners[P_START]="player";state.owners[AI_START]=A(state).id;
-  const ai=A(state);ai.profile="reference";ai.hiddenProfile=false;
-  state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
-
-  setSelectedTerritory(null);saveGame();
-  runHook("configChanged");
-  $("homeScreen").hidden=true;if($("setupScreen"))$("setupScreen").hidden=true;
-  showView("game");
-  renderAll();window.scrollTo({top:0});enterStep();
- }
- window.startTutorial=startTutorial;
- const box=document.createElement("div");box.id="tutBox";box.className="tut-box";box.hidden=true;box.setAttribute("role","dialog");box.setAttribute("aria-live","polite");document.body.appendChild(box);
- let focused=null,scrolledStep=-1;
- const cur=()=>state?.tutorial&&!state.tutorial.done?state.tutorial:null;
- function clearFocus(){if(focused)focused.classList.remove("tut-focus");focused=null}
- function endTutorial(skipped){const tu=cur();if(!tu)return;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();clearFocus();box.hidden=true;renderAll();
-  if(skipped)showModal(`<h2>Tutorial terminado</h2><p class="small muted">A partida continua normalmente no nível Fácil. Você pode rever o tutorial pela tela inicial (botão “Tutorial”) e as regras em “Como jogar”.</p>`,[{label:"Continuar",cls:"primary"}])}
- function enterStep(){const tu=cur();if(!tu)return;const st=STEPS[tu.step];if(st?.enter&&!tu["entered"+tu.step]){tu["entered"+tu.step]=true;st.enter();saveGame()}draw()}
- function draw(msg){
-  const tu=cur();clearFocus();if(!tu||!$("homeScreen").hidden||state.result){box.hidden=true;return}
-  if(tu.waitEra&&state.era<tu.waitEra){box.hidden=false;box.className="tut-box tut-mini";box.innerHTML=`<span>🎓 Tutorial: continue jogando — volta na era ${tu.waitEra}.</span><button type="button" data-tut="skip" class="tut-link">Sair</button>`;bind();return}
-  const st=STEPS[tu.step];if(!st){endTutorial(false);return}
-  const el=st.target();if(el){focused=el;el.classList.add("tut-focus");if(scrolledStep!==tu.step){scrolledStep=tu.step;const tall=el.getBoundingClientRect().height>innerHeight*0.55;el.scrollIntoView({block:tall?"start":"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}}
-  box.hidden=false;box.className="tut-box";
-  // Em ecrãs largos, o balão fica do lado oposto ao elemento destacado para não o tapar.
-  if(window.innerWidth>640&&el){const r=el.getBoundingClientRect(),right=r.left+r.width/2>window.innerWidth/2;box.style.left=right?"16px":"auto";box.style.right=right?"auto":"16px"}else{box.style.left="";box.style.right=""}
-  // A instrução de ação (👉 ...) fica sempre visível por baixo do texto, que rola dentro do balão se for longo.
-  const full=st.html(),k=full.indexOf("👉"),body=(k>=0?full.slice(0,k):full).replace(/(<br>\s*)+$/,""),cta=k>=0?full.slice(k):"";
-  box.innerHTML=`<div class="tut-head"><span class="pill">Tutorial ${tu.step+1}/${STEPS.length}</span><button type="button" data-tut="skip" class="tut-link">Pular tutorial</button></div><h3>${st.t}</h3><div class="tut-text">${body}</div>${cta?`<div class="tut-cta">${cta}</div>`:""}${msg?`<div class="tut-warn">${msg}</div>`:""}${st.action&&cta?"":`<div class="tut-actions">${st.action?'<span class="small muted">Faça a ação indicada para continuar.</span>':`<button type="button" class="primary" data-tut="next">${st.last?"Terminar tutorial":"Próximo →"}</button>`}</div>`}`;
-  bind();place();
- }
- // Telemóvel (≤ 640 px): o balão fica acima ou abaixo do elemento destacado, do lado com mais espaço,
- // e nunca por cima da barra fixa de baixo. Se o elemento ocupar a tela toda, o balão fica em baixo.
- const safeProbe=document.createElement("div");safeProbe.style.cssText="position:fixed;left:0;top:env(safe-area-inset-top,0px);width:0;height:0;visibility:hidden;pointer-events:none";document.body.appendChild(safeProbe);
- // Texto mais comprido que o balão: esbate o fim para mostrar que dá para rolar.
- const markMore=()=>{const tt=box.querySelector(".tut-text");box.classList.toggle("more",!!tt&&tt.scrollHeight>tt.clientHeight+2&&tt.scrollTop+tt.clientHeight<tt.scrollHeight-2)};
- box.addEventListener("scroll",markMore,true);
- function place(){requestAnimationFrame(markMore);
-  const reset=()=>{box.style.top="";box.style.bottom="";box.style.maxHeight=""};
-  if(box.hidden||box.classList.contains("tut-mini")||!focused||window.innerWidth>640){reset();return}
-  const vh=innerHeight,gap=10,minH=170,r=focused.getBoundingClientRect(),bar=document.querySelector(".actionbar");
-  const sTop=safeProbe.getBoundingClientRect().top+8,barTop=bar&&bar.offsetParent?Math.min(vh,bar.getBoundingClientRect().top):vh;
-  const inBar=bar&&bar.contains(focused),limitBot=inBar?vh:barTop;
-  const visTop=Math.max(sTop,r.top),visBot=Math.min(limitBot,r.bottom);
-  const above=visTop-gap-sTop,below=inBar?-1:barTop-8-(visBot+gap);
-  if(below>=minH&&below>=above){box.style.top=(visBot+gap)+"px";box.style.bottom="auto";box.style.maxHeight=below+"px";return}
-  if(above>=minH){box.style.top="auto";box.style.bottom=(vh-visTop+gap)+"px";box.style.maxHeight=above+"px";return}
-  // Sem espaço livre suficiente (elemento grande): balão em baixo, por cima da barra, ocupando no máximo 45% da tela.
-  box.style.top="auto";box.style.bottom=(vh-barTop+8)+"px";box.style.maxHeight=Math.round(Math.min(vh*0.45,barTop-sTop-8))+"px";
- }
- let placeQueued=false;const queuePlace=()=>{if(placeQueued)return;placeQueued=true;requestAnimationFrame(()=>{placeQueued=false;place()})};
- window.addEventListener("scroll",queuePlace,{passive:true});window.addEventListener("resize",queuePlace);
- function bind(){box.querySelectorAll("[data-tut]").forEach(b=>b.onclick=()=>{
-  if(b.dataset.tut==="skip"){endTutorial(true);return}
-  const tu=cur(),st=STEPS[tu.step];st.after?.();if(st.last){endTutorial(false);return}tu.step++;saveGame();enterStep()})}
- // Avanço automático das etapas com ação e retoma depois das eras de espera.
- setInterval(()=>{const tu=cur();if(!tu||!$("homeScreen").hidden)return;
-  if(tu.waitEra){if(state.era>=tu.waitEra){tu.waitEra=0;saveGame();enterStep()}return}
-  const st=STEPS[tu.step];if(st?.action&&st.done()){tu.step++;saveGame();enterStep()}},250);
- // Durante as etapas de ação, não deixa concluir a era antes do tempo.
- onHook("beforeConclude",()=>{const tu=cur();
-  if(tu&&!tu.waitEra&&tu.step<=2){draw("Primeiro coloque pelo menos "+fmt(needMil(),0)+" de ouro em Militar (plano “Ataque”).");return false}
-  if(tu&&!tu.waitEra&&tu.step===4){draw("Primeiro dê a ordem de ataque a "+regionName(TARGET)+" ("+(TARGET+1)+").");return false}
- });
- // Depois de cada desenho completo, redesenha o balão por cima.
- onHook("afterRender",()=>{if(cur())setTimeout(()=>{if(focused||box.hidden===false)draw()},0)});
- // Tela inicial: botão e oferta na primeira visita.
- const how=$("homeHowTo");if(how){const b=document.createElement("button");b.type="button";b.className="home-secondary";b.id="homeTutorial";b.textContent="🎓 Tutorial";how.insertAdjacentElement("beforebegin",b);
-  b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()}}
- let offered=false;try{offered=!!await storage.get(TUT_KEY)}catch(e){offered=true}
- const fresh=!state||(!state.history.length&&state.era<=1);
- if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Uma partida guiada mostra, em poucos minutos, como investir, atacar, defender e vencer. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}]),300);
- if(cur())setTimeout(draw,0);
- // Ao voltar ao jogo a partir da tela inicial, mostra de novo o balão.
- onHook("continueGame",()=>setTimeout(draw,0));
- onHook("returnHome",()=>{clearFocus();box.hidden=true});
-}
 // Únicas formas de outros módulos substituírem estas variáveis (um módulo não pode reatribuir o que importa).
 export function setCompareResults(v){compareResults=v;return v}
 export function setLastStrategyResult(v){lastStrategyResult=v;return v}
 export function setScenarioLoaded(v){scenarioLoaded=v;return v}
-export function setSavedGameLoaded(v){savedGameLoaded=v;return v}
-export function setSaveProblem(v){saveProblem=v;return v}
-export function setSavedRaw(v){savedRaw=v;return v}
 export function setAiValidationResults(v){aiValidationResults=v;return v}
 export function setBalanceLabResults(v){balanceLabResults=v;return v}
 export function setFixedRun(v){fixedRun=v;return v}
 export function setFixedCancel(v){fixedCancel=v;return v}
 export function setFtLabReady(v){ftLabReady=v;return v}
-export function setSheetOpen(v){sheetOpen=v;return v}
-export function setSheetReturn(v){sheetReturn=v;return v}
-export function setSheetHist(v){sheetHist=v;return v}
-export function setSheetIgnorePop(v){sheetIgnorePop=v;return v}
-export function setToastTimer(v){toastTimer=v;return v}
 
 // Depuração e testes: variáveis globais só com ?dev=1 ou quando os testes automáticos o pedem (ver src/app/debug.js).
-if(DEV_MODE||globalThis.__IMPERIOS_TEST__)exposeGlobals([ns_core_index,ns_ai_index,ns_app_session,ns_app_save,ns_app_hooks,ns_platform_storage,ns_platform_files,ns_ui_format,ns_ui_dom,ns_labs_settings,ns_labs_ai_checks,ns_labs_engine,ns_labs_experiment,ns_labs_validation,ns_labs_tests_def,ns_legacy]);
+if(DEV_MODE||globalThis.__IMPERIOS_TEST__)exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_util,ns_labs_ai_checks,ns_labs_engine,ns_labs_experiment,ns_labs_settings,ns_labs_tests_def,ns_labs_validation,ns_legacy,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_toast,ns_ui_tutorial]);
