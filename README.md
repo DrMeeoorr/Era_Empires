@@ -34,6 +34,7 @@ Para uma verificação rápida só das regras (uns 3 segundos): `npm run test:ra
 | `tests/game-flow.test.js` | Partida curta completa até à tela de resultado, salvar/recarregar e o tutorial do início ao fim. |
 | `tests/security.test.js` | Um save com HTML no nome de uma IA, na cor ou no registo de eventos não pode executar código. |
 | `tests/save.test.js` | Save danificado não trava o jogo (vai para `…-corrompido` e começa partida nova com aviso); falha ao salvar mostra aviso ao jogador. |
+| `tests/difficulty.test.js` | Valores de uma dificuldade não "vazam" para outra nem para "Configurações"; o tutorial não grava as suas escolhas (Fácil, 1 IA, 30 eras) nas do jogador. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. |
 
 **Se o teste de regressão falhar**

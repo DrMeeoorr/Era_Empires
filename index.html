@@ -1033,7 +1033,18 @@ const DIFFICULTIES={
  config:{name:"Configurações",desc:"Usa a receita, a agressividade e o alvo das IAs definidos nas Configurações."}
 };
 let currentDifficulty="config";
-function applyDifficulty(key){const d=DIFFICULTIES[key];if(!d||key==="config")return;configApplied.economy.aiIncomeMultiplier=d.aiIncomeMultiplier;configApplied.economy.aiIncomeMultiplier1v1=d.aiIncomeMultiplier1v1??-1;configApplied.military.aiAggression=d.aiAggression;configApplied.military.aiTarget=d.aiTarget}
+// Os 4 valores que as dificuldades substituem. aiConfigBase guarda os valores "das Configurações", para que
+// escolher "Configurações" depois de outra dificuldade volte a eles (antes ficavam os da dificuldade anterior).
+const AI_DIFF_FIELDS=[["economy","aiIncomeMultiplier"],["economy","aiIncomeMultiplier1v1"],["military","aiAggression"],["military","aiTarget"]];
+const pickAiDifficulty=cfg=>Object.fromEntries(AI_DIFF_FIELDS.map(([g,k])=>[g+"."+k,cfg[g][k]]));
+let aiConfigBase=pickAiDifficulty(DEFAULTS);
+// Valores vindos de um save: só são aceites se a configuração continuar válida com eles.
+function validAiBase(b){if(!b||typeof b!=="object")return null;try{const c=clone(DEFAULTS);for(const [g,k] of AI_DIFF_FIELDS){if(!(g+"."+k in b))return null;c[g][k]=b[g+"."+k]}normalizeConfig(c);return pickAiDifficulty(c)}catch(e){return null}}
+// Chamada quando a configuração é aplicada nos laboratórios: com a dificuldade "Configurações" ativa, os valores aplicados passam a ser a base.
+function rememberAiBase(cfg){if(currentDifficulty==="config")aiConfigBase=pickAiDifficulty(cfg)}
+function applyDifficulty(key){const d=DIFFICULTIES[key];if(!d)return;
+ if(key==="config"){for(const [g,k] of AI_DIFF_FIELDS)configApplied[g][k]=aiConfigBase[g+"."+k];return}
+ configApplied.economy.aiIncomeMultiplier=d.aiIncomeMultiplier;configApplied.economy.aiIncomeMultiplier1v1=d.aiIncomeMultiplier1v1??-1;configApplied.military.aiAggression=d.aiAggression;configApplied.military.aiTarget=d.aiTarget}
 /* ── Adversários: estilo escolhido por IA ou sorteado ── */
 const OPPONENT_OPTIONS=[["random","🎲 Aleatório (descobre no fim)"],["config","⚙ Definido nas Configurações"],["reference","Equilibrado — divide igualmente"],["military","Militar — exército forte"],["aggressive","Agressivo — expande e ataca muito"],["technologist","Tecnológico — aposta no longo prazo"],["economist","Infraestrutura — economia forte"],["adaptive","Adaptativa — reage à situação"]];
 // Na versão completa o padrão segue o perfil definido nas Configurações (comportamento anterior).
@@ -1052,7 +1063,7 @@ const SAVE_KEY="imperios-completo-partida", SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompi
 // com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
 let saveFailed=false;
 function saveGame(){
- try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty}));if(saveFailed){saveFailed=false;showSaveWarning(null)}return true}
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase}));if(saveFailed){saveFailed=false;showSaveWarning(null)}return true}
  catch(e){saveFailed=true;showSaveWarning(e);return false}
 }
 function showSaveWarning(err){
@@ -1111,7 +1122,10 @@ function readSavedGame(){
  try{const o=JSON.parse(raw);
   if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
   const why=validateSavedState(migrateSavedState(o.state));if(why)return {status:"invalid",raw,reason:why};
-  return {status:"ok",game:{config:normalizeConfig(o.config),state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty:DIFFICULTIES[o.difficulty]?o.difficulty:null}};
+  const config=normalizeConfig(o.config),difficulty=DIFFICULTIES[o.difficulty]?o.difficulty:null;
+  // Saves antigos não têm aiBase: com "Configurações" os valores salvos são a base; com outra dificuldade, os padrões.
+  const aiBase=validAiBase(o.aiBase)||(difficulty===null||difficulty==="config"?pickAiDifficulty(config):pickAiDifficulty(DEFAULTS));
+  return {status:"ok",game:{config,state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty,aiBase}};
  }catch(e){return {status:"invalid",raw,reason:e.message||String(e)}}
 }
 function loadSavedGame(){const r=readSavedGame();return r.status==="ok"?r.game:null}
@@ -1125,7 +1139,7 @@ function renderSavedSafely(render){
  try{render()}catch(e){
   if(!savedGameLoaded)throw e;
   savedGameLoaded=false;try{quarantineSave(localStorage.getItem(SAVE_KEY)||JSON.stringify({v:1,state}))}catch(_){}
-  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty="config";opponentChoices=["config","config","config"];selectedTerritory=null;state=newGame();
+  configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty="config";aiConfigBase=pickAiDifficulty(configDefault);opponentChoices=["config","config","config"];selectedTerritory=null;state=newGame();
   if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
   render();
  }
@@ -1286,7 +1300,17 @@ function concludeEra(){
  }
  go();
 }
-function startNewGame(){state=newGame();selectedTerritory=null;saveGame();renderAll();window.scrollTo({top:0})}
+// O tutorial joga com Fácil/1 IA/30 eras/modo lento, mas guarda as escolhas anteriores do jogador em
+// state.tutorial.prevSetup; a próxima partida nova (Jogar de novo, Reiniciar...) volta a elas.
+function tutorialPrevSetup(){const p=state?.tutorial?.prevSetup;return p&&typeof p==="object"?p:null}
+function restoreSetupAfterTutorial(){
+ const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
+ try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:"config";
+  c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;const n=normalizeConfig(c);
+  configApplied=n;gameMode=p.mode==="fast"?"fast":"slow";currentDifficulty=diff;applyDifficulty(diff);configEdited=clone(configApplied);if(typeof renderParams==="function")renderParams();
+ }catch(e){}
+}
+function startNewGame(){restoreSetupAfterTutorial();state=newGame();selectedTerritory=null;saveGame();renderAll();window.scrollTo({top:0})}
 
 function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts()}
 function setStatus(id,msg,cls=""){const el=$(id);el.className="status "+cls;el.textContent=msg}
@@ -1318,7 +1342,7 @@ function renderParams(){
 }
 function readParams(){document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");configEdited[g][k]=el.type==="checkbox"?el.checked:el.type==="number"?Number(el.value):el.value});return normalizeConfig(configEdited)}
 function applyConfig(){
- const c=readParams();if($("recalcExisting").checked){configApplied=clone(c);state=newGame();selectedTerritory=null;addLog(state,"Partida reiniciada com recálculo explícito.");}
+ const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){configApplied=clone(c);state=newGame();selectedTerritory=null;addLog(state,"Partida reiniciada com recálculo explícito.");}
  else configApplied=clone(c);
  configEdited=clone(c);renderParams();renderAll();$("configState").textContent="Configuração aplicada";setStatus("labStatus",$("recalcExisting").checked?"Configuração aplicada e partida reiniciada.":"Configuração aplicada. Investimentos existentes mantêm seus parâmetros originais.","success");
 }
@@ -1952,7 +1976,7 @@ function renderExpResults(){
 // Integração: leva os parâmetros de um cenário para a configuração aplicada (jogo e laboratórios).
 function applyScenarioToConfig(i){
  const s=expState.results?.scenarios[i];if(!s)return;
- configApplied=normalizeConfig({...clone(s.cfg),references:configApplied.references});configEdited=clone(configApplied);renderParams();renderAll();refreshValConfigOptions();
+ configApplied=normalizeConfig({...clone(s.cfg),references:configApplied.references});rememberAiBase(configApplied);configEdited=clone(configApplied);renderParams();renderAll();refreshValConfigOptions();
  setStatus("expStatus",`Parâmetros do cenário "${s.name}" aplicados à configuração. A partida em curso mantém os investimentos já feitos; reinicie-a para jogar só com as novas regras. Recomenda-se executar de novo os testes funcionais.`,"success");
 }
 function renderExpProfileTable(){
@@ -2085,7 +2109,7 @@ function setupValLab(){
 function init(){
  const read=readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;savedGameLoaded=true}else state=newGame();
+ if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true}else state=newGame();
  renderSavedSafely(()=>{renderParams();renderAll()});
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===b.dataset.view));if(b.dataset.view==="balanceLab")redrawExpCharts();}));
  AREAS.forEach(([k],idx)=>{
@@ -2106,7 +2130,7 @@ function init(){
  $("restoreConfig").onclick=()=>{configEdited=clone(configDefault);renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
  $("saveConfig").onclick=()=>{try{download("imperios-configuracao.json",JSON.stringify({formatVersion:VERSION,config:readParams()},null,2))}catch(e){setStatus("labStatus",e.message,"error")}};
  $("loadConfigBtn").onclick=()=>$("configFile").click();$("configFile").onchange=e=>{if(e.target.files[0])loadJsonFile(e.target.files[0],"config");e.target.value=""};
- $("restartWithConfig").onclick=()=>{try{configApplied=readParams();configEdited=clone(configApplied);state=newGame();selectedTerritory=null;renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
+ $("restartWithConfig").onclick=()=>{try{configApplied=readParams();rememberAiBase(configApplied);configEdited=clone(configApplied);state=newGame();selectedTerritory=null;renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
  document.querySelectorAll(".quick").forEach(b=>b.onclick=()=>runLong(Number(b.dataset.n)));
  $("customAdvance").onclick=()=>{try{const n=safeNum($("customEras").value,1,1e9);if(!Number.isSafeInteger(n))throw Error("Use um inteiro positivo.");runLong(n)}catch(e){setStatus("advanceStatus",e.message,"error")}};
  $("cancelAdvance").onclick=()=>{cancelRequested=true;setStatus("advanceStatus","Cancelamento solicitado; concluindo o bloco atual...")};
@@ -2133,8 +2157,11 @@ init();
  const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
  // fromGame=true repõe as escolhas da partida atual; a partir da tela inicial mantém as escolhas em curso.
- const openSetup=(fromGame=false)=>{if(fromGame===true)choice={mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:currentDifficulty};sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
- let choice={mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:currentDifficulty};
+ // Escolhas atuais; durante/depois do tutorial, as que o jogador tinha antes de o começar.
+ const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:DIFFICULTIES[p.difficulty]?p.difficulty:"config"};
+  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:currentDifficulty}};
+ const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
+ let choice=currentChoice();
  const renderProfiles=()=>{$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>IA ${choice.ai===1?"":i+1}</span><select data-prof="${i}" aria-label="Estilo da IA ${i+1}">${OPPONENT_OPTIONS.map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{opponentChoices=opponentChoices.map(()=>"random");sync()}};
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
@@ -2158,7 +2185,7 @@ init();
  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{choice.eras=Number(b.dataset.eras);sync()});
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
- const begin=()=>{gameMode=choice.mode;currentDifficulty=choice.difficulty;applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied=normalizeConfig(configApplied);configEdited=clone(configApplied);renderParams();startNewGame();home.hidden=true;setup.hidden=true;const t=document.querySelector('.tab[data-view="game"]');if(t)t.click()};
+ const begin=()=>{restoreSetupAfterTutorial();gameMode=choice.mode;currentDifficulty=choice.difficulty;applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied=normalizeConfig(configApplied);configEdited=clone(configApplied);renderParams();startNewGame();home.hidden=true;setup.hidden=true;const t=document.querySelector('.tab[data-view="game"]');if(t)t.click()};
  $("homeStart").onclick=()=>openSetup(false);
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false};
  $("homeHowTo").onclick=()=>showModal(`<h2>Como jogar</h2>${$("howTo").querySelector(".grid").innerHTML}`,[{label:"Entendi",cls:"primary"}]);
@@ -2170,7 +2197,7 @@ init();
  $("homeContinue").onclick=()=>{openTab("game");renderAll()};
  $("homeCompare").onclick=()=>openTab("balanceLab");
  $("homeLab").onclick=()=>openTab("lab");
- $("returnHome").onclick=()=>{choice={mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:currentDifficulty};sync();home.hidden=false;home.scrollTop=0};
+ $("returnHome").onclick=()=>{choice=currentChoice();sync();home.hidden=false;home.scrollTop=0};
  sync();
 })();
 
@@ -2258,13 +2285,15 @@ init();
  function startTutorial(){
   scrolledStep=-1;
   try{localStorage.setItem(TUT_KEY,"1")}catch(e){}
+  // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
+  const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false};
   gameMode="slow";currentDifficulty="facil";applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;configApplied=normalizeConfig(configApplied);
-  if(typeof opponentChoices!=="undefined")opponentChoices[0]="reference";
+  // O rival do tutorial é sempre "Equilibrado" (definido abaixo em ai.profile); opponentChoices do jogador não muda.
   state=newGame();
   // Posições do tutorial: você no 8, a IA no 10, o território 9 livre entre os dois.
   state.owners=state.owners.map(()=> "neutral");state.owners[P_START]="player";state.owners[AI_START]=A(state).id;
   const ai=A(state);ai.profile="reference";ai.hiddenProfile=false;
-  state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
+  state.aiAvoid={player:true,idx:[TARGET]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial
 
   selectedTerritory=null;saveGame();
   if(typeof configEdited!=="undefined"&&typeof renderParams==="function"){configEdited=clone(configApplied);renderParams()}
