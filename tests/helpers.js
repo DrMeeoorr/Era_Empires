@@ -86,7 +86,7 @@ async function openGame(browser, { contextOptions = {}, offerTutorial = false, d
   page.on("pageerror", (e) => errors.push("exceção: " + (e.stack || e.message)));
   page.on("requestfailed", (r) => errors.push("pedido falhou: " + r.url()));
   await page.goto(dev ? GAME_URL + (GAME_URL.includes("?") ? "&" : "?") + "dev=1" : GAME_URL);
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state && typeof runTests === "function");
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state && typeof runTests === "function");
   return { context, page, errors };
 }
 

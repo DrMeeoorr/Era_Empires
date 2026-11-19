@@ -89,7 +89,7 @@ test("salvar e recarregar: o progresso continua depois de recarregar a página",
   const before = JSON.parse(saved);
   assert.equal(before.era, 4);
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   // Tela inicial oferece "Continuar partida (era 4 de 30)".
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
@@ -127,7 +127,7 @@ test("salvar e recarregar: depois de uma partida terminada, reabrir o jogo mant�
   assert.deepEqual(chosen, { ai: 3, eras: 15, supremacy: false, difficulty: "dificil", mode: "fast", style: "military" });
   await page.evaluate(() => { while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   assert.equal(await page.evaluate(() => !!state.result), false, "partida terminada foi retomada");
   assert.deepEqual(await read(), chosen);
   assert.equal(await page.evaluate(() => state.civs.length), 4, "a partida nova já usa as 3 IAs escolhidas");
@@ -144,7 +144,7 @@ test("salvar e recarregar: partida do tutorial terminada volta às escolhas de a
   await page.locator("#setupStart").click();
   await page.evaluate(() => { startTutorial(); while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const r = await page.evaluate(() => ({ ai: configApplied.map.aiCount, eras: configApplied.endgame.maxEras, difficulty: currentDifficulty, result: !!state.result, tutorial: !!state.tutorial }));
   assert.deepEqual(r, { ai: 2, eras: 15, difficulty: "dificil", result: false, tutorial: false });
   assert.deepEqual(errors, []);
@@ -159,14 +159,14 @@ test("salvar e recarregar: partida terminada não é retomada e save corrompido 
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   assert.equal(await page.evaluate(() => !!state.result), false, "partida terminada foi retomada");
   assert.equal(await page.locator("#homeContinue").isVisible(), false);
   // Save corrompido / formato desconhecido.
   for (const raw of ["{lixo", JSON.stringify({ v: 99, state: {} }), JSON.stringify({ v: 1, state: { civs: "x" } })]) {
     await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEYS.save, raw]);
     await page.reload();
-    await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+    await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
     assert.deepEqual(await page.evaluate(() => ({ era: state.era, result: state.result })), { era: 1, result: null }, "save inválido: " + raw);
   }
   assert.deepEqual(errors, []);
@@ -213,7 +213,7 @@ test("tutorial: recarregar a página a meio retoma o tutorial no mesmo passo", a
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, offerTutorial: true });
   await playTutorial(page, { stopBefore: 7 });
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
   assert.match(await cont.innerText(), /era 3/);

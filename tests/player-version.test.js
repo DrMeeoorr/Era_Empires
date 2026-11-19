@@ -66,7 +66,7 @@ test("versão de desenvolvimento (?dev=1): laboratórios, Exportar e 'Versão co
   await page.locator('.tab[data-view="game"]').click();
   // ?dev=1 continua depois de recarregar (o endereço mantém-se).
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   assert.equal(await page.evaluate(() => DEV_MODE), true);
   assert.deepEqual(errors, []);
   await context.close();
@@ -96,7 +96,7 @@ test("versão do jogador: save antigo com dificuldade 'config' e rivais 'config'
     localStorage.setItem("imperios-completo-partida", JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: s, opponentChoices: ["config", "config", "config"], difficulty: "config", aiBase: pickAiDifficulty(DEFAULTS) }));
   });
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   assert.equal(await page.evaluate(() => currentDifficulty), "config", "a partida salva perdeu a dificuldade");
   await page.locator("#homeContinue").click().catch(() => {});
   await page.evaluate(() => { document.getElementById("homeScreen").hidden = true; renderAll(); });

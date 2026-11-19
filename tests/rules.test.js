@@ -12,14 +12,14 @@ before(async () => {
 });
 after(async () => browser && browser.close());
 
-/** Corre fn(arg) na página; devolve o valor ou falha com a mensagem do erro lançado. */
+/** Corre fn(arg) na página (fn pode ser assíncrona); devolve o valor ou falha com a mensagem do erro lançado. */
 async function rule(fn, arg) {
   const r = await ctx.page.evaluate(
-    ([src, a]) => {
+    async ([src, a]) => {
       try {
         // Cada caso parte da configuração padrão; restaura o estado global no fim.
         const saved = { state, configApplied, gameMode, currentDifficulty };
-        try { return { ok: true, value: (0, eval)("(" + src + ")")(a) }; }
+        try { return { ok: true, value: await (0, eval)("(" + src + ")")(a) }; }
         finally { state = saved.state; configApplied = saved.configApplied; gameMode = saved.gameMode; currentDifficulty = saved.currentDifficulty; }
       } catch (e) { return { ok: false, msg: e.message || String(e) }; }
     },
@@ -275,18 +275,19 @@ test("configuração: normalizeConfig é idempotente e recusa valores fora dos l
   }));
 
 test("gravação: saveGame/loadSavedGame preservam a partida; dados inválidos devolvem null", () =>
-  rule(() => {
+  // saveGame/loadSavedGame são assíncronos (armazenamento pronto para o app).
+  rule(async () => {
     const KEY = "imperios-completo-partida", before = localStorage.getItem(KEY);
     try {
       gameMode = "fast"; configApplied = clone(DEFAULTS); configApplied.map.aiCount = 2; state = newGame();
       for (let i = 0; i < 4; i++) playEra({ military: 5, infrastructure: 5, technology: 5 });
-      saveGame();
-      const g = loadSavedGame();
+      await saveGame();
+      const g = await loadSavedGame();
       if (!g || JSON.stringify(g.state) !== JSON.stringify(state)) throw Error("estado gravado ≠ estado carregado");
       if (g.gameMode !== "fast" || g.config.map.aiCount !== 2) throw Error("modo/configuração não preservados");
       for (const raw of ["", "{", "null", '{"v":2,"state":{}}', '{"v":1,"state":{"civs":[],"owners":null}}', '{"v":1,"state":{"civs":[],"owners":[]},"config":{}}']) {
         localStorage.setItem(KEY, raw);
-        if (loadSavedGame() !== null) throw Error("save inválido aceite: " + raw);
+        if ((await loadSavedGame()) !== null) throw Error("save inválido aceite: " + raw);
       }
     } finally { if (before === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, before); }
   }));

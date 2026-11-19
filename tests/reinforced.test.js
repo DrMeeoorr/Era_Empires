@@ -218,7 +218,7 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
 
   // Depois de recarregar continua a partida reiniciada (o save foi substituído).
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const reloaded = await snap(page);
   assert.equal(reloaded.era, 1);
   assert.equal(reloaded.history, 0);

@@ -600,6 +600,16 @@ function effectiveDelay(type, configuredDelay, mode="slow"){
 }
 const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];
 const $=id=>document.getElementById(id);
+/* ── Armazenamento (único lugar que usa localStorage) ──
+   Interface assíncrona: get(key) → texto ou null, set(key,texto), remove(key); todas devolvem promessas.
+   Hoje usa o localStorage do navegador; no app Android basta trocar por @capacitor/preferences
+   (Preferences.get/set/remove) sem mexer no resto do jogo. Com o localStorage a gravação acontece já na
+   chamada (antes de a promessa resolver), por isso a ordem das gravações é sempre a das chamadas. */
+const storage={
+ async get(key){return localStorage.getItem(key)},
+ async set(key,value){localStorage.setItem(key,String(value))},
+ async remove(key){localStorage.removeItem(key)},
+};
 // true com ?dev=1: mostra laboratórios, testes e exportação (ver o <script> no <head>).
 const DEV_MODE=typeof document!=="undefined"&&!document.documentElement.classList.contains("player-build");
 // Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
@@ -1346,10 +1356,11 @@ function playEra(allocation){const row=finishEra(state,configApplied,{playerAllo
 const SAVE_KEY="imperios-completo-partida", SAVE_CORRUPT_KEY=SAVE_KEY+"-corrompido";
 // Grava a partida. Se o navegador recusar (espaço cheio, armazenamento bloqueado), avisa o jogador
 // com uma mensagem visível em vez de falhar em silêncio; o aviso some na próxima gravação bem-sucedida.
+// Devolve uma promessa: true se gravou, false se falhou (o aviso já foi mostrado).
 let saveFailed=false;
 function saveGame(){
- try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase}));if(saveFailed){saveFailed=false;showSaveWarning(null)}return true}
- catch(e){saveFailed=true;showSaveWarning(e);return false}
+ let w;try{w=storage.set(SAVE_KEY,JSON.stringify({v:1,savedAt:Date.now(),gameMode,config:configApplied,state,opponentChoices,difficulty:currentDifficulty,aiBase:aiConfigBase}))}catch(e){w=Promise.reject(e)}
+ return w.then(()=>{if(saveFailed){saveFailed=false;showSaveWarning(null)}return true},e=>{saveFailed=true;showSaveWarning(e);return false});
 }
 function showSaveWarning(err){
  if(typeof document==="undefined")return;let el=document.getElementById("saveWarning");
@@ -1400,9 +1411,9 @@ function migrateSavedState(st){
  }
  return st;
 }
-// Lê o save: {status:"none"} (não há), {status:"ok",game} ou {status:"invalid",raw,reason}.
-function readSavedGame(){
- let raw=null;try{raw=localStorage.getItem(SAVE_KEY)}catch(e){return {status:"none"}}
+// Lê o save: {status:"none"} (não há), {status:"ok",raw,game} ou {status:"invalid",raw,reason}.
+async function readSavedGame(){
+ let raw=null;try{raw=await storage.get(SAVE_KEY)}catch(e){return {status:"none"}}
  if(!raw)return {status:"none"};
  try{const o=JSON.parse(raw);
   if(!o||typeof o!=="object"||o.v!==1)return {status:"invalid",raw,reason:"formato desconhecido"};
@@ -1410,20 +1421,21 @@ function readSavedGame(){
   const config=normalizeConfig(o.config),difficulty=DIFFICULTIES[o.difficulty]?o.difficulty:null;
   // Saves antigos não têm aiBase: com "Configurações" os valores salvos são a base; com outra dificuldade, os padrões.
   const aiBase=validAiBase(o.aiBase)||(difficulty===null||difficulty==="config"?pickAiDifficulty(config):pickAiDifficulty(DEFAULTS));
-  return {status:"ok",game:{config,state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty,aiBase}};
+  return {status:"ok",raw,game:{config,state:o.state,gameMode:o.gameMode==="fast"?"fast":"slow",opponentChoices:Array.isArray(o.opponentChoices)?o.opponentChoices:null,difficulty,aiBase}};
  }catch(e){return {status:"invalid",raw,reason:e.message||String(e)}}
 }
-function loadSavedGame(){const r=readSavedGame();return r.status==="ok"?r.game:null}
+async function loadSavedGame(){const r=await readSavedGame();return r.status==="ok"?r.game:null}
 // Save que não pode ser usado: guarda uma cópia noutra chave (para análise) e tira-o do caminho,
 // para o jogo não voltar a quebrar sempre que for aberto.
-function quarantineSave(raw){try{localStorage.setItem(SAVE_CORRUPT_KEY,raw)}catch(e){}try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
-let savedGameLoaded=false,saveProblem=null;
+function quarantineSave(raw){storage.set(SAVE_CORRUPT_KEY,raw).catch(()=>{});storage.remove(SAVE_KEY).catch(()=>{})}
+// savedRaw: o texto do save carregado ao abrir o jogo (para pôr de lado se falhar ao desenhar).
+let savedGameLoaded=false,saveProblem=null,savedRaw=null;
 function noticeBrokenSave(){setTimeout(()=>showModal(`<h2>Não foi possível continuar a partida salva</h2><p class="small muted">Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.</p>`,[{label:"Entendi",cls:"primary"}]),350)}
 // Primeiro desenho com um save carregado: se falhar, o save é posto de lado e começa uma partida nova.
 function renderSavedSafely(render){
  try{render()}catch(e){
   if(!savedGameLoaded)throw e;
-  savedGameLoaded=false;try{quarantineSave(localStorage.getItem(SAVE_KEY)||JSON.stringify({v:1,state}))}catch(_){}
+  savedGameLoaded=false;try{quarantineSave(savedRaw||JSON.stringify({v:1,state}))}catch(_){}
   configApplied=clone(configDefault);configEdited=clone(configDefault);gameMode="slow";currentDifficulty=DEFAULT_DIFFICULTY;aiConfigBase=pickAiDifficulty(configDefault);applyDifficulty(currentDifficulty);opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];selectedTerritory=null;state=newGame();
   if(!saveProblem){saveProblem="erro ao desenhar: "+(e.message||e);noticeBrokenSave()}
   render();
@@ -2216,13 +2228,14 @@ function testRegistry(){
  return TEST_REGISTRY;
 }
 const ftResults=new Map();let ftHistory=[],ftLastRun=null;
-try{ftHistory=JSON.parse(localStorage.getItem("imperios-ft-history")||"[]")}catch(e){ftHistory=[]}
+const FT_HISTORY_KEY="imperios-ft-history";
+async function loadFtHistory(){try{ftHistory=JSON.parse(await storage.get(FT_HISTORY_KEY)||"[]")}catch(e){ftHistory=[]}}
 function executeTests(filter,label){
  const reg=testRegistry().filter(filter),t0=performance.now();
  for(const t of reg){const s=performance.now();let ok=true,msg="Resultado esperado obtido.";try{t.fn()}catch(e){ok=false;msg=e.message||String(e)}ftResults.set(t.id,{ok,msg,ms:performance.now()-s,at:Date.now()})}
  const pass=reg.filter(t=>ftResults.get(t.id).ok).length,ms=performance.now()-t0;
  ftHistory.unshift({at:new Date().toISOString(),label,total:reg.length,pass,fail:reg.length-pass,ms,failed:reg.filter(t=>!ftResults.get(t.id).ok).map(t=>t.id)});ftHistory=ftHistory.slice(0,20);
- try{localStorage.setItem("imperios-ft-history",JSON.stringify(ftHistory))}catch(e){}
+ storage.set(FT_HISTORY_KEY,JSON.stringify(ftHistory)).catch(()=>{});
  ftLastRun={filter,label};$("ftRepeat").disabled=false;renderFtLab();
  return {total:reg.length,pass};
 }
@@ -2519,10 +2532,10 @@ SHORT_SCREEN.addEventListener?.("change",placePlans);
 // ainda rola; Fase 3). Com ?dev=1 o cabeçalho e as abas ficam por cima e a página rola como antes.
 function updateFit(){const g=$("game");document.documentElement.classList.toggle("game-fit",!DEV_MODE&&!!g&&g.classList.contains("active")&&!state?.result);if(state?.result&&sheetOpen==="attackSheet")closeSheet({focus:false})}
 
-function init(){
- const read=readSavedGame(),saved=read.status==="ok"?read.game:null;
+async function init(){
+ const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true}
+ if(saved&&!saved.state.result){configApplied=saved.config;gameMode=saved.gameMode;state=saved.state;if(saved.opponentChoices)opponentChoices=saved.opponentChoices;if(saved.difficulty)currentDifficulty=saved.difficulty;aiConfigBase=saved.aiBase;savedGameLoaded=true;savedRaw=read.raw}
  else if(saved){
   // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
   // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
@@ -2572,13 +2585,20 @@ function init(){
  $("runBalanceLab").onclick=()=>runBalanceLab().catch(e=>setStatus("balanceStatus",e.message,"error"));
  $("exportBalanceLab").onclick=exportBalanceLab;
  setupFixedLab();
+ await loadFtHistory();
  setupFtLab();setupExpLab();setupValLab();
  window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult();redrawExpCharts();drawValChart()});
 }
-init();
+// Arranque: espera o save (armazenamento assíncrono) e só depois liga a tela inicial, as ordens e o tutorial.
+// window.__imperiosReady fica true quando tudo está pronto (os testes automáticos esperam por isso).
+(async function boot(){
+ await init();
+ setupHomeScreen();setupOrdersUI();await setupTutorial();
+ window.__imperiosReady=true;
+})();
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
-(function setupHomeScreen(){
+function setupHomeScreen(){
  const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
  // fromGame=true repõe as escolhas da partida atual; a partir da tela inicial mantém as escolhas em curso.
@@ -2626,10 +2646,10 @@ init();
  $("homeLab").onclick=()=>openTab("lab");
  $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0};
  sync();
-})();
+}
 
 /* ── Ordens simultâneas na interface: ordem marcada no mapa e relatório no fim da era ── */
-(function setupOrdersUI(){
+function setupOrdersUI(){
  const sim=()=>!!configApplied.military.simultaneousOrders,myOrders=()=>(state.orders||[]).filter(o=>o.owner==="player"),myOrder=t=>myOrders().find(o=>o.idx===t);
  const _renderAttack=renderAttack;
  renderAttack=function(){
@@ -2680,13 +2700,13 @@ init();
   strip.innerHTML=`<p class="small muted" style="margin:0">Pontos = pontuação final se a partida acabasse agora: territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. 1000 pontos = desempenho de referência.</p>`+lv.map((x,i)=>{const p=PTS(x.score),d=prev[x.id]!=null?p-prev[x.id]:null;
    return `<div class="score-row ${x.id==="player"?"me":""}" style="--c:${cssColor(x.civ?.chartColor)}"><span class="pos">${i+1}.º</span><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${x.civ&&x.id!=="player"?` <span class="muted small">· ${escapeHtml(profileLabel(x.civ))}</span>`:""}</span><span class="pts"><strong>${p}</strong>${i>0?` <span class="gap">−${top-p}</span>`:""}${d?` <span class="trend ${d>0?"up":"down"}">${d>0?"↑":"↓"}${Math.abs(d)}</span>`:""}</span></div>`}).join("")};
  renderSavedSafely(renderAll);
-})();
+}
 
 /* ── Tutorial: partida guiada (1 IA, roteiro controlado; depois jogo livre no Fácil) ──
    O estado do tutorial vive em state.tutorial={step,waitEra,attackDone} e é guardado com a partida.
    Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
    e state.forcedAttack (resultado do próximo ataque de uma civilização). */
-(function setupTutorial(){
+async function setupTutorial(){
  const TUT_KEY="imperios-tutorial-oferecido",P_START=7,AI_START=9,TARGET=8;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
@@ -2713,7 +2733,7 @@ init();
  }
  function startTutorial(){
   scrolledStep=-1;
-  try{localStorage.setItem(TUT_KEY,"1")}catch(e){}
+  storage.set(TUT_KEY,"1").catch(()=>{});
   // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
   const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false};
   gameMode="slow";currentDifficulty="facil";applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;configApplied=normalizeConfig(configApplied);
@@ -2789,14 +2809,14 @@ init();
  // Tela inicial: botão e oferta na primeira visita.
  const how=$("homeHowTo");if(how){const b=document.createElement("button");b.type="button";b.className="home-secondary";b.id="homeTutorial";b.textContent="🎓 Tutorial";how.insertAdjacentElement("beforebegin",b);
   b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()}}
- let offered=false;try{offered=!!localStorage.getItem(TUT_KEY)}catch(e){offered=true}
+ let offered=false;try{offered=!!await storage.get(TUT_KEY)}catch(e){offered=true}
  const fresh=!state||(!state.history.length&&state.era<=1);
- if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Uma partida guiada mostra, em poucos minutos, como investir, atacar, defender e vencer. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{try{localStorage.setItem(TUT_KEY,"1")}catch(e){}}}]),300);
+ if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Uma partida guiada mostra, em poucos minutos, como investir, atacar, defender e vencer. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}]),300);
  if(cur())setTimeout(draw,0);
  // Ao voltar ao jogo a partir da tela inicial, mostra de novo o balão.
  ["homeContinue"].forEach(id=>{const el=$(id);if(el){const prev=el.onclick;el.onclick=e=>{prev?.(e);setTimeout(draw,0)}}});
  const ret=$("returnHome");if(ret){const prev=ret.onclick;ret.onclick=e=>{prev?.(e);clearFocus();box.hidden=true}}
-})();
+}
 
 </script>
 </body>

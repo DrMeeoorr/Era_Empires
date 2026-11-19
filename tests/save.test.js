@@ -14,7 +14,7 @@ after(async () => browser && browser.close());
 async function reloadWith(page, raw) {
   await page.evaluate(([k, c, v]) => { localStorage.removeItem(c); localStorage.setItem(k, v); }, [KEYS.save, CORRUPT, raw]);
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await page.locator('#modalRoot :text("Não foi possível continuar a partida salva")').waitFor({ timeout: 3000 });
   return page.evaluate(([k, c]) => ({ era: state.era, result: state.result, save: localStorage.getItem(k), copy: localStorage.getItem(c), map: document.querySelectorAll("[data-territory]").length }), [KEYS.save, CORRUPT]);
 }
@@ -30,7 +30,7 @@ test("save com civs:[] não quebra o jogo: cópia em '-corrompido', partida nova
   assert.ok(r.map >= 4, "o mapa da partida nova não foi desenhado");
   // Reabrir de novo já não mostra o aviso (o save danificado saiu do caminho).
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await page.waitForTimeout(500);
   assert.equal(await page.locator('#modalRoot :text("Não foi possível continuar")').count(), 0);
   assert.deepEqual(errors, []);
@@ -76,14 +76,15 @@ test("quando o navegador recusa gravar, o jogador vê um aviso; o aviso some qua
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await page.locator("#homeStart").click();
   await page.locator("#setupStart").click();
-  const r = await page.evaluate(() => {
+  // saveGame() devolve uma promessa (armazenamento assíncrono, pronto para o app): true/false quando termina.
+  const r = await page.evaluate(async () => {
     const orig = Storage.prototype.setItem;
     Storage.prototype.setItem = function () { throw new DOMException("cheio", "QuotaExceededError"); };
     let failed;
-    try { failed = saveGame(); } finally { Storage.prototype.setItem = orig; }
+    try { failed = await saveGame(); } finally { Storage.prototype.setItem = orig; }
     const el = document.getElementById("saveWarning");
     const shown = { ret: failed, visible: !!el && !el.hidden && el.getBoundingClientRect().height > 0, text: el?.innerText || "" };
-    const okRet = saveGame();
+    const okRet = await saveGame();
     return { ...shown, okRet, hiddenAfter: el.hidden };
   });
   assert.equal(r.ret, false);
@@ -148,7 +149,7 @@ test("migração: save antigo (v4) abre, é convertido e a partida continua exat
   // Pela interface: grava o save v4, recarrega e continua.
   await page.evaluate(([k, st]) => localStorage.setItem(k, JSON.stringify({ v: 1, savedAt: 1, gameMode: "slow", config: configApplied, state: st, opponentChoices, difficulty: "medio" })), [KEYS.save, r.old]);
   await page.reload();
-  await page.waitForFunction(() => typeof state !== "undefined" && !!state);
+  await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
   assert.match(await cont.innerText(), new RegExp(`era ${r.era}`));
