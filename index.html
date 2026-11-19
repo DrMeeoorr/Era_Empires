@@ -99,6 +99,13 @@ details.card summary{cursor:pointer;min-height:32px;display:flex;align-items:cen
 .save-warning{top:calc(8px + env(safe-area-inset-top,0px))}
 /* ===== UX Fase 1: cartões do topo sem frases cortadas (quebram linha em vez de "...") ===== */
 .stat .f{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3;overflow-wrap:anywhere}
+/* ===== UX Fase 1: painel do alvo curto e botão de ataque legível ===== */
+.target-panel{scroll-margin-bottom:96px}
+.tgt-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 2px;font-size:13px;color:var(--muted)}.tgt-nums b{color:var(--text);font-size:15px}.tgt-nums b.red{color:var(--red)}
+.tgt-info{margin-top:4px;font-size:12.5px;color:var(--muted)}.tgt-info summary{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:4px;color:#b9c8dc;text-decoration:underline;text-underline-offset:3px;list-style:none}.tgt-info summary::-webkit-details-marker{display:none}.tgt-info[open] summary{margin-bottom:2px}
+.target-panel button#attack{min-height:48px;min-width:132px}
+.target-panel button#attack:disabled{opacity:1;background:#162236;border:1px dashed #4a6283;color:#c3d1e3;filter:none;cursor:not-allowed}
+@media(max-width:480px){.target-panel{flex-direction:column;align-items:stretch}.target-panel .txt{flex:0 0 auto}.target-panel button#attack{width:100%}}
 </style>
 </head>
 <body>
@@ -1203,18 +1210,24 @@ function renderMap(){
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);selectedTerritory=selectedTerritory===i?null:i;renderMap()}));
  renderAttack();renderEvents();
 }
+// Painel do alvo: uma linha com o território, 3 números (custo, força disponível, chance) e a explicação
+// longa atrás de "ⓘ". O botão desabilitado diz o motivo dentro dele.
+const ATTACK_CHANCE="82%";
+const infoTip=(html,label="Como funciona")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> ${label}</summary><div>${html}</div></details>`;
+const targetNums=(cost,have)=>`<div class="tgt-nums"><span>Custo <b>${fmt(cost,1)}</b></span><span>Sua força <b class="${have+1e-9>=cost?"":"red"}">${fmt(have,1)}</b></span><span>Chance <b>${ATTACK_CHANCE}</b></span></div>`;
+const setAttackBtn=(btn,text,enabled)=>{btn.textContent=text;btn.disabled=!enabled};
 function renderAttack(){
  const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military;
- btn.textContent="Atacar";btn.disabled=true;
- if(state.result||!P(state).active){$("mapStatus").textContent=state.result?"A partida terminou.":"Foi eliminado; já não pode atacar.";return}
- if(t===null){$("mapStatus").innerHTML=`Toque num território com <span class="gold">contorno dourado</span> (vizinho do seu império) para ver o ataque. Poder disponível: <strong>${fmt(mil,1)}</strong>.`;return}
+ setAttackBtn(btn,"Escolha um alvo",false);
+ if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Foi eliminado; já não pode atacar.";return}
+ if(t===null){$("mapStatus").innerHTML=`Toque num território com <span class="gold">contorno dourado</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.`;return}
  const owner=state.owners[t];
- if(owner==="player"){$("mapStatus").innerHTML=`Território ${t+1} é seu. Defesa atual: ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
- if(!adjacentOwned(state,t,"player")){$("mapStatus").innerHTML=`Território ${t+1} não faz fronteira com o seu império. Escolha um território com contorno dourado.`;return}
+ if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> é seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
+ if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> não faz fronteira com o seu império. Escolha um com contorno dourado.`;return}
  const def=territoryDefense(state,t,configApplied),need=m.conquestCost+def,civ=owner==="neutral"?null:getCiv(state,owner);
  const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de fortificações/tecnologia`:""}`:`defesa ${fmt(def,0)}`;
- const ok=mil+1e-9>=need;btn.disabled=!ok;btn.textContent=`Atacar (${fmt(need,1)} pts)`;
- $("mapStatus").innerHTML=`<strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"} · ${defTxt} + conquista ${fmt(m.conquestCost,0)} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`Tem ${fmt(mil,1)} pontos · 82% de hipótese de vitória; os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-mil,1)} pontos.</span> Invista em Militar: o poder chega na era seguinte.`}`;
+ const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar (${fmt(need,1)})`:`Faltam ${fmt(need-mil,1)} de força`,ok);
+ $("mapStatus").innerHTML=`<div><strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"}</div>${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)} = ${fmt(need,1)} pontos. Força é o seu poder militar. Vence em ${ATTACK_CHANCE} das vezes; os pontos gastam-se mesmo se falhar.${ok?"":" Invista em Militar: o poder chega na era seguinte."}`)}`;
 }
 function renderEvents(){
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
@@ -2263,20 +2276,26 @@ init();
  renderAttack=function(){
   if(!sim())return _renderAttack();
   const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
-  btn.textContent="Dar ordem";btn.disabled=true;
-  if(state.result||!P(state).active){$("mapStatus").textContent=state.result?"A partida terminou.":"Foi eliminado; já não pode atacar.";return}
-  const ordTxt=ords.length?`<span class="gold">⚔ Ordens desta era: ${ords.map(o=>`território ${escapeHtml(o.idx+1)} (${fmt(o.need,1)} pts${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</span>. `:"";
-  const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa <strong>×${fmt(next,1)}</strong>.`:" Pode dar várias ordens por era; cada ataque adicional custa mais (2.º ×2, 3.º ×3…).";
-  if(t===null){$("mapStatus").innerHTML=`${ordTxt}Toque num território com <span class="gold">contorno dourado</span> para dar uma ordem de ataque. Poder livre: <strong>${fmt(mil,1)}</strong>.${costTxt}`;return}
-  if(ord){btn.disabled=false;btn.textContent="Cancelar ordem";$("mapStatus").innerHTML=`Ordem de ataque ao <strong>território ${t+1}</strong>: resolve-se ao concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} pts${ords.length>1?" e recalcula o custo das outras ordens":""}.`;return}
+  setAttackBtn(btn,"Escolha um alvo",false);
+  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").textContent=state.result?"A partida terminou.":"Foi eliminado; já não pode atacar.";return}
+  const ordTxt=ords.length?`<div class="gold small">⚔ Ordens desta era: ${ords.map(o=>`território ${escapeHtml(o.idx+1)} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</div>`:"";
+  const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Pode dar várias ordens por era; cada ataque adicional custa mais (2.º ×2, 3.º ×3…).";
+  const howOrders=`As ordens resolvem-se juntas no fim da era: se um rival atacar o mesmo território há <strong>batalha</strong> (vence a maior força: poder militar + tecnologia); depois, ${ATTACK_CHANCE} de chance de conquistar. Os pontos gastam-se mesmo se falhar.`;
+  if(t===null){$("mapStatus").innerHTML=`${ordTxt}<div>Toque num território com <span class="gold">contorno dourado</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</div>${infoTip(`Força é o seu poder militar: cada ataque custa a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
+  if(ord){setAttackBtn(btn,"Cancelar ordem",true);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> · ordem dada (${fmt(ord.need,1)}).</div>${infoTip(`A ordem resolve-se ao concluir a era, junto com as dos rivais. Cancelar devolve ${fmt(ord.need,1)} pontos${ords.length>1?" e recalcula o custo das outras ordens":""}.`)}`;return}
   const owner=state.owners[t];
-  if(owner==="player"){$("mapStatus").innerHTML=`${ordTxt}Território ${t+1} é seu. Defesa atual: ${fmt(territoryDefense(state,t,configApplied),1)}.`;return}
-  if(!adjacentOwned(state,t,"player")){$("mapStatus").innerHTML=`${ordTxt}Território ${t+1} não faz fronteira com o seu império. Escolha um território com contorno dourado.`;return}
+  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> é seu · defesa ${fmt(territoryDefense(state,t,configApplied),1)}.</div>`;return}
+  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> não faz fronteira com o seu império. Escolha um com contorno dourado.</div>`;return}
   const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=m.conquestCost+def,need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
-  if(!replacing&&ords.length>=maxO){$("mapStatus").innerHTML=`${ordTxt}Já deu o máximo de ${maxO} ordens nesta era.`;return}
-  const ok=avail+1e-9>=need;btn.disabled=!ok;btn.textContent=`${replacing?"Trocar ordem":"Dar ordem"} (${fmt(need,1)} pts)`;
-  $("mapStatus").innerHTML=`${ordTxt}<strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"} · defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = <strong>${fmt(need,1)} pontos</strong>. ${ok?`A ordem resolve-se no fim da era: se um rival atacar o mesmo território há <strong>batalha</strong> (vence a maior força: poder militar + tecnologia); depois, 82% de hipótese de conquistar. Os pontos gastam-se mesmo se falhar.`:`<span class="red">Faltam ${fmt(need-avail,1)} pontos.</span>${mult>1?" Ataques adicionais custam mais.":" Invista em Militar: o poder chega na era seguinte."}`}`;
+  if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${ordTxt}<div>Já deu o máximo de ${maxO} ordens nesta era.</div>`;return}
+  const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Dar ordem"} (${fmt(need,1)})`:`Faltam ${fmt(need-avail,1)} de força`,ok);
+  $("mapStatus").innerHTML=`${ordTxt}<div><strong>Território ${t+1}</strong> · ${civ?"de "+escapeHtml(civ.name):"livre"}${mult>1?` · ${ords.length+1}.º ataque ×${fmt(mult,1)}`:""}</div>${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)} = ${fmt(base,1)}${mult>1?` × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} pontos. Força é o seu poder militar.${ok?"":mult>1?" Ataques adicionais custam mais.":" Invista em Militar: o poder chega na era seguinte."} ${howOrders}`)}`;
  };
+  // Depois de tocar num território, o painel do alvo (e o botão "Dar ordem") sobe para cima da barra fixa de baixo.
+ const revealTargetPanel=()=>{const panel=document.querySelector(".target-panel"),bar=document.querySelector(".actionbar");if(!panel||selectedTerritory===null)return;
+  const r=panel.getBoundingClientRect(),limit=(bar&&bar.offsetParent?bar.getBoundingClientRect().top:innerHeight)-8;
+  if(r.bottom>limit){const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;window.scrollBy({top:Math.min(r.bottom-limit,Math.max(0,r.top-8)),behavior:smooth?"smooth":"auto"})}};
+ $("map").addEventListener("click",e=>{if(e.target.closest("[data-territory]"))requestAnimationFrame(revealTargetPanel)});
  const _attackClick=$("attack").onclick;
  $("attack").onclick=()=>{
   if(!sim())return _attackClick();

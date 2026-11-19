@@ -90,3 +90,30 @@ for (const [name, opts] of MOBILE_SCREENS) {
     await context.close();
   });
 }
+
+// Ao tocar num território, o botão "Dar ordem" aparece por cima da barra fixa de baixo (sem rolar à mão)
+// e, quando desabilitado, diz o motivo dentro dele.
+for (const [name, opts] of MOBILE_SCREENS) {
+  test(`celular ${name}: botão "Dar ordem" visível acima da barra fixa e com o motivo quando desabilitado`, async () => {
+    const { context, page, errors } = await openGame(browser, { contextOptions: { ...opts, reducedMotion: "reduce" } });
+    await page.locator("#homeStart").click();
+    await page.locator("#setupStart").click();
+    await page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const t = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
+    await page.locator(`[data-territory="${t}"]`).click({ noWaitAfter: true });
+    await page.waitForTimeout(300);
+    const geo = await page.evaluate(() => {
+      const b = document.getElementById("attack").getBoundingClientRect(), bar = document.querySelector(".actionbar").getBoundingClientRect();
+      return { top: b.top, bottom: b.bottom, barTop: bar.top, h: innerHeight, text: document.getElementById("attack").textContent, disabled: document.getElementById("attack").disabled };
+    });
+    assert.ok(geo.top >= 0 && geo.bottom <= geo.barTop + 1, `botão escondido: ${JSON.stringify(geo)}`);
+    assert.equal(geo.disabled, true);
+    assert.match(geo.text, /^Faltam [\d.,]+ de força$/);
+    const status = await page.locator("#mapStatus").innerText();
+    assert.match(status, /Custo/); assert.match(status, /Sua força/); assert.match(status, /Chance 82%/);
+    await screenshot(page, `${name}-5-alvo`);
+    assert.deepEqual(errors, []);
+    await context.close();
+  });
+}
