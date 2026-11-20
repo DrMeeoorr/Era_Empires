@@ -37,7 +37,7 @@ export function initHome(){
   for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("homeVictoryDesc").textContent=choice.conquest?"Só domínio (70% das regiões) ou eliminação. No limite de eras, vencem os pontos.":"Domínio, eliminação ou supremacia (na fase final). No limite de eras, vencem os pontos.";
   for(const [id,on] of [["mapFixed",choice.map!=="sorteado"],["mapRandom",choice.map==="sorteado"]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Rochedo é montanha, Musgo é floresta. Bom para aprender o mapa.";
+  $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
   for(const [id,on] of [["terrVisual",!choice.effects],["terrEffects",!!choice.effects]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("terrFxDesc").textContent=choice.effects?"Cada terreno dá 2 vantagens e 1 desvantagem (ouro, defesa, Obras, Força ou Ciência). Veja em ⓘ Terrenos.":"O terreno só enfeita o mapa: as regras são as de sempre. Bom para começar.";
   $("homeRandomStart").checked=!!choice.randomStart;

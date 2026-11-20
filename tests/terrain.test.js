@@ -12,7 +12,8 @@ const { launch, openGame, openCustomize, horizontalOverflow, MOBILE_SCREENS, KEY
 const SRC = path.resolve(__dirname, "..", "src");
 const load = (rel) => import(pathToFileURL(path.join(SRC, rel)).href);
 const PIXEL = MOBILE_SCREENS[0][1];
-const APPROVED = ["campina", "pantano", "campina", "colinas", "campina", "tundra", "floresta", "deserto", "campina", "colinas", "tundra", "floresta", "pantano", "floresta", "colinas", "montanha", "montanha", "deserto", "pantano", "campina", "campina", "floresta", "montanha", "campina"];
+// Rodada de balanceamento de 20/11/2026 (aprovada): Jaspe ↔ Rochedo — Jaspe Montanha, Rochedo Colinas.
+const APPROVED = ["campina", "pantano", "campina", "colinas", "campina", "tundra", "floresta", "deserto", "campina", "montanha", "tundra", "floresta", "pantano", "floresta", "colinas", "montanha", "colinas", "deserto", "pantano", "campina", "campina", "floresta", "montanha", "campina"];
 const NAMES = ["Campina", "Floresta", "Colinas", "Montanha", "Deserto", "Pântano", "Tundra"];
 const WIDE_FONT = '*{font-family:"DejaVu Sans",sans-serif!important}';
 
@@ -22,13 +23,13 @@ after(async () => browser && browser.close());
 
 // ── Sem navegador ──
 
-test("terrenos: o mapa padrão é a tabela aprovada (Rochedo montanha, Musgo floresta, Salgar deserto…)", async () => {
+test("terrenos: o mapa padrão é a tabela aprovada (Jaspe montanha, Rochedo colinas, Musgo floresta, Salgar deserto…)", async () => {
   const T = await load("core/terrain.js"), N = await load("core/names.js");
   assert.deepEqual([...T.DEFAULT_TERRAIN], APPROVED);
   assert.ok(Object.isFrozen(T.DEFAULT_TERRAIN));
   assert.deepEqual(T.TERRAINS.map((k) => T.TERRAIN_NAMES[k]), NAMES);
   const by = (name) => T.DEFAULT_TERRAIN[N.REGION_NAMES ? N.REGION_NAMES.indexOf(name) : -1];
-  if (N.REGION_NAMES) { assert.equal(by("Rochedo"), "montanha"); assert.equal(by("Musgo"), "floresta"); assert.equal(by("Salgar"), "deserto"); }
+  if (N.REGION_NAMES) { assert.equal(by("Jaspe"), "montanha"); assert.equal(by("Rochedo"), "colinas"); assert.equal(by("Musgo"), "floresta"); assert.equal(by("Salgar"), "deserto"); }
   const p = T.makeMapTerrain("padrao", null, [0, 23]);
   assert.deepEqual(p, { type: "padrao", seed: null, list: APPROVED });
   // Tipo desconhecido também cai no padrão.
