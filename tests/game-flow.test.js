@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan, assertClickable } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan, assertClickable, openCustomize } = require("./helpers");
 const { playTutorial, waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -13,6 +13,7 @@ after(async () => browser && browser.close());
 /** Nova partida → 15 eras (curta) → Começar. */
 async function startShortGame(page, { eras = 15 } = {}) {
   await page.locator("#homeStart").click();
+  await openCustomize(page);
   await page.locator(`#homeEraPresets [data-eras="${eras}"]`).click();
   await page.locator("#setupStart").click();
   await page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1 && !!state.pending);
@@ -91,10 +92,10 @@ test("salvar e recarregar: o progresso continua depois de recarregar a página",
   assert.equal(before.era, 4);
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
-  // Tela inicial oferece "Continuar partida (era 4 de 30)".
+  // Tela inicial oferece "Continuar · Era 4" (com "de 30 · Médio · 2 rivais" embaixo).
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
-  assert.match(await cont.innerText(), /era 4 de 30/);
+  assert.match(await cont.innerText(), /^Continuar · Era 4\s+de 30 · Médio · 2 rivais$/);
   const after = await page.evaluate(() => JSON.parse(JSON.stringify(state)));
   assert.deepEqual(after, before, "o estado recarregado difere do estado guardado");
   assert.equal(await page.evaluate(() => configApplied.map.aiCount), 2);
@@ -113,6 +114,7 @@ test("salvar e recarregar: o progresso continua depois de recarregar a página",
 test("salvar e recarregar: depois de uma partida terminada, reabrir o jogo mantém as escolhas do jogador", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await page.locator("#homeStart").click();
+  await openCustomize(page);
   await page.locator("#modeFast").click();
   await page.locator('#homeOpponents [data-ai="3"]').click();
   await page.locator('[data-prof="1"]').selectOption("military");
@@ -140,6 +142,7 @@ test("salvar e recarregar: partida do tutorial terminada volta às escolhas de a
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await page.locator("#homeStart").click();
   await page.locator('#homeOpponents [data-ai="2"]').click();
+  await openCustomize(page);
   await page.locator('#homeEraPresets [data-eras="15"]').click();
   await page.locator('#homeDifficulty [data-diff="dificil"]').click();
   await page.locator("#setupStart").click();
@@ -155,6 +158,7 @@ test("salvar e recarregar: partida do tutorial terminada volta às escolhas de a
 test("posição inicial aleatória: interruptor da tela inicial, gravado no aparelho e ignorado pelo tutorial", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await page.locator("#homeStart").click();
+  await openCustomize(page);
   assert.equal(await page.locator("#homeRandomStart").isChecked(), false, "o padrão deve ser desligado");
   await page.locator("#homeRandomStart").check();
   assert.match(await page.locator("#setupSummary").innerText(), /posição aleatória/);
@@ -245,7 +249,7 @@ test("tutorial: recarregar a página a meio retoma o tutorial no mesmo passo", a
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
-  assert.match(await cont.innerText(), /era 3/);
+  assert.match(await cont.innerText(), /^Continuar · Era 3\s+de 30 · tutorial · 1 rival$/);
   await cont.click();
   await waitStep(page, 5);
   assert.equal(await page.evaluate(() => state.owners[8]), "player");

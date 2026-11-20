@@ -42,7 +42,7 @@ test("save com nome de IA, cor e registo maliciosos não executa código (mapa, 
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   // O save pode ser aceite (o nome é só texto) — se for, o nome tem de aparecer como texto.
   const loaded = await page.evaluate((evil) => state.civs[1]?.name === evil, EVIL);
-  await page.locator("#homeContinue, #homeStart").first().waitFor();
+  await page.locator("#homeContinue:visible, #homeStart:visible").first().waitFor();
   if (loaded) {
     await page.evaluate(() => { document.getElementById("homeScreen").hidden = true; renderAll(); });
     const legend = await page.locator("#mapLegend").innerText();

@@ -1,0 +1,142 @@
+/* Impérios — telas fora da partida: início ("Aurora"), Nova partida + Personalizar, Como jogar ("Atlas") e o
+   convite do tutorial. Mesma paleta, botões e ícones SVG (sprite no dev.html) nas quatro.
+   Fonte própria (Marcellus SC, OFL — assets/fonts/OFL.txt) só no nome IMPÉRIOS e nos títulos. */
+@font-face{font-family:"Marcellus SC";src:url("../assets/fonts/marcellus-sc-latin-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+:root{--scr-ink:#0a1322;--scr-sea:#0d1b31;--scr-card:#122340;--scr-line:#2a3d5c;--scr-parch:#efe3c2;--scr-gold:#f4bd50;--scr-gold2:#d99a2b;--scr-muted:#b4c0d2;--scr-title:"Marcellus SC",Georgia,"Times New Roman",serif}
+.icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.ic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.brand-word,.pg-h1,.pg-lab,.pg-perso summary b,.modal-invite h2{font-family:var(--scr-title);font-weight:400}
+
+/* Telas cheias (por cima do jogo) */
+.home-screen{position:fixed;inset:0;z-index:1000;overflow-x:hidden;overflow-y:auto;color:var(--text);-webkit-tap-highlight-color:transparent}
+.home-screen[hidden]{display:none!important}
+.setup-screen{z-index:1001}#howToScreen{z-index:1002}
+
+/* Botões (comuns às telas) */
+.btn-main,.btn-line,.btn-glass,.pg-iconbtn,.pg-seg>button,.pg-rivals>button,.pg-perso summary,.pg-full summary,.modal-invite .txtbtn{-webkit-tap-highlight-color:transparent}
+button.btn-main,.btn-main{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;padding:8px 18px;border-radius:14px;border:0;background:linear-gradient(180deg,#ffd27a,var(--scr-gold) 45%,var(--scr-gold2));color:#1d1405;font-weight:800;font-size:18px;letter-spacing:.02em;box-shadow:0 1px 0 #fff6 inset,0 -2px 0 #0003 inset,0 10px 24px #f4bd5033}
+.btn-main .ic{width:20px;height:20px}
+.btn-two{display:block;text-align:left;line-height:1.15}.btn-two small{display:block;font-weight:600;font-size:13px;letter-spacing:0;color:#3b2a0c}
+.btn-line,.btn-glass{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:6px 12px;border-radius:14px;font-weight:700;font-size:15px;color:var(--scr-parch)}
+.btn-line{border:1.5px solid #e9d9ad66;background:#0a1322b3}
+.btn-glass{border:1px solid #ffffff33;background:#0e1a30cc;backdrop-filter:blur(6px)}
+.btn-glass .ic{width:20px;height:20px;color:#ffd58a}
+.btn-main:active,.btn-line:active,.btn-glass:active,.pg-seg>button:active,.pg-rivals>button:active{transform:translateY(1px);filter:brightness(1.08)}
+.home-screen button:focus-visible,.home-screen summary:focus-visible,.home-screen input:focus-visible,.home-screen select:focus-visible,.modal-invite button:focus-visible{outline:3px solid #ffd58a;outline-offset:2px}
+
+/* ===== Início — "Aurora": céu, sol nascendo, colinas das eras com as bandeiras ===== */
+.au-home{background:linear-gradient(180deg,#0d1430,#2a2152 48%,#0f1e2e 70%)}
+.au-frame{position:relative;display:flex;flex-direction:column;min-height:100%;width:min(100%,600px);margin:0 auto;background:#0f1e2e;box-shadow:0 0 60px #0006}
+.au-stage{position:relative;flex:1;min-height:260px;overflow:hidden}
+.au-scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.au-brand{position:relative;z-index:2;text-align:center;padding:max(44px,calc(env(safe-area-inset-top,0px) + 24px)) 16px 0}
+.brand-word{margin:0;font-size:clamp(40px,13vw,58px);line-height:1;letter-spacing:.12em;padding-left:.12em;color:var(--scr-parch);text-shadow:0 2px 0 #0006,0 2px 20px #0d1430}
+.au-sub{margin:12px 0 0;font-size:12.5px;font-weight:700;letter-spacing:.3em;padding-left:.3em;text-transform:uppercase;color:#ffd58a}
+.au-acts{position:relative;z-index:2;display:grid;gap:10px;padding:14px max(20px,env(safe-area-inset-right,0px)) max(18px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));background:#0f1e2e;margin-top:-1px}
+.au-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.au-acts .hidden{display:none!important}
+.au-dev .btn-glass{min-height:48px;font-size:13px;font-weight:600}
+@media(max-height:660px){.au-brand{padding-top:max(26px,calc(env(safe-area-inset-top,0px) + 14px))}.au-acts{gap:8px;padding-top:10px}.btn-main{min-height:54px}.btn-line,.btn-glass{min-height:50px}}
+@media(prefers-reduced-motion:no-preference){.au-sun{animation:auRise 1.4s ease-out both}.au-brand{animation:auFade .8s ease-out both}@keyframes auRise{from{transform:translateY(26px);opacity:.4}}@keyframes auFade{from{opacity:0;transform:translateY(6px)}}}
+
+/* ===== Telas internas — "Atlas" ===== */
+.pg-screen{background:linear-gradient(180deg,var(--scr-sea),var(--scr-ink) 320px);padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+.pg-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 8px max(8px,env(safe-area-inset-left,0px));background:#0d1b31f2;border-bottom:1px solid #1f3150;backdrop-filter:blur(8px)}
+.pg-iconbtn{width:48px;height:48px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:transparent;color:var(--scr-parch)}
+.pg-iconbtn:active{background:#ffffff14}
+.pg-h1{margin:0;font-size:24px;letter-spacing:.05em;color:var(--scr-parch)}
+.pg-wrap{display:grid;gap:14px;max-width:560px;margin:0 auto;padding:16px max(14px,env(safe-area-inset-right,0px)) 0 max(14px,env(safe-area-inset-left,0px))}
+.pg-card{min-width:0;padding:14px 12px;border-radius:16px;border:1px solid #263a5a;background:linear-gradient(180deg,#132541,#101d33)}
+.pg-lab{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:18px;letter-spacing:.06em;color:var(--scr-parch)}
+.pg-lab .ic{width:20px;height:20px;color:var(--scr-gold)}
+.pg-desc{margin:9px 2px 0;color:var(--scr-muted);font-size:13.5px;line-height:1.4}
+/* Escolhas em segmentos (Dificuldade, Duração, Ritmo, Vitória) */
+.pg-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:3px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
+.pg-seg>button,.pg-other{min-width:0;min-height:52px;display:grid;place-items:center;align-content:center;gap:2px;padding:4px 1px;border:0;border-radius:9px;background:transparent;color:#cbd5e3;font-size:clamp(11.5px,3.5vw,14px);font-weight:600;line-height:1.15;text-align:center}
+.pg-seg>button small{display:block;font-size:11.5px;font-weight:600;opacity:.85}
+.pg-seg>button.selected{background:linear-gradient(180deg,#f8cd6d,#e2a22c);color:#1d1405;box-shadow:0 2px 8px #0006}
+.pg-seg>button.selected small{opacity:1}
+.pips{display:flex;gap:2px;justify-content:center}.pips i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.85}
+.pg-other{cursor:text;font-size:11.5px}.pg-other span{display:block}
+.pg-other input{width:100%;max-width:64px;min-height:28px;padding:2px 4px;border:1px solid #3a5070;border-radius:7px;background:#0d1a2e;color:var(--text);text-align:center;font-size:15px;font-weight:700;-moz-appearance:textfield}
+.pg-other input::-webkit-inner-spin-button,.pg-other input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pg-other.on{box-shadow:0 0 0 2px var(--scr-gold) inset}
+/* Rivais */
+.pg-rivals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pg-rivals>button{min-width:0;min-height:76px;display:grid;place-items:center;align-content:center;gap:2px;padding:6px 2px;border-radius:12px;border:1.5px solid var(--scr-line);background:#0d1a2e;color:#d2dbe8;font-weight:700;font-size:15px}
+.pg-rivals>button.selected{border-color:var(--scr-gold);background:#2a2412;color:#ffe2a0;box-shadow:0 0 0 1px var(--scr-gold) inset}
+.pg-rivals .syms{font-size:18px;letter-spacing:4px;padding-left:4px;line-height:1.1}
+.pg-rivals small{font-weight:600;font-size:12.5px;color:#b9c4d4}.pg-rivals .selected small{color:#ffe2a0}
+/* Personalizar */
+.pg-perso{border-radius:16px;border:1px solid #263a5a;background:#0f1c31}
+.pg-perso>summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 14px;cursor:pointer}
+.pg-perso>summary::-webkit-details-marker{display:none}
+.pg-perso>summary>.ic{color:var(--scr-gold)}
+.pg-perso>summary .t{flex:1;min-width:0}
+.pg-perso>summary .t b{display:block;font-size:18px;letter-spacing:.05em;color:var(--scr-parch)}
+.pg-perso>summary .t span{display:block;font-size:13px;color:var(--scr-muted)}
+.pg-perso .chev,.pg-full .chev{width:20px;height:20px;transition:transform .2s}
+.pg-perso[open]>summary .chev,.pg-full[open]>summary .chev{transform:rotate(90deg)}
+.pg-pbody{display:grid;gap:16px;padding:14px 12px 14px;border-top:1px solid #23375a}
+.pg-field{min-width:0}
+.pg-fl{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:13.5px;font-weight:700;color:#d2dbe8}
+.pg-fl .ic{width:18px;height:18px;color:var(--scr-gold)}
+.profile-rows{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.profile-row{min-width:0;display:grid;grid-template-columns:5.6em minmax(0,1fr);align-items:center;column-gap:6px;padding:2px 3px 6px 12px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
+.profile-row>span{font-weight:700;color:var(--text);white-space:nowrap}
+.profile-row select{min-width:0;width:100%;min-height:48px;padding:0 8px;border:0;border-radius:9px;background:#13233b;color:var(--text);font-size:14.5px}
+.profile-desc{grid-column:2;padding-left:8px;font-size:12.5px;color:var(--scr-muted);line-height:1.25}
+.profile-rows .chips{display:flex}
+#allRandom{min-height:48px;width:100%;border-radius:12px;border:1px dashed #3a5070;background:transparent;color:#ffd58a;font-weight:700}
+.pg-switch{display:flex;align-items:center;gap:10px;min-height:56px;cursor:pointer}
+.pg-switch>.ic{color:var(--scr-gold);width:20px;height:20px}
+.pg-switch .t{flex:1;min-width:0}.pg-switch .t b{display:block;font-size:14.5px}.pg-switch .t span{display:block;font-size:12.5px;color:var(--scr-muted)}
+.pg-switch input{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:56px;height:32px;margin:0;border-radius:99px;background:#33476a;border:1px solid #4a6080;cursor:pointer;transition:background .15s}
+.pg-switch input::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#dfe7f3;transition:transform .15s}
+.pg-switch input:checked{background:var(--scr-gold2);border-color:var(--scr-gold)}.pg-switch input:checked::after{transform:translateX(24px);background:#fff}
+/* Rodapé fixo com o botão principal */
+.pg-sticky{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;gap:6px;justify-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(#0a132200,#0a1322 22px)}
+.pg-sticky .btn-main{max-width:560px}
+.setup-summary{max-width:560px;width:100%;text-align:center;font-size:12.5px;line-height:1.3;color:var(--scr-muted)}
+.setup-summary strong{color:var(--text)}
+
+/* Como jogar */
+.pg-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;padding:10px 0 0;list-style:none}
+.pg-steps li{position:relative;min-width:0;padding:12px 4px 8px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink);text-align:center;font-size:13px;line-height:1.25;color:#d7deea}
+.pg-steps b{display:block;margin-top:4px;font-size:13.5px;color:var(--scr-parch)}
+.pg-steps .n{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--scr-gold);color:#1d1405;font-size:12px;font-weight:800}
+.pg-steps .ic{width:26px;height:26px;margin-top:4px;color:var(--scr-gold)}
+.pg-inv{display:grid;grid-template-columns:40px minmax(0,1fr) 88px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #1f3150}
+.pg-inv:first-of-type{border-top:0}
+.pg-inv .badge{width:40px;height:40px;border-radius:10px;display:grid;place-items:center}
+.b-mil{background:#3a2c0e;color:var(--gold)}.b-infra{background:#103a30;color:var(--green)}.b-tech{background:#2a2148;color:var(--purple)}
+.pg-inv b{display:block;font-size:15px}.pg-inv span{display:block;font-size:13px;line-height:1.3;color:var(--scr-muted)}
+.spark{width:88px;height:40px;overflow:visible}.spark text{font-size:8px;fill:#9aa9be}
+@media(max-width:340px){.pg-inv{grid-template-columns:40px minmax(0,1fr)}.pg-inv .spark{display:none}}
+.pg-win{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pg-win>div{min-width:0;padding:10px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink);font-size:13px;line-height:1.3;color:var(--scr-muted)}
+.pg-win b{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:14px;color:var(--scr-parch)}
+.pg-win b .ic{width:18px;height:18px;color:var(--scr-gold)}
+.pg-full{margin-top:8px}
+.pg-full>summary{list-style:none;display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;cursor:pointer;color:var(--scr-gold);font-weight:700}
+.pg-full>summary::-webkit-details-marker{display:none}
+.pg-fullbody{display:grid;gap:4px;padding:4px 2px 0}.pg-fullbody h3{margin:10px 0 4px;color:var(--scr-parch)}.pg-fullbody p{margin:0;line-height:1.5;color:#c9d3e2}
+
+/* Convite do tutorial (folha embaixo, no estilo "Atlas") */
+.modal-back.modal-invite{align-items:flex-end;padding:0;background:#050a14b3}
+.modal-invite .modal{max-width:560px;margin:0 auto;padding:10px 20px max(18px,env(safe-area-inset-bottom,0px));text-align:center;border:0;border-top:1px solid #3a5070;border-radius:22px 22px 0 0;background:linear-gradient(180deg,#16294a,#0f1c31);box-shadow:0 -20px 40px #0008}
+.modal-invite .grip{width:40px;height:4px;margin:0 auto 12px;border-radius:4px;background:#4a6080}
+.modal-invite .medal{display:block;width:80px;height:80px;margin:0 auto}
+.modal-invite h2{margin:8px 0 6px;font-size:25px;letter-spacing:.04em;color:var(--scr-parch)}
+.modal-invite p{max-width:320px;margin:0 auto 14px;color:#c9d3e2;font-size:15px}
+.modal-invite .meta{display:flex;justify-content:center;gap:16px;margin:0 0 6px;color:var(--scr-muted);font-size:13.5px}
+.modal-invite .meta span{display:flex;align-items:center;gap:5px}.modal-invite .meta .ic{width:17px;height:17px;color:var(--scr-gold)}
+.modal-invite .actions{flex-direction:column;gap:4px}
+.modal-invite .actions button{flex:none;width:100%}
+.modal-invite .txtbtn{min-height:48px;border:0;background:transparent;color:#c9d3e2;font-weight:700}
+@media(prefers-reduced-motion:no-preference){.modal-invite .modal{animation:invUp .25s ease-out both}@keyframes invUp{from{transform:translateY(30px);opacity:.6}}}
+/* Celulares: a Dificuldade em 2 linhas (3 + 2) para "Muito fácil" e "Lendário" caberem inteiros, mesmo com fonte larga. */
+@media(max-width:430px){.pg-seg-diff{grid-auto-flow:row;grid-template-columns:repeat(6,minmax(0,1fr))}.pg-seg-diff>button{grid-column:span 2;font-size:14px}.pg-seg-diff>button:nth-child(n+4){grid-column:span 3}}
+/* dev.html: a opção "⚙ Configurações" (laboratórios) ocupa uma linha inteira. */
+.pg-seg-diff>button[data-diff="config"]{grid-column:1/-1}
+@media(min-width:431px){.pg-seg-diff:has(>[data-diff="config"]:not([hidden])){grid-auto-flow:row;grid-template-columns:repeat(5,minmax(0,1fr))}}

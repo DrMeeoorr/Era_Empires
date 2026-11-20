@@ -4,7 +4,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick, openCustomize } = require("./helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
 let browser, ctx;
@@ -192,6 +192,7 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await page.locator("#homeStart").click();
   await page.locator('#homeOpponents [data-ai="3"]').click();
+  await openCustomize(page);
   await page.locator('#homeEraPresets [data-eras="15"]').click();
   await page.locator('#homeDifficulty [data-diff="dificil"]').click();
   await page.locator("#setupStart").click();

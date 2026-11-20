@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, MOBILE_SCREENS, dismissModals, menuClick } = require("./helpers");
+const { launch, openGame, MOBILE_SCREENS, dismissModals, menuClick, openCustomize } = require("./helpers");
 const { waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -19,6 +19,7 @@ async function startVia(page, { diff, ai, eras, fast = false }) {
   await page.locator("#homeStart").click();
   if (diff) await page.locator(`#homeDifficulty [data-diff="${diff}"]`).click();
   if (ai) await page.locator(`#homeOpponents [data-ai="${ai}"]`).click();
+  await openCustomize(page);
   if (eras) await page.locator(`#homeEraPresets [data-eras="${eras}"]`).click();
   await page.locator(fast ? "#modeFast" : "#modeSlow").click();
   await page.locator("#setupStart").click();

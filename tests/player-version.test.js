@@ -157,7 +157,7 @@ test("saves: a partida da chave antiga passa para a do jogador; jogador e dev gu
   assert.equal(keys.player, old, "a partida não foi copiada para a chave do jogador");
   assert.equal(keys.legacy, null, "a chave antiga devia sair depois de copiada");
   assert.equal(keys.dev, null);
-  assert.match(await page.locator("#homeContinue").innerText(), /era 4/);
+  assert.match(await page.locator("#homeContinue").innerText(), /^Continuar · Era 4\b/);
   // A versão de desenvolvimento (mesma origem) começa a sua própria partida e não mexe na do jogador.
   await page.goto(DEV_URL);
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);

@@ -3,7 +3,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, choosePlan, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, dismissModals, choosePlan, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS, openCustomize } = require("./helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
 let browser;
@@ -12,6 +12,7 @@ after(async () => browser && browser.close());
 
 async function startGame(page) {
   await page.locator("#homeStart").click();
+  await openCustomize(page);
   await page.locator('[data-eras="15"]').click();
   await page.locator("#setupStart").click();
   const confirm = page.locator('#modalRoot button:has-text("Nova partida")');

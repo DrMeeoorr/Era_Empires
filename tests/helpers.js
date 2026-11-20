@@ -21,7 +21,7 @@ const ROOT = path.resolve(__dirname, "..");
 // GAME_URL pode apontar para outro endereço (ex.: servidor local ou build dividido em módulos).
 const VIRTUAL_ORIGIN = "http://imperios.test";
 const GAME_URL = process.env.GAME_URL || VIRTUAL_ORIGIN + "/index.html";
-const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json", ".woff2": "font/woff2" };
 
 /** Serve os ficheiros do repositório em VIRTUAL_ORIGIN dentro do contexto. */
 async function serveRepo(context) {
@@ -126,7 +126,7 @@ async function horizontalOverflow(page) {
     const out = [];
     const de = document.documentElement;
     if (de.scrollWidth > de.clientWidth + 1) out.push(`documento: scrollWidth ${de.scrollWidth} > ${de.clientWidth}`);
-    for (const id of ["homeScreen", "setupScreen"]) {
+    for (const id of ["homeScreen", "setupScreen", "howToScreen"]) {
       const el = document.getElementById(id);
       if (el && !el.hidden && el.scrollWidth > el.clientWidth + 1) out.push(`${id}: scrollWidth ${el.scrollWidth} > ${el.clientWidth}`);
     }
@@ -175,6 +175,17 @@ async function choosePlan(page, plan) {
   await b.click();
 }
 
+/**
+ * Abre "Personalizar" na tela Nova partida (Duração, Ritmo, Vitória, Estilo dos rivais, Posição inicial).
+ * Só Dificuldade e Rivais ficam à vista; o resto fica dentro desse bloco, fechado por padrão.
+ */
+async function openCustomize(page) {
+  const d = page.locator("#setupCustomize");
+  await d.waitFor({ state: "visible" });
+  if (!(await d.evaluate((e) => e.open))) await page.locator("#setupCustomize > summary").click();
+  await page.locator("#homeEraPresets").waitFor({ state: "visible" });
+}
+
 async function screenshot(page, name) {
   fs.mkdirSync(SHOTS_DIR, { recursive: true });
   const file = path.join(SHOTS_DIR, name.replace(/[^\w.-]+/g, "_") + ".png");
@@ -184,5 +195,5 @@ async function screenshot(page, name) {
 
 module.exports = {
   playwright, chromium, devices, ROOT, GAME_URL, DEV_URL, KEYS, MOBILE_SCREENS, SHOTS_DIR,
-  launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, menuClick, choosePlan,
+  launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, menuClick, choosePlan, openCustomize,
 };

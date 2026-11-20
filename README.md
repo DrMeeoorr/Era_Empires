@@ -45,7 +45,8 @@ No GitHub Pages nada muda: o site continua a ser publicado a partir do `index.ht
 ```
 index.html            versão do jogador (gerada a partir do dev.html)
 dev.html              versão de desenvolvimento (jogo + laboratórios)
-styles/               base.css (comum), game.css (jogo), labs.css (só laboratórios)
+styles/               base.css (comum), game.css (jogo), screens.css (início, Nova partida, Como jogar), labs.css (só laboratórios)
+assets/fonts/         Marcellus SC (nome IMPÉRIOS e títulos) e a licença OFL.txt
 src/
   core/               regras do jogo: configuração, mapa, economia, militar, eras, fim de partida (sem tela)
   ai/                 decisões e perfis das IAs (sem tela)
@@ -101,6 +102,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
 | `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Para ver o código e os subcódigos: `npm run fingerprint`. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
+| `tests/screens.test.js` | Telas fora da partida (início "Aurora", Nova partida + Personalizar, Como jogar, convite do tutorial) nos 3 celulares, também com a fonte larga: início sem rolar, sem rolagem horizontal nem textos cortados, alvos ≥ 48 px, Personalizar com todas as opções, "Continuar · Era N" com partida salva, fonte Marcellus SC local. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
 | `tests/game-flow.test.js` | Partida curta completa até à tela de resultado, salvar/recarregar, a "Posição inicial aleatória" (gravada no aparelho e ignorada pelo tutorial) e o tutorial do início ao fim. |
 | `tests/security.test.js` | Um save com HTML no nome de uma IA, na cor ou no registo de eventos não pode executar código. |
