@@ -131,7 +131,7 @@ export function defenseText(t){const d=defenseParts(state,t,configApplied),tc=te
  return `defesa ${fmt(d.base,0)}${d.works>0.05?` + ${fmt(d.works,1)} de Obras`:""}${d.reserve>0.05?` + ${fmt(d.reserve,1)} de Força guardada`:""}${tc.def}`}
 // Linha da folha de uma região sua: a defesa total e a parte que vem da Força guardada.
 export function ownDefenseLine(t){const d=defenseParts(state,t,configApplied);
- return `<p class="tgt-sub">Defesa ${fmt(d.total,1)}${d.reserve>0.05?` · Força guardada +${fmt(d.reserve,1)}`:""}. Obras e a Força que você não usa em ataques reforçam a defesa.</p>`}
+ return `<p class="tgt-sub own-def"><span class="od-n"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Defesa <strong>${fmt(d.total,1)}</strong></span>${d.reserve>0.05?` · <span class="od-n">Força guardada <strong class="gold">+${fmt(d.reserve,1)}</strong></span>`:""}. <span class="od-why">Obras e a Força que você não usa em ataques reforçam a defesa.</span></p>`}
 export const infoTip=(html,label="Por quê?")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> O ataque acontece no fim da era. <u>${label}</u></summary><div>${html}</div></details>`;
 export const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>Custo</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>Sua força</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>Chance</span> <b>${ATTACK_CHANCE}</b></div></div>`;
 // Região no painel do alvo: nome + número pequeno (o mesmo do mapa).

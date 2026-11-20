@@ -392,3 +392,7 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
  .medal-svg.pop{animation:medalPop .55s cubic-bezier(.2,1.5,.4,1) .15s both}
 }
 @keyframes medalPop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+/* Folha de uma região sua: os dois números da defesa em destaque, a explicação numa linha à parte */
+.own-def .od-n{white-space:nowrap}.own-def .od-n .ic{width:16px;height:16px;vertical-align:-3px;margin-right:3px;color:var(--muted)}
+.own-def strong{font-size:16px;color:var(--text)}.own-def strong.gold{color:var(--gold)}
+.own-def .od-why{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
