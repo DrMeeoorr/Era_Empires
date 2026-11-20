@@ -25,6 +25,22 @@ export function aiTargetScore(s,i,civ,cfg,style){return attackNeed(s,i,civ.id,cf
 // Alvo efetivo: "leader" vira "neutralFirst" no Só visual quando há mais de 2 impérios ativos.
 export function leaderTargetMode(s,priority){return priority==="leader"&&!terrainEffectsOn(s)&&s.civs.filter(c=>c.active).length>2?"neutralFirst":priority}
 
+// Reflexo de defesa (rodada 2 de balanceamento, 20/11/2026).
+export const DEFENSE_REFLEX_POINTS=15;
+export function defenseReflexOn(s,civ,targetsNow=eligibleTargets(s,civ.id)){
+ return s.civs[0]?.controller==="human"&&civ.id!=="player"&&targetsNow.some(t=>t.o==="player")&&(s.civs[0].military||0)>civ.military;
+}
+export function applyDefenseReflex(weights){
+ const b=DEFENSE_REFLEX_POINTS,tot=weights[1]+weights[2]||1;
+ return [weights[0]+b,Math.max(0,weights[1]-b*weights[1]/tot),Math.max(0,weights[2]-b*weights[2]/tot)];
+}
+// O Científico decide se consegue pagar um ataque já com o desconto da Ciência (attackNeed); os outros estilos
+// continuam a decidir pelo custo cheio (rodada 2 de balanceamento, 20/11/2026).
+function decisionCost(s,i,civ,cfg,style,fx){
+ if(style==="technologist")return attackNeed(s,i,civ.id,cfg);
+ return fx?fullAttackCost(s,i,cfg):cfg.military.conquestCost+territoryDefense(s,i,cfg);
+}
+
 // Decisão de uma IA: mesmos perfis do MVP, agora comparando-se com o rival mais forte.
 export function aiDecide(s,civ,cfg,era){
  const investment={military:0,infrastructure:0,technology:0};
@@ -56,6 +72,10 @@ export function aiDecide(s,civ,cfg,era){
   else if(myTerr>=Math.max(3,rivalTerr+2))weights=[22,43,35];
   else weights=[32,43,25];
  }
+ // Rodada 2 de balanceamento (20/11/2026) — reflexo de defesa: se o rival faz fronteira com o jogador humano e o
+ // exército do jogador é maior que o dele, ganha +15 pontos de Militar, tirados de Obras e Ciência na proporção
+ // de cada uma (nunca abaixo de 0). Não dispara em partidas só de IAs.
+ if(defenseReflexOn(s,civ,targetsNow))weights=applyDefenseReflex(weights);
  const weightSum=weights.reduce((a,b)=>a+Math.max(0,Number(b)||0),0)||1;
  const reservePct=clamp(Number(cfg.military.aiReserve||0),0,90)/100;
  const treasuryBefore=civ.treasury;
@@ -76,12 +96,12 @@ export function aiDecide(s,civ,cfg,era){
   // os rivais brigarem entre si e com regiões bem defendidas (o Difícil com 3 rivais ficava tão fácil como o Médio).
   // Aí o Difícil/Lendário vão primeiro às regiões livres (atacando sempre); no 1×1 e com efeitos, a coligação continua.
   const priority=leaderTargetMode(s,cfg.military.aiTarget||"neutralFirst");
-  // Coligação contra o líder: alvos pagáveis (custo cheio) primeiro; depois o líder em territórios
+  // Coligação contra o líder: alvos pagáveis (custo cheio; Científico com desconto) primeiro; depois o líder em territórios
   // (exceto a própria IA; em empate, o jogador), os neutros e, por último, as outras IAs; o mais barato em cada grupo.
   let leaderId=null,payable=null,leaderClass=null;
   if(priority==="leader"){const others=s.civs.filter(c=>c.active&&c.id!==civ.id),top=Math.max(...others.map(c=>countTerritories(s,c.id)));
    leaderId=(others.find(c=>c.id==="player"&&countTerritories(s,c.id)===top)||others.find(c=>countTerritories(s,c.id)===top))?.id??null;
-   payable=t=>civ.military+1e-9>=(fx?fullAttackCost(s,t.i,cfg):cfg.military.conquestCost+territoryDefense(s,t.i,cfg));leaderClass=t=>t.o===leaderId?0:t.o==="neutral"?1:2}
+   payable=t=>civ.military+1e-9>=decisionCost(s,t.i,civ,cfg,style,fx);leaderClass=t=>t.o===leaderId?0:t.o==="neutral"?1:2}
   // Com terrenos com efeitos, os empates de cada critério desfazem-se pelo valor do terreno (aiTargetScore).
   const score=fx?new Map(targets.map(t=>[t.i,aiTargetScore(s,t.i,civ,cfg,style)])):null,tie=(a,b)=>fx?score.get(a.i)-score.get(b.i)||a.i-b.i:a.i-b.i;
   targets.sort((a,b)=>{
@@ -95,7 +115,8 @@ export function aiDecide(s,civ,cfg,era){
    return (a.o==="neutral"?0:1)-(b.o==="neutral"?0:1)||tie(a,b);
   });
   // IA prudente: só dá a 1ª ordem com o custo cheio (sem desconto tecnológico), mas paga o custo com desconto.
-  const t=targets[0],required=fx?fullAttackCost(s,t.i,cfg):cfg.military.conquestCost+territoryDefense(s,t.i,cfg);
+  // Exceção: o Científico já decide com o desconto (decisionCost).
+  const t=targets[0],required=decisionCost(s,t.i,civ,cfg,style,fx);
   if(civ.military+1e-9>=required){const result=cfg.military.simultaneousOrders?orderAttack(s,t.i,civ.id,cfg):attackTerritory(s,t.i,civ.id,cfg,true);action=result.ok?(result.queued?`${civ.name} ordenou ataque ao território ${t.i+1}`:result.win?`${civ.name} conquistou território ${t.i+1}`:`${civ.name} atacou território ${t.i+1} e foi repelida`):`${civ.name}: ${result.reason}`;}
   else action=`${civ.name} acumulando poder militar (precisa ${fmtCore(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.
