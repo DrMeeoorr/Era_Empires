@@ -15,6 +15,7 @@ import {renderMap,fitRegionNames,attackSelected,markLegend} from "./map.js";
 import {showDialog} from "./modal.js";
 import {renderForecast,renderHistory,renderNotifications,renderVictory,renderCharts,renderResult} from "./panels.js";
 import {eraSnapshot,showEraSummary,toggleEraSummary,renderSummaryToggle} from "./report.js";
+import {noteEraMedals} from "./medals.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
 
 export function showSaveWarning(err){
@@ -45,7 +46,7 @@ export function concludeEra(){
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});showEraSummary(before)};
+ const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);const medals=noteEraMedals(before);saveGame();AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});showEraSummary(before,medals)};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
   showDialog({icon:"coins",title:`Você ainda tem ${money(left)} para investir`,text:"O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.",
    body:`<label class="dlg-check"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,

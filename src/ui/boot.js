@@ -3,22 +3,25 @@
 // window.__imperiosReady fica true quando tudo está pronto (os testes automáticos esperam por isso).
 //   saveSlot: "player" ou "dev" (chave do save) · migrateOldSave: mover o save da chave antiga (só jogador)
 //   labs: função que liga os laboratórios · debug: função que expõe as variáveis globais de depuração.
+import {loadMedals,useMedalSlot} from "../app/medals.js";
 import {migrateLegacySaveKey,useSaveSlot} from "../app/save.js";
 import {initSheets} from "./sheets.js";
 import {watchShortScreen} from "./allocation.js";
 import {initGame} from "./game.js";
 import {initHome} from "./home.js";
 import {fillTerrainLists} from "./map.js";
+import {initMedals} from "./medals.js";
 import {initTutorial} from "./tutorial.js";
 import {$} from "./dom.js";
 
 export async function boot({saveSlot="player",migrateOldSave=false,labs=null,debug=null}={}){
  if(debug)await debug();
- useSaveSlot(saveSlot);
+ useSaveSlot(saveSlot);useMedalSlot(saveSlot);
  if(migrateOldSave)await migrateLegacySaveKey();
  initSheets();watchShortScreen();fillTerrainLists();
+ await loadMedals();
  await initGame();
- initHome();
+ initHome();initMedals();
  await initTutorial();
  if(labs&&$("lab"))await labs();
  window.__imperiosReady=true;

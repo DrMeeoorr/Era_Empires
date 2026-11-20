@@ -11,6 +11,7 @@ import {$} from "./dom.js";
 import {escapeHtml,fmt,cssColor} from "./format.js";
 import {liveScores,PTS,hudNum} from "./hud.js";
 import {civLabel} from "./labels.js";
+import {medalNoticeHtml,medalToastText} from "./medals.js";
 import {showModal} from "./modal.js";
 import {showToast} from "./toast.js";
 
@@ -64,17 +65,18 @@ function scoreHtml(c){
  return `<div class="sum-score"><div class="sum-score-h"><span>Placar</span>${mv}</div>${c.lv.map((x,i)=>{const p=PTS(x.score),d=c.prevPts[x.id]!=null?p-c.prevPts[x.id]:null;
   return `<div class="sum-row ${x.id==="player"?"me":""}"><span class="pos">${i+1}.º</span><span class="nm">${x.civ?civLabel(x.civ):escapeHtml(x.name)}</span><span class="bar"><i style="--w:${(100*p/max).toFixed(1)}%;background:${cssColor(x.civ?.chartColor)}"></i></span><b>${fmt(p,0)}</b><span class="tr ${d>0?"up":d<0?"down":""}">${d?`${d>0?"▲":"▼"}${fmt(Math.abs(d),0)}`:""}</span></div>`}).join("")}</div>`}
 // Mostra o resumo da era b.era (tela cheia) ou o aviso curto. Devolve o que foi mostrado ("full", "toast" ou "").
-export function showEraSummary(b){
+// medals: medalhas NOVAS desta era ([{id,first}]; game.js) → bloco "Nova medalha" no resumo ou no aviso curto.
+export function showEraSummary(b,medals=[]){
  if(!b||state.result)return "";
  const c=eraChanges(b),skip=!!state.ui?.skipReport;
- if(!c.full||skip){
-  showToast(`<strong>Era ${escapeHtml(c.era)} concluída</strong> · +${hudNum(c.gold)} de ouro${c.rank?` · ${c.rank.pos}.º no placar`:""}${skip&&c.mine?" · veja ☰ → Detalhes":""}`);
+ if((!c.full&&!medals.length)||skip){
+  showToast(medals.length?medalToastText(medals)+` · Era ${escapeHtml(c.era)} concluída`:`<strong>Era ${escapeHtml(c.era)} concluída</strong> · +${hudNum(c.gold)} de ouro${c.rank?` · ${c.rank.pos}.º no placar`:""}${skip&&c.mine?" · veja ☰ → Detalhes":""}`);
   return "toast";
  }
  const r=c.rev,parts=[["dos territórios",r.normal],["das Obras",r.infra],["da Ciência",r.tech]].filter(([,v])=>v>=0.05).map(([n,v])=>`${hudNum(v)} ${n}`).join(" · ");
- showModal(`<div class="sum-kicker">Era ${escapeHtml(c.era)} concluída</div><h2 class="sum-title" id="sumTitle">${titleFor(c)}</h2>
+ showModal(`<div class="sum-kicker">Era ${escapeHtml(c.era)} concluída</div><h2 class="sum-title" id="sumTitle">${medals.length&&titleFor(c)==="Era tranquila"?"Nova medalha!":titleFor(c)}</h2>
 <div class="sum-gold"><div class="n"><span class="coin" aria-hidden="true">$</span><span id="sumGold" data-to="${c.gold}">+${hudNum(c.gold)}</span></div><div class="t">de ouro para a era ${escapeHtml(c.next)}${parts?`<br><span>${parts}</span>`:""}</div></div>
-<div class="sum-events">${c.events.map(eventHtml).join("")||`<p class="muted small">Nenhum ataque nesta era.</p>`}</div>${scoreHtml(c)}`,
+${medalNoticeHtml(medals)}<div class="sum-events">${c.events.map(eventHtml).join("")||`<p class="muted small">Nenhum ataque nesta era.</p>`}</div>${scoreHtml(c)}`,
   [{label:`Era ${escapeHtml(c.next)} <span aria-hidden="true">→</span>`,cls:"primary sum-next"}]);
  const back=$("modalRoot").querySelector(".modal-back");back.classList.add("sum-back");back.setAttribute("aria-labelledby","sumTitle");back.querySelector(".modal").classList.add("era-sum");back.querySelector(".modal").id="eraSummary";
  back.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();back.querySelector(".sum-next")?.click()}});

@@ -14,6 +14,7 @@ import {startNewGame} from "./game.js";
 import {liveScores,PTS} from "./hud.js";
 import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml} from "./labels.js";
+import {resultMedalsHtml} from "./medals.js";
 
 export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
 export function renderCharts(){
@@ -89,6 +90,7 @@ export function renderResult(){
  scr.innerHTML=`<div class="res-inner"><div class="res-emblem">${EMBLEM[sm.tone]}</div><div class="sum-kicker">Fim da partida · Era ${escapeHtml(sm.era)}</div><h2 class="res-title" id="resultTitle">${sm.title}</h2><p class="res-sub">${sm.sub}</p>
  <div class="sum-score res-score"><div class="sum-score-h"><span>Placar final</span><span>pontos</span></div>${sm.rows.map((x,i)=>`<div class="sum-row ${x.id==="player"?"me":""}"><span class="pos">${i+1}.º</span><span class="nm">${x.civ?civLabel(x.civ):escapeHtml(x.name||x.id)}</span><span class="bar"><i style="--w:${(100*PTS(x.score)/max).toFixed(1)}%;background:${cssColor(x.civ?.chartColor)}"></i></span><b>${fmt(PTS(x.score),0)}</b><span></span></div>`).join("")}</div>
  <div class="res-tiles">${sm.tiles.map(t=>`<div class="res-tile"><div class="v">${t.v}</div><div class="k">${t.k}</div></div>`).join("")}</div>
+ ${resultMedalsHtml()}
  <div class="res-actions"><button type="button" id="newGameAfterEnd" class="primary res-again">Jogar de novo</button><div class="res-two"><button type="button" id="seeDetails" data-open="resultSheet" aria-haspopup="dialog">Ver detalhes</button><button type="button" id="resultHome">Início</button></div></div></div>`;
  // A partida acabou: fecha a folha que estiver aberta (placar, detalhes...) para a tela de resultado ficar à vista.
  if(scr.hidden&&isSheetOpen()&&!isSheetOpen("resultSheet"))closeSheet({focus:false});

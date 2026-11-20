@@ -4,6 +4,7 @@ import {exposeGlobals} from "./app/debug.js";
 import * as ns_ai_decide from "./ai/decide.js";
 import * as ns_ai_profiles from "./ai/profiles.js";
 import * as ns_app_hooks from "./app/hooks.js";
+import * as ns_app_medals from "./app/medals.js";
 import * as ns_app_save from "./app/save.js";
 import * as ns_app_session from "./app/session.js";
 import * as ns_app_setup from "./app/setup.js";
@@ -32,6 +33,7 @@ import * as ns_ui_home from "./ui/home.js";
 import * as ns_ui_hud from "./ui/hud.js";
 import * as ns_ui_labels from "./ui/labels.js";
 import * as ns_ui_map from "./ui/map.js";
+import * as ns_ui_medals from "./ui/medals.js";
 import * as ns_ui_mapshape from "./ui/mapshape.js";
 import * as ns_ui_modal from "./ui/modal.js";
 import * as ns_ui_panels from "./ui/panels.js";
@@ -41,4 +43,4 @@ import * as ns_ui_terrain_art from "./ui/terrain-art.js";
 import * as ns_ui_toast from "./ui/toast.js";
 import * as ns_ui_tutorial from "./ui/tutorial.js";
 
-export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_terrain,ns_core_util,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_mapshape,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_terrain_art,ns_ui_toast,ns_ui_tutorial])}
+export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_medals,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_terrain,ns_core_util,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_medals,ns_ui_mapshape,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_terrain_art,ns_ui_toast,ns_ui_tutorial])}

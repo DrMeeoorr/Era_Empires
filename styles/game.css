@@ -372,3 +372,23 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .save-warning .sw-t{flex:1;min-width:0}
 .save-warning .sw-x{flex:none;display:grid;place-items:center;width:48px;height:48px;padding:0;border:0;border-radius:12px;background:transparent;color:#c9d3e2}
 .save-warning .sw-x .ic{width:20px;height:20px}
+/* ===== Medalhas (20/11/2026): aviso no resumo da era, lista na tela de resultado, aviso curto ===== */
+.medal-svg{display:block;flex:none}
+.sum-medals{display:grid;gap:8px;margin:0 0 10px}
+.sum-medal{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;padding:8px 12px;border-radius:14px;border:1px solid #f4bd5099;background:linear-gradient(90deg,#f4bd5026,#14213a 70%)}
+.sum-medal .medal-svg{width:52px;height:58px}
+.sm-t{min-width:0}.sm-t b{display:block;font-size:17px;line-height:1.2;color:#ffe2a0}.sm-t span{display:block;font-size:13px;line-height:1.3;color:#c3cfdf}
+.sm-t .sm-k{font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.res-medals{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;margin:0 0 12px;padding:6px 8px 6px 10px;border-radius:14px;background:#14213a;border:1px solid #f4bd5066;color:var(--text);text-align:left;font:inherit}
+.res-medals:active{filter:brightness(1.1)}
+.rm-icons{display:flex;flex:none}.rm-icons .medal-svg{width:36px;height:41px}.rm-icons .medal-svg+.medal-svg{margin-left:-12px}
+.rm-t{flex:1;min-width:0;line-height:1.25}.rm-t b{display:block;font-size:15px}.rm-t>span:not(.rm-k){display:block;font-size:13px;color:#c3cfdf}
+.rm-k{display:block;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.rm-c{flex:none;display:flex;align-items:center;gap:2px;font-size:13px;font-weight:700;color:var(--muted)}.rm-c .ic{width:18px;height:18px}
+.toast .toast-medal{display:inline-block;vertical-align:middle}.toast .toast-medal .medal-svg{width:26px;height:30px}
+.menu-item .mi-count{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px}
+@media (max-height:700px){.res-medals{margin-bottom:8px}}
+@media (prefers-reduced-motion:no-preference){
+ .medal-svg.pop{animation:medalPop .55s cubic-bezier(.2,1.5,.4,1) .15s both}
+}
+@keyframes medalPop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
