@@ -233,10 +233,7 @@ html.player-build.game-fit .wrap{padding-top:calc(6px + env(safe-area-inset-top,
 .map .territory .tnum{color:#d2dcea}
 .map .territory.target .rname{color:#fff}
 .map .territory .def{color:#ffd98a}
-.legend .lg-me{background:linear-gradient(#22867a,#16645b);border:1px solid #6fe0b0}
-.legend .lg-rival{background:repeating-linear-gradient(135deg,var(--c) 0 3px,color-mix(in srgb,var(--c) 45%,#2a1f2e) 3px 6px)}
-.legend .lg-free{background:#22324a;border:1px solid #64758e}
-.legend .lg-target{border:2px dashed var(--gold)}
+.legend .lg-free{background:linear-gradient(135deg,#3b5a2c 50%,#4a4e5c 50%);border:1px solid #8a98ad}
 /* Altura mínima do mapa: a região mais baixa tem 94/400 da altura do mapa → 205 px garantem toques de 48 px. */
 html.game-fit .map-box{padding:6px 3px;min-height:217px}
 html.game-fit .map{width:min(100cqw - 2px,(100cqh - 2px)*1.75);height:max(205px,min(100cqh - 2px,(100cqw - 2px)*.75));aspect-ratio:auto}
@@ -321,3 +318,22 @@ html.result-open,html.result-open body{overflow:hidden}
 @media (max-width:380px){.tut-tip{font-size:15px}}
 @media (prefers-reduced-motion:no-preference){.tut-spot{animation:tutPulse 1.4s ease-in-out infinite}.tut-box:not([hidden]){animation:sumIn .18s ease-out}}
 @keyframes tutPulse{50%{outline-offset:5px}}
+/* ===== Terrenos (20/11/2026): fronteira + bandeira do dono, selo de espadas, folha ⓘ Terrenos ===== */
+.legend-row{display:flex;align-items:center;gap:8px;min-width:0}
+.legend-row .legend{flex:1;min-width:0}
+.legend .flag-ico,.legend .swd-ico{vertical-align:-3px;margin-right:4px;flex:none}
+
+.lg-ter{position:relative;flex:none;margin:6px 2px 0 0;padding:1px 9px;min-height:22px;border-radius:999px;font-size:12px;line-height:18px;font-weight:700;color:var(--gold);background:#16233a;border:1px solid #3a4f70;white-space:nowrap;touch-action:manipulation}
+.lg-ter::before{content:"";position:absolute;inset:-13px -4px}
+html.game-fit .legend-row .lg-ter{margin-top:3px}
+.map.has-sel .territory:not(.selected){opacity:.6}
+.map .territory.ordered .order-tag{color:#ffd479}
+.tgt-terrain{margin:6px 0 2px}
+.ter-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:#1b2a42;border:1px solid var(--line);font-size:13px;font-weight:650;color:var(--text)}
+.ter-ico{flex:none;display:inline-block}
+.ter-list{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.ter-list li{display:flex;align-items:center;gap:9px;min-height:48px;padding:6px 10px;border-radius:10px;background:#17243a;border:1px solid var(--line)}
+.ter-list b{display:block;font-size:14px;color:var(--text)}
+.ter-list small{display:block;font-size:12px;line-height:1.25;color:var(--muted)}
+.ter-mapnote{margin:4px 0 0}
+#terrainSheet .ter-list{margin-bottom:6px}
