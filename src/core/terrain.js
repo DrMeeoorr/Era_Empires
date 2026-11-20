@@ -1,5 +1,6 @@
-// Terrenos do mapa (Campina, Floresta, Colinas, Montanha, Deserto, Pântano, Tundra). Por enquanto são só
-// visuais: nenhuma regra do jogo os lê. Sem DOM.
+// Terrenos do mapa (Campina, Floresta, Colinas, Montanha, Deserto, Pântano, Tundra). Sem DOM.
+// Opção da partida "Terrenos": Só visual (padrão; nenhuma regra os lê, o jogo é o de antes byte a byte) ou
+// Com efeitos (state.terrainEffects===true; ver TERRAIN_EFFECTS no fim do ficheiro).
 // Dois tipos de mapa: "padrao" (tabela fixa, cada região tem sempre o mesmo terreno) e "sorteado" (novo a cada
 // partida). O sorteio usa um gerador próprio com a sua semente (guardada no save); nunca usa o sorteio das
 // batalhas (rng.js), por isso não muda nenhum resultado do jogo nem a impressão digital.
@@ -76,3 +77,51 @@ export function terrainOf(s){
  return defaultTerrain(n);
 }
 export const mapTypeOf=s=>s?.terrain?.type==="sorteado"&&Array.isArray(s.terrain.list)?"sorteado":"padrao";
+
+/* ── Efeitos do terreno (opção "Com efeitos", 20/11/2026) ──
+   Só valem quando a partida tem state.terrainEffects===true; desligado, nenhuma função abaixo muda um número.
+   Cada terreno tem 2 vantagens e 1 desvantagem:
+   • income: multiplica o ouro que a região rende (1,2 = +20%; 0,8 = −20%);
+   • defense: pontos somados à defesa da região (nunca abaixo de 0);
+   • attack: multiplica o custo de quem ataca a região (1,2 = +20%);
+   • obras / forca / ciencia: % somada à receita de Obras, aos pontos de Força dos novos investimentos militares e
+     à receita de Ciência do império, por cada região desse terreno que ele tem (0,1 = +10% por região).
+   defense e attack protegem só quem ocupa: uma região livre custa o normal.
+   A região inicial de cada império conta como Campina (ouro, defesa e Obras), mesmo que o mapa desenhe outro terreno. */
+export const TERRAIN_EFFECTS=Object.freeze({
+ campina:Object.freeze({income:1.2,obras:0.05,defense:-2}),
+ floresta:Object.freeze({obras:0.1,defense:2,income:0.8}),
+ colinas:Object.freeze({forca:0.1,defense:2,income:0.8}),
+ montanha:Object.freeze({defense:4,income:1.2,ciencia:-0.1}),
+ deserto:Object.freeze({ciencia:0.1,income:1.2,defense:-2}),
+ pantano:Object.freeze({ciencia:0.2,attack:1.2,income:0.8}),
+ tundra:Object.freeze({ciencia:0.15,defense:2,income:0.8}),
+});
+export const START_TERRAIN="campina";
+// Liga/desliga dos efeitos numa partida. Saves antigos não têm o campo: Só visual.
+export const terrainEffectsOn=s=>s?.terrainEffects===true;
+// Regiões iniciais dos impérios guardadas na partida (state.terrain.starts). Dados estranhos: nenhuma.
+export function terrainStartsOf(s){const a=s?.terrain?.starts,n=s?.owners?.length||0;return Array.isArray(a)?a.filter(i=>Number.isInteger(i)&&i>=0&&i<n):[]}
+// Terreno que vale para as regras na região i (a região inicial conta como Campina).
+export function ruleTerrain(s,i){return terrainStartsOf(s).includes(i)?START_TERRAIN:terrainOf(s)[i]}
+const fx=(s,i)=>TERRAIN_EFFECTS[ruleTerrain(s,i)]||{};
+// Multiplicador do ouro da região i (1 com os efeitos desligados).
+export function terrainIncomeFactor(s,i){return terrainEffectsOn(s)?fx(s,i).income??1:1}
+// Pontos de defesa do terreno da região i (0 desligado ou se a região está livre).
+export function terrainDefenseBonus(s,i){return terrainEffectsOn(s)&&s.owners[i]!=="neutral"?fx(s,i).defense||0:0}
+// Multiplicador do custo de ataque contra a região i (1 desligado ou se a região está livre).
+export function terrainAttackFactor(s,i){return terrainEffectsOn(s)&&s.owners[i]!=="neutral"?fx(s,i).attack??1:1}
+// Soma do bônus por área ("obras", "forca" ou "ciencia") das regiões de um dono (0 desligado).
+export function terrainAreaBonus(s,owner,key){if(!terrainEffectsOn(s))return 0;let b=0;s.owners.forEach((o,i)=>{if(o===owner)b+=fx(s,i)[key]||0});return b}
+// Liga os efeitos num estado novo, guardando as regiões iniciais (laboratórios, testes e partidas novas).
+export function enableTerrainEffects(s){s.terrainEffects=true;s.terrain={...(s.terrain||{type:"padrao",seed:null,list:terrainOf(s)}),starts:s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0)};return s}
+// Textos curtos de cada terreno para o jogador: 2 vantagens e 1 desvantagem.
+export const TERRAIN_EFFECT_TEXT=Object.freeze({
+ campina:["+20% ouro","+5% Obras","−2 defesa"],
+ floresta:["+10% Obras","+2 defesa","−20% ouro"],
+ colinas:["+10% Força","+2 defesa","−20% ouro"],
+ montanha:["+4 defesa","+20% ouro","−10% Ciência"],
+ deserto:["+10% Ciência","+20% ouro","−2 defesa"],
+ pantano:["+20% Ciência","atacar custa +20%","−20% ouro"],
+ tundra:["+15% Ciência","+2 defesa","−20% ouro"],
+});

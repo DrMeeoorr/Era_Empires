@@ -3,11 +3,14 @@
 // qualquer era mudar, o código muda. Serve para provar que uma refatoração não alterou o jogo.
 // Referência atual: e82cdda4 (após o rebalanceamento: Obras dão defesa, Ciência barateia ataques, Ciência rende após 2 eras, Difícil/Hardcore atacam o líder).
 //
-// Uso direto: node tests/fingerprint.js        (imprime o código e os subcódigos de cada grupo)
+// Uso direto: node tests/fingerprint.js        (imprime os dois códigos — terreno só visual e com efeitos — e os subcódigos)
 // Na suíte:   tests/fingerprint.test.js (faz parte do `npm test`).
 "use strict";
 
 const EXPECTED = "e82cdda4";
+// Segunda impressão digital: as mesmas partidas com os terrenos COM EFEITOS (mapa padrão e sorteado).
+// Muda se mudar a tabela dos terrenos (src/core/terrain.js) ou a forma como a IA os escolhe.
+const EXPECTED_EFFECTS = "75da3210";
 
 /** Corre dentro da página do jogo. Devolve {tests, all, parts}. */
 function fingerprintInPage() {
@@ -33,7 +36,27 @@ function fingerprintInPage() {
   return { tests: t.pass + "/" + t.total, pass: t.pass, total: t.total, all: h(JSON.stringify(parts)), parts };
 }
 
-module.exports = { EXPECTED, fingerprintInPage };
+/** Corre dentro da página do jogo: partidas só de IAs com os terrenos com efeitos. Devolve {all, parts}. */
+function fingerprintEffectsInPage() {
+  const h = (str) => { let x = 0x811c9dc5; for (const ch of str) { x ^= ch.codePointAt(0); x = Math.imul(x, 0x01000193) >>> 0; } return x.toString(16).padStart(8, "0"); };
+  const profs = LAB_PROFILES.map((x) => x[0]);
+  const parts = {};
+  for (const type of ["padrao", "sorteado"])
+    for (const civCount of [2, 4, 6])
+      for (const mode of ["slow", "fast"]) {
+        const c = clone(DEFAULTS); c.map.aiCount = civCount - 1;
+        const recs = [];
+        for (let g = 0; g < 3; g++) {
+          const m = runMatch(c, { mode, profiles: profs, civCount, seed: fixedGameSeed(SEED, g), game: g, terrain: { type, seed: 1000 + g, effects: true } });
+          recs.push({ r: m.result, tl: m.state.timeline, o: m.state.owners, t: m.state.terrain });
+        }
+        parts[`fx_${type}_${civCount}_${mode}`] = h(JSON.stringify(recs));
+      }
+  { const c = clone(DEFAULTS); parts.fx_fixed = h(JSON.stringify(runFixedGame(c, { eras: 40, mode: "slow", profiles: profs, civCount: 4, seed: SEED, game: 1, terrain: { type: "sorteado", seed: 77, effects: true } }))); }
+  return { all: h(JSON.stringify(parts)), parts };
+}
+
+module.exports = { EXPECTED, EXPECTED_EFFECTS, fingerprintInPage, fingerprintEffectsInPage };
 
 if (require.main === module) {
   const { launch, openGame } = require("./helpers");
@@ -44,8 +67,11 @@ if (require.main === module) {
       const out = await page.evaluate(fingerprintInPage);
       console.log(JSON.stringify(out, null, 1));
       console.log(out.all === EXPECTED ? `OK: impressão digital ${out.all} igual à referência.` : `DIFERENTE: ${out.all} (referência ${EXPECTED}).`);
+      const fx = await page.evaluate(fingerprintEffectsInPage);
+      console.log(JSON.stringify(fx, null, 1));
+      console.log(fx.all === EXPECTED_EFFECTS ? `OK: impressão digital com terrenos com efeitos ${fx.all} igual à referência.` : `DIFERENTE (terrenos com efeitos): ${fx.all} (referência ${EXPECTED_EFFECTS}).`);
       if (errors.length) console.log("ERROS", errors);
-      process.exitCode = out.all === EXPECTED && !errors.length ? 0 : 1;
+      process.exitCode = out.all === EXPECTED && fx.all === EXPECTED_EFFECTS && !errors.length ? 0 : 1;
     } finally { await browser.close(); }
   })();
 }

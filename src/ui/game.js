@@ -1,11 +1,11 @@
 // Tela da era: arranque do jogo (save ou partida nova), desenho completo, concluir a era, nova partida, vistas.
 import {runHook,hooks,onHook} from "../app/hooks.js";
 import {quarantineSave,saveGame,readSavedGame} from "../app/save.js";
-import {setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,currentDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,state,playEra,DEV_MODE,setMapType} from "../app/session.js";
+import {setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,currentDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,state,playEra,DEV_MODE,setMapType,setTerrainEffectsChoice} from "../app/session.js";
 import {restoreSetupAfterTutorial} from "../app/setup.js";
 import {pickAiDifficulty} from "../core/config.js";
 import {P} from "../core/state.js";
-import {mapTypeOf} from "../core/terrain.js";
+import {mapTypeOf,terrainEffectsOn} from "../core/terrain.js";
 import {clone} from "../core/util.js";
 import {readAlloc,renderAllocation,AREAS,placePlans,round2,stepArea,restArea,setAlloc,applyPlan} from "./allocation.js";
 import {$} from "./dom.js";
@@ -67,11 +67,11 @@ export async function initGame(){
  onHook("saveStatus",showSaveWarning);
  const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
+ if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
  else if(saved){
   // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
   // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
-  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
+  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
   catch(e){setConfigApplied(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setState(newGame())}
  }
  else{applyDifficulty(currentDifficulty);setState(newGame())}

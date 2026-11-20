@@ -40,6 +40,33 @@ npx serve .                    # outra opção com Node.js
 Depois abra http://localhost:8080/ (jogador) ou http://localhost:8080/dev.html (desenvolvimento).
 No GitHub Pages nada muda: o site continua a ser publicado a partir do `index.html` do branch `main`.
 
+## Terrenos
+
+Cada região tem um terreno (Campina, Floresta, Colinas, Montanha, Deserto, Pântano, Tundra). Em **Nova partida →
+Personalizar → Terrenos** o jogador escolhe:
+
+- **Só visual** (padrão para jogador novo e sempre no tutorial): o terreno só enfeita o mapa; as regras são as de
+  sempre, byte a byte (impressão digital `e82cdda4`). Saves antigos abrem assim.
+- **Com efeitos**: cada terreno dá 2 vantagens e 1 desvantagem (`TERRAIN_EFFECTS` em `src/core/terrain.js`):
+
+| Terreno | Vantagens | Desvantagem |
+|---|---|---|
+| Campina | +20% ouro · +5% Obras | −2 defesa |
+| Floresta | +10% Obras · +2 defesa | −20% ouro |
+| Colinas | +10% Força · +2 defesa | −20% ouro |
+| Montanha | +4 defesa · +20% ouro | −10% Ciência |
+| Deserto | +10% Ciência · +20% ouro | −2 defesa |
+| Pântano | +20% Ciência · atacar custa +20% | −20% ouro |
+| Tundra | +15% Ciência · +2 defesa | −20% ouro |
+
+  O ouro vale para o que a região rende; as % de Obras, Força e Ciência somam-se por região desse terreno que o
+  império tem (Força: nos pontos de cada novo investimento militar). Defesa e custo de ataque do terreno só valem
+  em regiões com dono (uma região livre custa o normal). A região inicial de cada império conta como Campina.
+  A IA escolhe alvos pelo custo dividido pelo valor do terreno (ouro + afinidade do estilo: Construtor →
+  Campina/Floresta, Científico → Deserto/Pântano/Tundra, Militar/Agressivo → Colinas). A partida guarda
+  `state.terrainEffects=true` e as regiões iniciais em `state.terrain.starts`. Nos laboratórios,
+  `runMatch`/`runFixedGame` aceitam `terrain: {type, seed, effects}`.
+
 ## Organização do código
 
 ```
@@ -53,7 +80,7 @@ src/
   app/                sessão (partida atual, dificuldade, rivais), gravação do save, ganchos, depuração
   platform/           armazenamento (localStorage hoje; @capacitor/preferences no app) e ficheiros
   ui/                 telas do jogador: tela inicial, tela da era, mapa, gaveta, folhas, tutorial…
-  labs/               laboratórios (só no dev.html), incluindo os 148 testes internos
+  labs/               laboratórios (só no dev.html), incluindo os 151 testes internos
   main-player.js      entrada do index.html
   main-dev.js         entrada do dev.html
 tools/                build-player-html.js (gera o index.html) e serve.js (servidor local do npm start)
@@ -95,12 +122,13 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 
 | Ficheiro | O que verifica |
 | --- | --- |
-| `tests/internal.test.js` | Os 148 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
-| `tests/internal-node.test.js` | Os mesmos 148 testes internos, mas no Node, sem navegador. |
+| `tests/internal.test.js` | Os 151 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
+| `tests/internal-node.test.js` | Os mesmos 151 testes internos, mas no Node, sem navegador. |
 | `tests/structure.test.js` | Organização do código: regras sem tela, `localStorage` só no `storage`, sem funções substituídas em cadeia, jogador sem laboratórios, `index.html` igual ao gerado a partir do `dev.html`. |
 | `tests/rules.test.js` | Regras extra: mapa, economia, ataques, fim de partida, configuração e gravação. |
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
-| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Mede o jogo com os terrenos só visuais (padrão). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint-effects.test.js` | Segunda impressão digital: 37 partidas só de IAs com os **terrenos com efeitos** (mapa padrão e sorteado, 2/4/6 impérios, ritmo normal e rápido): tem de continuar `75da3210`. Muda se mudar a tabela dos terrenos ou a escolha de alvos da IA. `npm run fingerprint` mostra as duas. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
 | `tests/screens.test.js` | Telas fora da partida (início "Aurora", Nova partida + Personalizar, Como jogar, convite do tutorial) nos 3 celulares, também com a fonte larga: início sem rolar, sem rolagem horizontal nem textos cortados, alvos ≥ 48 px, Personalizar com todas as opções, "Continuar · Era N" com partida salva, fonte Marcellus SC local. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
@@ -112,6 +140,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Cinco delas já substituem os internos fracos em `src/labs/tests-def.js`; ver `tests/README.md`. |
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
 | `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
+| `tests/terrain-effects.test.js` | Terrenos com efeitos: tabela final, desligado idêntico (também com terrenos variados), um teste por efeito (ouro, defesa, custo de ataque, % de Obras/Força/Ciência), proteção só para quem ocupa, região inicial como Campina, IA prefere o terreno do seu estilo, laboratórios com `terrain`, opção "Terrenos" em Personalizar e resumos, save (ligado sobrevive a recarregar; save antigo = Só visual), tutorial sempre Só visual, folha da região (linha + · + · − e custo com o terreno), folha ⓘ Terrenos e Como jogar ligados e desligados. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**

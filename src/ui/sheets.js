@@ -2,7 +2,7 @@
 import {selectedTerritory,setSelectedTerritory} from "../app/session.js";
 import {$} from "./dom.js";
 import {renderMetrics} from "./hud.js";
-import {renderMap,renderTerrainSheet} from "./map.js";
+import {renderMap,renderTerrainSheet,fillTerrainLists} from "./map.js";
 import {renderForecast,renderHistory,renderNotifications,renderCharts,renderVictory,renderResultDetails} from "./panels.js";
 
 /* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
@@ -12,6 +12,7 @@ import {renderForecast,renderHistory,renderNotifications,renderCharts,renderVict
 export const SHEET_HOOKS={
  attackSheet:{onClose:()=>{if(selectedTerritory!==null){setSelectedTerritory(null);renderMap()}}},
  terrainSheet:{onOpen:()=>renderTerrainSheet()},
+ howTo:{onOpen:()=>fillTerrainLists()},
  details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
  scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
  resultSheet:{onOpen:()=>requestAnimationFrame(renderResultDetails)},
