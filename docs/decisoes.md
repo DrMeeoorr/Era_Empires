@@ -39,3 +39,20 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
   Arvela, Brumas, Cardo, Dorna, Esmera, Fenda, Gralha, Hélia, Ivara, Jaspe, Lumen, Musgo,
   Névoa, Ombral, Pedral, Quartzo, Rochedo, Salgar, Torva, Urzal, Vau, Velar, Xisto, Zênite.
   No mapa: **nome + número pequeno**.
+
+## 20/11/2026 — Redesenho das telas iniciais (mobile-ux)
+- **Tela inicial: direção C "Aurora"** — céu, sol nascendo e colinas das eras com as bandeiras dos impérios.
+  Botão principal **"Jogar"**; com partida salva, **"Continuar · Era N"** (com "de 30 · Médio · 1 rival" embaixo) e
+  **"Nova partida"** como secundário. **"Tutorial"** e **"Como jogar"** lado a lado. Cabe sem rolar, inclusive em 360×640.
+- **Demais telas: direção A "Atlas"** — convite do tutorial, Nova partida (configurar) com **Personalizar** e Como jogar.
+  As duas direções usam a mesma paleta, os mesmos botões e os mesmos ícones SVG.
+- **Fonte própria: sim** — Marcellus SC (licença OFL, ~15 KB, guardada no próprio jogo, sem internet; licença em
+  `assets/fonts/OFL.txt`) só no nome IMPÉRIOS (também na tela inicial) e nos títulos. Textos comuns: fonte do sistema.
+- Nomes aprovados:
+  - "Começar" → **"Jogar"**.
+  - "Modo lento/rápido" → **"Ritmo: Normal / Rápido"**.
+  - "Clássico" → **"Clássica"** (vitória).
+  - "Hardcore" → **"Lendário"** (só o nome mostrado; a chave interna `hardcore` e os saves continuam iguais).
+- Configurar: só **Dificuldade** e **Rivais** à vista, com os padrões (Médio, 1 rival, 30 eras); o resto (duração,
+  ritmo, vitória, estilo de cada rival, posição inicial aleatória) fica em **"Personalizar"**, sem tirar nenhuma opção.
+- Versão do jogador sem textos de laboratório ("MVP", "Funciona offline · sem instalação…"); título da aba: "Impérios".
