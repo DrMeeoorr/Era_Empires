@@ -82,3 +82,25 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
   Montanha; se não der, nova tentativa com a semente seguinte.
 - **Save**: guarda o tipo de mapa, a semente própria (sorteada à parte, nunca o sorteio das batalhas) e a lista dos
   24 terrenos (`state.terrain`); saves antigos abrem com o mapa padrão.
+
+## 20/11/2026 — Terrenos com efeitos (game-designer)
+- **Opção "Terrenos"** em Nova partida → Personalizar: **"Só visual · regras de sempre"** (padrão para jogador novo)
+  / **"Com efeitos · cada terreno muda o jogo"**; com efeitos, os resumos mostram "terrenos com efeito". O tutorial
+  usa sempre Só visual e devolve a escolha do jogador depois. Saves antigos abrem como Só visual.
+- Só visual = o jogo de antes, byte a byte (impressão digital **e82cdda4**). Com efeitos tem impressão digital
+  própria: **75da3210** (`tests/fingerprint-effects.test.js`).
+- **Tabela final** (2 vantagens + 1 desvantagem; aprovada a variante "Tundra com Ciência"):
+  Campina +20% ouro, +5% Obras, −2 defesa · Floresta +10% Obras, +2 defesa, −20% ouro ·
+  Colinas +10% Força, +2 defesa, −20% ouro · Montanha +4 defesa, +20% ouro, −10% Ciência ·
+  Deserto +10% Ciência, +20% ouro, −2 defesa · Pântano +20% Ciência, atacar custa +20%, −20% ouro ·
+  **Tundra +15% Ciência, +2 defesa, −20% ouro**.
+  A Tundra trocou "+10% Força" por Ciência e "ataques contra +20%" por "+2 defesa" (para não ficar igual ao
+  Pântano); com +10% Ciência ela ficava fraca (índice 0,87), com +15% fica no meio (0,95).
+- Regras: o ouro vale para o que a região rende; as % de Obras/Força/Ciência somam por região desse terreno que o
+  império tem (Força nos pontos de cada novo investimento militar); **a proteção do terreno (defesa e custo de
+  ataque) vale só para quem ocupa**; **a região inicial conta como Campina** (ouro, defesa e Obras).
+- IA: valor do alvo = ouro do terreno + afinidade do estilo (Construtor: Campina/Floresta; Científico:
+  Deserto/Pântano/Tundra; Militar/Agressivo: só Colinas; Adaptativo: um pouco de todos menos Montanha).
+- Aceitos: estratégia Equilibrada um pouco acima da meta (pior perfil 61% na v7; 67% na tabela final), Médio mais
+  fácil com efeitos. Ficam para depois: empate Médio × Difícil no modo Só visual, Pedral (região inicial fraca),
+  sem troca Xisto ↔ Velar.
