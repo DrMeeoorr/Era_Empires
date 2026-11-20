@@ -64,13 +64,16 @@ export function normalizeConfig(c){
  return x;
 }
 export const ICE_WEIGHT_KEYS=["iceWMilitary","iceWInfrastructure","iceWTechnology","iceWFinance","iceWTerritory"],SCORE_WEIGHT_KEYS=["scoreWMilitary","scoreWInfrastructure","scoreWTechnology","scoreWTreasury","scoreWTerritory"];
-/* ── Dificuldade ── */
+/* ── Dificuldade ──
+   Rodada de balanceamento de 20/11/2026 (aprovada): Difícil 1,05 com 2+ rivais (1×1 continua 1,03); Médio com terrenos
+   com efeito: effectsIncome (1,06 com 2+ rivais, 1,03 no 1×1), gravado na partida (state.aiIncomeEffects) ao começar.
+   Difícil/Lendário com 2+ rivais no Só visual: regiões livres primeiro (ver ai/decide.js). */
 export const DIFFICULTIES={
  muitofacil:{name:"Muito fácil",desc:"Os rivais recebem 70% da receita normal. Ideal para aprender: dá para vencer com frequência mesmo contra 3 rivais.",aiIncomeMultiplier:0.7,aiAggression:75,aiTarget:"neutralFirst"},
  facil:{name:"Fácil",desc:"Os rivais recebem 92% da receita normal.",aiIncomeMultiplier:0.92,aiAggression:75,aiTarget:"neutralFirst"},
- medio:{name:"Médio",desc:"Rivais com as mesmas regras que você (com 2 ou mais rivais, +3% de receita).",aiIncomeMultiplier:1.03,aiIncomeMultiplier1v1:1,aiAggression:75,aiTarget:"neutralFirst"},
- dificil:{name:"Difícil",desc:"Rivais estrategas: atacam sempre e se unem contra quem lidera — muitas vezes você.",aiIncomeMultiplier:1.03,aiAggression:100,aiTarget:"leader"},
- hardcore:{name:"Lendário",desc:"Rivais estrategas que se unem contra quem lidera e recebem +12% de receita. Para quem já domina o jogo.",aiIncomeMultiplier:1.12,aiAggression:100,aiTarget:"leader"},
+ medio:{name:"Médio",desc:"Rivais com as mesmas regras que você (com 2 ou mais rivais, +3% de receita). Com terrenos com efeito, os rivais recebem +3% a mais.",aiIncomeMultiplier:1.03,aiIncomeMultiplier1v1:1,aiAggression:75,aiTarget:"neutralFirst",effectsIncome:{aiIncomeMultiplier:1.06,aiIncomeMultiplier1v1:1.03}},
+ dificil:{name:"Difícil",desc:"Rivais estrategas: atacam sempre e recebem +3% de receita (+5% com 2 ou mais rivais). No 1×1 o rival se concentra em você; com 2 ou mais rivais, eles correm primeiro para as regiões livres (com terrenos com efeito, se unem contra quem lidera).",aiIncomeMultiplier:1.05,aiIncomeMultiplier1v1:1.03,aiAggression:100,aiTarget:"leader"},
+ hardcore:{name:"Lendário",desc:"Rivais estrategas que atacam sempre e recebem +12% de receita. No 1×1 o rival se concentra em você; com 2 ou mais rivais, eles correm primeiro para as regiões livres (com terrenos com efeito, se unem contra quem lidera). Para quem já domina o jogo.",aiIncomeMultiplier:1.12,aiAggression:100,aiTarget:"leader"},
  config:{name:"Configurações",desc:"Usa a receita, a agressividade e o alvo das IAs definidos nas Configurações."}
 };
 // Os 4 valores que as dificuldades substituem. aiConfigBase guarda os valores "das Configurações", para que

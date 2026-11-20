@@ -60,6 +60,14 @@ export function allocateStrategy(s,cfg,strategy,custom=[34,33,33],owner="player"
  invest(s,"military",amounts[0],cfg,owner);invest(s,"infrastructure",amounts[1],cfg,owner);invest(s,"technology",amounts[2],cfg,owner);
  return {military:amounts[0],infrastructure:amounts[1],technology:amounts[2]};
 }
+// Multiplicadores de receita das IAs só desta partida com terrenos com efeitos ({all, v1}); null = usar a configuração.
+// Valores estranhos no save são ignorados (mesmos limites da configuração: 0,1–5; v1 −1 = usar o geral).
+export function aiIncomeEffectsOf(s){
+ const x=s?.aiIncomeEffects;if(!terrainEffectsOn(s)||!x||typeof x!=="object")return null;
+ const all=Number(x.aiIncomeMultiplier),v1=Number(x.aiIncomeMultiplier1v1??-1);
+ if(!Number.isFinite(all)||all<0.1||all>5||!Number.isFinite(v1)||v1>5||(v1<0&&v1!==-1))return null;
+ return {all,v1};
+}
 // Receita de uma civilização na era: territórios + infraestrutura + tecnologia (mesma regra para todos).
 export function collectRevenue(s,civ,era,cfg){
  const territories=countTerritories(s,civ.id);
@@ -87,7 +95,10 @@ export function collectRevenue(s,civ,era,cfg){
  // Dificuldade: multiplicador de receita das IAs. Só em partidas com jogador humano, para não
  // distorcer os laboratórios (onde todas as civilizações são IA e o lugar 0 também).
  // Dificuldade: em 1×1 pode usar um multiplicador próprio (aiIncomeMultiplier1v1 ≥ 0; -1 = usar o geral).
- const v1=cfg.economy.aiIncomeMultiplier1v1,diffMult=(civ.index>0&&s.civs[0]?.controller==="human")?((s.civs.length===2&&v1>=0)?v1:(cfg.economy.aiIncomeMultiplier??1)):1;
+ // Terrenos com efeitos: a partida pode trazer multiplicadores próprios (state.aiIncomeEffects, gravados ao começar;
+ // Médio: 1,06 com 2+ rivais e 1,03 no 1×1 — rodada de 20/11/2026). Saves sem o campo usam os da configuração.
+ const fxm=aiIncomeEffectsOf(s),v1=fxm?fxm.v1:cfg.economy.aiIncomeMultiplier1v1,all=fxm?fxm.all:(cfg.economy.aiIncomeMultiplier??1);
+ const diffMult=(civ.index>0&&s.civs[0]?.controller==="human")?((s.civs.length===2&&v1>=0)?v1:all):1;
  if(diffMult!==1){normal*=diffMult;infra*=diffMult;tech*=diffMult}
  const total=normal+infra+tech;
  if(![normal,infra,tech,total,civ.treasury,civ.military].every(Number.isFinite)||Math.max(normal,infra,tech,total,civ.treasury,civ.military)>1e100){s.stopped=true;throw Error("Limite numérico atingido; exporte o histórico antes de continuar.")}

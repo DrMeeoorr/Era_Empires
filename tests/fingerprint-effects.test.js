@@ -1,6 +1,6 @@
 // Segunda impressão digital: as partidas só de IAs com os terrenos COM EFEITOS (mapa padrão e sorteado) têm de dar
 // sempre o mesmo código. Muda se mudar a tabela dos terrenos, a forma como a IA os escolhe ou alguma regra.
-// A primeira (terreno só visual, e82cdda4) está em tests/fingerprint.test.js. Ver tests/fingerprint.js.
+// A primeira (terreno só visual, a911f8cd desde 20/11/2026; antes e82cdda4) está em tests/fingerprint.test.js. Ver tests/fingerprint.js.
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");

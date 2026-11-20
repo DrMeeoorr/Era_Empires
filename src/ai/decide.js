@@ -22,6 +22,9 @@ export function aiTerrainValue(s,i,style){const k=ruleTerrain(s,i);return (TERRA
 // Menor = alvo melhor (com os efeitos ligados).
 export function aiTargetScore(s,i,civ,cfg,style){return attackNeed(s,i,civ.id,cfg)/aiTerrainValue(s,i,style)}
 
+// Alvo efetivo: "leader" vira "neutralFirst" no Só visual quando há mais de 2 impérios ativos.
+export function leaderTargetMode(s,priority){return priority==="leader"&&!terrainEffectsOn(s)&&s.civs.filter(c=>c.active).length>2?"neutralFirst":priority}
+
 // Decisão de uma IA: mesmos perfis do MVP, agora comparando-se com o rival mais forte.
 export function aiDecide(s,civ,cfg,era){
  const investment={military:0,infrastructure:0,technology:0};
@@ -68,7 +71,11 @@ export function aiDecide(s,civ,cfg,era){
  // Tutorial: a IA pode ter de evitar o jogador ou territórios reservados.
  const av=s.aiAvoid,targets=eligibleTargets(s,civ.id).filter(t=>!(av&&((av.player&&t.o==="player")||(av.idx||[]).includes(t.i))));let action;
  if(targets.length&&roll<aggression/100){
-  const priority=cfg.military.aiTarget||"neutralFirst",fx=terrainEffectsOn(s);
+  const fx=terrainEffectsOn(s);
+  // Rodada de balanceamento de 20/11/2026: no Só visual, com 2+ rivais ainda em jogo, a coligação contra o líder fazia
+  // os rivais brigarem entre si e com regiões bem defendidas (o Difícil com 3 rivais ficava tão fácil como o Médio).
+  // Aí o Difícil/Lendário vão primeiro às regiões livres (atacando sempre); no 1×1 e com efeitos, a coligação continua.
+  const priority=leaderTargetMode(s,cfg.military.aiTarget||"neutralFirst");
   // Coligação contra o líder: alvos pagáveis (custo cheio) primeiro; depois o líder em territórios
   // (exceto a própria IA; em empate, o jogador), os neutros e, por último, as outras IAs; o mais barato em cada grupo.
   let leaderId=null,payable=null,leaderClass=null;

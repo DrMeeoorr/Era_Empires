@@ -61,9 +61,9 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
 - **7 terrenos, só visuais por enquanto** (nenhuma regra muda; impressão digital continua e82cdda4):
   Campina, Floresta, **Colinas** (dois morros sobrepostos, terracota, sem árvore), Montanha, Deserto, Pântano, Tundra.
   Arte própria em SVG (sem imagens externas), com forma diferente para cada terreno (não depende só da cor).
-- **Mapa padrão** (tabela fixa, na ordem das regiões):
+- **Mapa padrão** (tabela fixa, na ordem das regiões; atualizada na rodada de balanceamento de 20/11/2026 — Jaspe ↔ Rochedo):
   Campina: Arvela, Cardo, Esmera, Ivara, Urzal, Vau, Zênite · Floresta: Gralha, Musgo, Ombral, Velar ·
-  Colinas: Dorna, Jaspe, Pedral · Montanha: Quartzo, Rochedo, Xisto · Deserto: Hélia, Salgar ·
+  Colinas: Dorna, Pedral, Rochedo · Montanha: Jaspe, Quartzo, Xisto · Deserto: Hélia, Salgar ·
   Pântano: Brumas, Névoa, Torva · Tundra: Fenda, Lumen.
   Pedral (Colinas) e Torva (Pântano), regiões iniciais com 3+/4+ rivais, ficam como estão: o `game-designer` decide depois.
 - **Dono**: fronteira grossa só em volta de cada império (lisa para você, listrada para os rivais, com contorno escuro)
@@ -104,3 +104,21 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
 - Aceitos: estratégia Equilibrada um pouco acima da meta (pior perfil 61% na v7; 67% na tabela final), Médio mais
   fácil com efeitos. Ficam para depois: empate Médio × Difícil no modo Só visual, Pedral (região inicial fraca),
   sem troca Xisto ↔ Velar.
+
+## 20/11/2026 — Rodada de balanceamento (game-designer) — aprovada
+Medida com ~54 mil partidas por modo (semente fixa); o repositório deu exatamente os números da proposta.
+1. **Médio com terrenos com efeito**: rivais **+3% de ouro** (1,06 com 2+ rivais; 1,03 no 1×1). Só com efeitos;
+   fica gravado na partida (`state.aiIncomeEffects`). A estratégia Equilibrada cai de 66% para 59% no pior caso.
+2. **Mapa padrão**: **Jaspe ↔ Rochedo** (Jaspe = Montanha, Rochedo = Colinas). Com efeitos, Arvela × Zênite no 1×1
+   só de IAs passa de 61/39 para 51/49.
+3. **Posições iniciais** (ambos os modos): **Arvela, Zênite, Esmera, Torva, Musgo, Ombral** (Pedral saiu). Pior região
+   com 4/5/6 impérios: Só visual 9/4/8% → 18/9/6%; com efeitos (padrão) 10/5/10% → 20/14/11%.
+4. **Difícil e Lendário com 2+ rivais no Só visual**: rivais vão **primeiro às regiões livres**, atacando sempre; no 1×1
+   e com efeitos mantêm a coligação contra o líder. **Difícil: 1,05 de ouro com 2+ rivais** nos dois modos (1×1
+   continua 1,03). Só visual, jogador-IA (1/2/3 rivais): Médio 74/27/26, Difícil 29/11/16, Lendário 8/4/10.
+- Impressões digitais novas: Só visual **a911f8cd** (antes e82cdda4; mudam só as partidas de 4 e 6 impérios, pelas
+  posições) e Com efeitos **bda662ed** (antes 75da3210).
+- Saves: partidas em curso continuam abrindo com as posições, os terrenos e a receita dos rivais com que começaram;
+  a nova regra de alvos do Difícil/Lendário (Só visual, 2+ rivais) vale a partir da era seguinte.
+- **Ficam para a próxima rodada**: estratégia **Agressiva no Só visual** (já ~58–67% no pior caso, acima da meta) e o
+  estilo **Científico** (o mais fraco; com efeitos, como jogador-IA no Médio, 21%).

@@ -10,7 +10,9 @@ export const TERRAINS=["campina","floresta","colinas","montanha","deserto","pant
 export const TERRAIN_NAMES={campina:"Campina",floresta:"Floresta",colinas:"Colinas",montanha:"Montanha",deserto:"Deserto",pantano:"Pântano",tundra:"Tundra"};
 export const TERRAIN_HINTS={campina:"Campos abertos",floresta:"Mata fechada",colinas:"Morros redondos",montanha:"Picos e rochas",deserto:"Dunas e salinas",pantano:"Charco e juncos",tundra:"Gelo e neve"};
 // Mapa padrão (aprovado em 20/11/2026), na ordem das regiões: Arvela, Brumas, Cardo… Zênite.
-export const DEFAULT_TERRAIN=Object.freeze(["campina","pantano","campina","colinas","campina","tundra","floresta","deserto","campina","colinas","tundra","floresta","pantano","floresta","colinas","montanha","montanha","deserto","pantano","campina","campina","floresta","montanha","campina"]);
+// Rodada de balanceamento (20/11/2026): Jaspe ↔ Rochedo (Jaspe Montanha, Rochedo Colinas). Com efeitos, as 3 Montanhas
+// (−10% Ciência) ficavam todas do lado de Zênite e Arvela vencia 61% no 1×1 só de IAs; com a troca, ~50%.
+export const DEFAULT_TERRAIN=Object.freeze(["campina","pantano","campina","colinas","campina","tundra","floresta","deserto","campina","montanha","tundra","floresta","pantano","floresta","colinas","montanha","colinas","deserto","pantano","campina","campina","floresta","montanha","campina"]);
 export const MAP_TYPES=["padrao","sorteado"];
 // Regras do sorteio: quantidade de cada terreno (mín.–máx.); a Campina tem também pelo menos 1 por império.
 export const TERRAIN_LIMITS={campina:[5,8],floresta:[3,5],colinas:[2,5],montanha:[2,4],deserto:[1,3],pantano:[2,4],tundra:[1,3]};
