@@ -122,3 +122,21 @@ Medida com ~54 mil partidas por modo (semente fixa); o repositório deu exatamen
   a nova regra de alvos do Difícil/Lendário (Só visual, 2+ rivais) vale a partir da era seguinte.
 - **Ficam para a próxima rodada**: estratégia **Agressiva no Só visual** (já ~58–67% no pior caso, acima da meta) e o
   estilo **Científico** (o mais fraco; com efeitos, como jogador-IA no Médio, 21%).
+
+## 20/11/2026 — Rodada 2 de balanceamento (game-designer) — aprovada
+Medida com ~54 mil partidas por modo (semente fixa); o repositório deu exatamente os números da proposta (0 diferenças).
+1. **Reflexo de defesa**: o rival que faz fronteira com o jogador humano, quando o exército do jogador é maior que o
+   dele, ganha **+15 pontos de Militar** nessa era, tirados de Obras e Ciência na proporção de cada uma. Não dispara em
+   partidas só de IAs. Cada estilo mantém a sua prioridade principal.
+2. **Científico decide atacar já com o desconto da Ciência** (alternativa A; os outros estilos continuam pelo custo
+   cheio). Com efeitos, o Científico como jogador-IA no Médio passa de 21% para 30%.
+- Efeito (Médio, pior caso por estratégia): Só visual Agressiva 67% → 52%, Militar 60% → 54%; com efeitos Equilibrada
+  59% → 50%. Jogador-IA (1/2/3 rivais), Só visual: Médio 74/27/26 → 73/27/21, Difícil 29/11/16 → 22/10/11,
+  Lendário 8/4/10 → 4/3/6.
+- **Aceito: Difícil e Lendário ficam mais duros**, sem compensação (o ouro das dificuldades não muda).
+- Impressões digitais novas: Só visual **8ba37eca** (antes a911f8cd) e Com efeitos **4010a086** (antes bda662ed).
+- Saves: nada novo é gravado; partidas em curso passam a usar a IA nova a partir da era seguinte.
+- **Pendências para depois**:
+  - Médio no 1×1 ainda vencível quase sempre atacando todas as eras (exigiria mexer numa regra de base, como a perda
+    de 20% do exército por era).
+  - Zênite domina as partidas só de IAs no Só visual (3 a 6 impérios).
