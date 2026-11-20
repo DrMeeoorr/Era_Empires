@@ -190,15 +190,19 @@ for (const [name, opts] of MOBILE_SCREENS) {
 test("nomes: tutorial fala do rival e da região pelo nome", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, offerTutorial: true });
   const problems = [], texts = {};
+  let summary = "";
   await playTutorial(page, {
     onStep: async (n) => {
       texts[n] = (await page.evaluate(() => document.getElementById("tutBox").innerText)).replace(/\s+/g, " ");
       genericNames(`tutorial passo ${n}`, texts[n], problems);
+      if (n === "4b") summary = (await page.locator("#eraSummary").innerText()).replace(/\s+/g, " ");
     },
   });
-  assert.match(texts[1], /★ Você \(verde\) e o rival ▲ Rubro/);
-  assert.match(texts[5], /Toque em Ivara \(9\)/);
-  assert.match(texts[9], /▲ Rubro atacou \S+ \(\d+\), um território seu|Os rivais também atacam/);
+  assert.match(texts[3], /Toque em Ivara/);
+  assert.match(texts["4b"], /conquistou a região/);
+  // O resumo da era do tutorial mostra o rival pelo nome, com o símbolo, no placar.
+  assert.match(summary, /▲ Rubro/);
+  genericNames("resumo da era do tutorial", summary, problems);
   assert.deepEqual(errors, []);
   await context.close();
   assert.deepEqual(problems, [], "\"território N\" ou \"IA\" genérico no tutorial");

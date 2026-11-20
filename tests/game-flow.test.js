@@ -203,7 +203,7 @@ test("salvar e recarregar: partida terminada não é retomada e save corrompido 
 for (const [name, opts] of [MOBILE_SCREENS[0], MOBILE_SCREENS[2]]) {
   test(`tutorial do início ao fim (${name})`, async () => {
     const { context, page, errors } = await openGame(browser, { contextOptions: opts, offerTutorial: true });
-    await playTutorial(page, { stopBefore: 10 });
+    await playTutorial(page, { stopBefore: 5 });
     await screenshot(page, `tutorial-final-${name}`);
     await page.locator('#tutBox [data-tut="next"]').click();
     // Fim: balão fechado, proteções do tutorial desligadas, partida continua.
@@ -212,7 +212,9 @@ for (const [name, opts] of [MOBILE_SCREENS[0], MOBILE_SCREENS[2]]) {
     assert.deepEqual(end, { done: true, avoid: null, forced: null, skipIdle: false, result: null });
     await choosePlan(page, "balanced");
     await concludeEraUI(page);
-    assert.equal(await page.evaluate(() => state.era), 6);
+    assert.equal(await page.evaluate(() => state.era), 4);
+    // As escolhas de antes do tutorial voltam na próxima partida nova.
+    assert.ok(await page.evaluate(() => !!state.tutorial.prevSetup), "o tutorial perdeu as escolhas de antes");
     assert.deepEqual(await horizontalOverflow(page), []);
     assert.deepEqual(errors, []);
     await context.close();
@@ -238,14 +240,14 @@ test("tutorial: 'Pular tutorial' termina o tutorial e a partida continua", async
 
 test("tutorial: recarregar a página a meio retoma o tutorial no mesmo passo", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, offerTutorial: true });
-  await playTutorial(page, { stopBefore: 7 });
+  await playTutorial(page, { stopBefore: 5 });
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
   assert.match(await cont.innerText(), /era 3/);
   await cont.click();
-  await waitStep(page, 7);
+  await waitStep(page, 5);
   assert.equal(await page.evaluate(() => state.owners[8]), "player");
   assert.deepEqual(errors, []);
   await context.close();

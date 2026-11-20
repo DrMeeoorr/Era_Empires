@@ -1,54 +1,56 @@
 // Tutorial: partida guiada (1 rival, roteiro controlado; depois jogo livre no Fácil).
 import {onHook,runHook} from "../app/hooks.js";
 import {saveGame} from "../app/save.js";
-import {state,configApplied,setSelectedTerritory} from "../app/session.js";
+import {state,configApplied,selectedTerritory,setSelectedTerritory} from "../app/session.js";
 import {newTutorialGame,TUTORIAL_POS} from "../app/setup.js";
-import {countTerritories,eligibleTargets} from "../core/map.js";
-import {attackNeed,attackTerritory} from "../core/military.js";
+import {territorialMinimum,territoryBase} from "../core/endgame.js";
+import {countTerritories} from "../core/map.js";
 import {regionName} from "../core/names.js";
-import {P,A} from "../core/state.js";
 import {storage} from "../platform/storage.js";
-import {SHORT_SCREEN,readAlloc} from "./allocation.js";
+import {readAlloc} from "./allocation.js";
 import {$} from "./dom.js";
 import {fmt,escapeHtml} from "./format.js";
 import {renderAll,showView} from "./game.js";
-import {civLabel} from "./labels.js";
 import {showModal} from "./modal.js";
 
-/* ── Tutorial: partida guiada (1 IA, roteiro controlado; depois jogo livre no Fácil) ──
-   O estado do tutorial vive em state.tutorial={step,waitEra,attackDone} e é guardado com a partida.
+/* ── Tutorial: partida guiada (1 rival "Equilibrado", posições fixas TUTORIAL_POS; depois jogo livre no Fácil) ──
+   5 passos de ação: investir → concluir → atacar → ver o resumo → como vencer.
+   O estado vive em state.tutorial={v:2,step,…} e é guardado com a partida; as escolhas do jogador de antes do
+   tutorial ficam em state.tutorial.prevSetup (src/app/setup.js) e voltam na próxima partida nova.
    Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
-   e state.forcedAttack (resultado do próximo ataque de uma civilização). */
+   e state.forcedAttack (o ataque do passo 3 dá certo). */
 export async function initTutorial(){
  const TUT_KEY="imperios-tutorial-oferecido",TARGET=TUTORIAL_POS.target;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
- // Em telas baixas (≤ 700 px) os planos rápidos ficam na folha "Planos ▾".
- const planCta=name=>SHORT_SCREEN.matches?`Toque em “Planos” e escolha “${name}”.`:`Toque no plano “${name}”.`;
+ const tname=()=>escapeHtml(regionName(TARGET));
+ const sheetOn=id=>{const el=$(id);return !!el&&!el.hidden};
+ const anySheet=()=>!!document.querySelector(".sheet:not([hidden])");
+ const summaryBtn=()=>document.querySelector("#eraSummary .sum-next");
+ /* ── Tutorial (Fase 3): 5 passos de ação, cada um com uma dica curta (no máximo 2 linhas) e uma seta para o alvo.
+    O resto da tela fica escurecido e o balão fica sempre do lado oposto ao alvo, sem o cobrir.
+    Cada passo: target() devolve o elemento a destacar (ou null: balão escondido) e o texto da dica para ele. */
  const STEPS=[
-  {t:"Bem-vindo a Impérios",target:()=>$("mapCard"),html:()=>`${civLabel(P(state))} (verde) e o rival ${civLabel(A(state))} disputam <strong>24 territórios</strong>. Vence quem primeiro:<br>• dominar <strong>70% do mapa</strong> (17 territórios);<br>• ou liderar com folga durante 5 eras (<strong>supremacia</strong>, só na fase final);<br>• ou tiver <strong>mais pontos</strong> na última era.`},
-  {t:"Ouro e receita",target:()=>$("metrics"),html:()=>`A cada era você recebe <strong>ouro</strong>: cada território rende, e as Obras e a Ciência somam mais. O <strong>ouro</strong> aqui no topo é o que você pode investir agora; o <strong>+/era</strong> mostra quanto entrou nesta era.`},
-  {t:"Investir",target:()=>$("investCard"),action:true,html:()=>`Há três áreas:<br>⚔ <strong>Militar</strong>: <strong>Força</strong> para atacar já na próxima era (perde 20% por era).<br>▰ <strong>Obras</strong>: rendem ouro a médio prazo e depois acabam.<br>✦ <strong>Ciência</strong>: rende tarde, mas para sempre.<br>Para atacar na próxima era, invista ao menos ${fmt(needMil(),0)} de ouro em Militar.<br><br>👉 <strong>${planCta("Ataque")}</strong>`,done:()=>readAlloc()[0]+1e-9>=needMil()},
-  {t:"Concluir a era",target:()=>$("advance"),action:true,html:()=>`Seus investimentos estão definidos. 👉 <strong>Toque em “Concluir era”.</strong> Os rivais jogam ao mesmo tempo e começa a era seguinte.`,done:()=>state.era>=2},
-  {t:"Atacar",target:()=>$("mapCard"),action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},html:()=>`Os territórios com <span class="gold">contorno dourado</span> são vizinhos e podem ser atacados. O ataque custa <strong>${configApplied.military.conquestCost} + a defesa</strong> do alvo em Força (territórios livres têm defesa ${configApplied.military.defenseNeutral}) e vence em 82% das vezes. Você pode dar várias ordens por era, mas cada ataque a mais custa mais (2.º ×2, 3.º ×3).<br><br>👉 <strong>Toque em ${regionName(TARGET)} (${TARGET+1}) e depois em “Atacar”.</strong>`,done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
-  {t:"Resolver as ordens",target:()=>$("advance"),action:true,html:()=>`Os ataques não são imediatos: as ordens de <strong>todos</strong> são resolvidas juntas no fim da era, em ordem sorteada. Se dois atacarem o mesmo território, há <strong>batalha</strong> — vence quem tiver mais Força (somada à Ciência).<br><br>👉 <strong>Toque em “Concluir era”</strong> e veja o relatório.`,done:()=>countTerritories(state,"player")>=2},
-  {t:"Conquista!",target:()=>$("statTerr"),html:()=>`Mais territórios = mais receita e mais pontos: <strong>territórios valem 40% da pontuação</strong>. Aqui, <strong>terras</strong> mostra quantos você tem e quantos precisa para a maioria.<br><br>Invista e conclua as próximas eras à vontade; o tutorial volta na <strong>era 4</strong>.`,after:()=>{state.tutorial.waitEra=4}},
-  {t:"As Obras rendem",target:()=>$("statGold"),html:()=>`O <strong>+/era</strong> ao lado do ouro soma o que rendem os territórios, as Obras e a Ciência (veja cada parte em ☰ → Detalhes da partida). Cada investimento em Obras cresce até a 4.ª era e depois vai acabando — reinvista para manter o ouro entrando.<br><br>Continue; algo vai acontecer na <strong>era 5</strong>.`,after:()=>{state.tutorial.waitEra=5}},
-  {t:"Você foi atacado!",target:()=>$("mapCard"),enter:()=>scriptedAttack(),html:()=>`${state.tutorial.attackIdx!=null?`O rival ${civLabel(A(state))} atacou ${escapeHtml(regionName(state.tutorial.attackIdx))} (${state.tutorial.attackIdx+1}), um território seu, e <strong>foi repelido</strong> desta vez (todo ataque tem 18% de chance de falhar).`:"Os rivais também atacam: quando tiverem Força suficiente, seus territórios vizinhos a eles viram alvos."}<br>• A <strong>defesa</strong> dos seus territórios cresce com suas Obras e sua Ciência — o atacante precisa pagar ${configApplied.military.conquestCost} + essa defesa.<br>• Quem conquista um território <strong>saqueia</strong> parte da economia do dono.<br>Guarde um pouco de Força e não deixe o ouro parado.`},
-  {t:"Como saber quem está ganhando",target:()=>$("scorePill"),html:()=>`O <strong>🏆</strong> no topo mostra sua <strong>posição</strong> no placar e a diferença de <strong>pontos</strong> para o líder. Toque nele (ou em “terras”) para ver o placar completo e quanto falta para cada vitória.<br><br>Agora é com você: a partida continua no nível <strong>Fácil</strong>. Boa sorte! 🏆`,last:true}
+  {t:"Invista",action:true,
+   target:()=>{const inline=document.querySelector('#plansInline [data-plan="attack"]');if(inline&&inline.offsetParent)return [inline,"Toque em <b>Ataque</b>: a maior parte do ouro vai para Militar."];
+    if(sheetOn("planSheet"))return [document.querySelector('#planSheet [data-plan="attack"]'),"Escolha <b>Ataque</b>: a maior parte do ouro vai para Militar."];
+    return anySheet()?null:[$("plansBtn"),"Toque em <b>Planos</b> e escolha <b>Ataque</b> para investir em Militar."]},
+   done:()=>readAlloc()[0]+1e-9>=needMil()},
+  {t:"Conclua a era",action:true,target:()=>anySheet()?null:[$("advance"),"Toque em <b>Concluir era</b>. O ouro em Militar vira Força."],done:()=>state.era>=2},
+  {t:"Ataque",action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},
+   target:()=>{if(sheetOn("attackSheet")){if(selectedTerritory===TARGET)return [$("attack"),"Toque em <b>Atacar</b>. O ataque acontece no fim da era."];return null}
+    return anySheet()?null:[document.querySelector(`[data-territory="${TARGET}"]`),`Toque em <b>${tname()}</b>, com borda dourada: é vizinha e está livre.`]},
+   done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
+  {t:"Veja o resumo",action:true,
+   target:()=>{const b=summaryBtn();if(b)return [b,"Você conquistou a região! Toque no botão para seguir."];
+    return anySheet()?null:[$("advance"),"Toque em <b>Concluir era</b> e veja o resultado do ataque."]},
+   done:()=>countTerritories(state,"player")>=2&&!summaryBtn()},
+  {t:"Como vencer",last:true,target:()=>anySheet()?null:[$("scorePill"),`Vença com ${territorialMinimum(territoryBase(state),configApplied.endgame.territoryPct)} regiões ou mais pontos. Aqui está sua posição.`]}
  ];
- function scriptedAttack(){
-  const tu=state.tutorial;if(tu.attackDone)return;tu.attackDone=true;
-  const ai=A(state);if(!ai?.active)return;
-  const mine=state.owners.map((o,i)=>o==="player"&&eligibleTargets(state,ai.id).some(t=>t.i===i)?i:-1).filter(i=>i>=0);if(!mine.length)return;
-  const idx=mine[0];tu.attackIdx=idx;const need=attackNeed(state,idx,ai.id,configApplied);
-  ai.military=Math.max(ai.military,need);state.forcedAttack={owner:ai.id,win:false};state.aiAvoid=null;
-  attackTerritory(state,idx,ai.id,configApplied,true);state.aiAvoid={player:true};saveGame();renderAll();
- }
+ const LAST=STEPS.length-1;
  function startTutorial(){
-  scrolledStep=-1;
   storage.set(TUT_KEY,"1").catch(()=>{});
   newTutorialGame();   // estado da partida guiada (src/app/setup.js): posições fixas, Fácil, 1 rival
-
+  state.tutorial.v=2;
   setSelectedTerritory(null);saveGame();
   runHook("configChanged");
   $("homeScreen").hidden=true;if($("setupScreen"))$("setupScreen").hidden=true;
@@ -56,69 +58,64 @@ export async function initTutorial(){
   renderAll();window.scrollTo({top:0});enterStep();
  }
  window.startTutorial=startTutorial;
- const box=document.createElement("div");box.id="tutBox";box.className="tut-box";box.hidden=true;box.setAttribute("role","dialog");box.setAttribute("aria-live","polite");document.body.appendChild(box);
- let focused=null,scrolledStep=-1;
- const cur=()=>state?.tutorial&&!state.tutorial.done?state.tutorial:null;
+ const box=document.createElement("div");box.id="tutBox";box.className="tut-box";box.hidden=true;box.setAttribute("role","dialog");box.setAttribute("aria-live","polite");box.setAttribute("aria-label","Tutorial");document.body.appendChild(box);
+ const spot=document.createElement("div");spot.id="tutSpot";spot.className="tut-spot";spot.hidden=true;spot.setAttribute("aria-hidden","true");document.body.appendChild(spot);
+ let focused=null,warn="",lastKey="";
+ // Saves do tutorial antigo (10 passos): passa para o passo equivalente dos 5 novos.
+ const cur=()=>{const tu=state?.tutorial;if(!tu||tu.done)return null;if(tu.v!==2){tu.step=[0,0,0,1,2,3,4,4,4,4][tu.step]??LAST;tu.waitEra=0;tu.v=2}return tu};
  function clearFocus(){if(focused)focused.classList.remove("tut-focus");focused=null}
- function endTutorial(skipped){const tu=cur();if(!tu)return;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();clearFocus();box.hidden=true;renderAll();
+ function hide(){clearFocus();box.hidden=true;spot.hidden=true;lastKey=""}
+ function endTutorial(skipped){const tu=cur();if(!tu)return;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();hide();renderAll();
   if(skipped)showModal(`<h2>Tutorial terminado</h2><p class="small muted">A partida continua normalmente no nível Fácil. Você pode rever o tutorial pela tela inicial (botão “Tutorial”) e as regras em “Como jogar”.</p>`,[{label:"Continuar",cls:"primary"}])}
- function enterStep(){const tu=cur();if(!tu)return;const st=STEPS[tu.step];if(st?.enter&&!tu["entered"+tu.step]){tu["entered"+tu.step]=true;st.enter();saveGame()}draw()}
- function draw(msg){
-  const tu=cur();clearFocus();if(!tu||!$("homeScreen").hidden||state.result){box.hidden=true;return}
-  if(tu.waitEra&&state.era<tu.waitEra){box.hidden=false;box.className="tut-box tut-mini";box.innerHTML=`<span>🎓 Tutorial: continue jogando — volta na era ${tu.waitEra}.</span><button type="button" data-tut="skip" class="tut-link">Sair</button>`;bind();return}
+ function enterStep(){const tu=cur();if(!tu)return;warn="";const st=STEPS[tu.step];if(st?.enter&&!tu["entered"+tu.step]){tu["entered"+tu.step]=true;st.enter();saveGame()}draw(true)}
+ // Desenha o balão: dica curta, seta e área destacada. Sem alvo visível (outra folha aberta, aviso...), esconde-se.
+ function draw(force){
+  const tu=cur();if(!tu||!$("homeScreen").hidden||state.result){hide();return}
   const st=STEPS[tu.step];if(!st){endTutorial(false);return}
-  const el=st.target();if(el){focused=el;el.classList.add("tut-focus");if(scrolledStep!==tu.step){scrolledStep=tu.step;const tall=el.getBoundingClientRect().height>innerHeight*0.55;el.scrollIntoView({block:tall?"start":"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}}
-  box.hidden=false;box.className="tut-box";
-  // Em ecrãs largos, o balão fica do lado oposto ao elemento destacado para não o tapar.
-  if(window.innerWidth>640&&el){const r=el.getBoundingClientRect(),right=r.left+r.width/2>window.innerWidth/2;box.style.left=right?"16px":"auto";box.style.right=right?"auto":"16px"}else{box.style.left="";box.style.right=""}
-  // A instrução de ação (👉 ...) fica sempre visível por baixo do texto, que rola dentro do balão se for longo.
-  const full=st.html(),k=full.indexOf("👉"),body=(k>=0?full.slice(0,k):full).replace(/(<br>\s*)+$/,""),cta=k>=0?full.slice(k):"";
-  box.innerHTML=`<div class="tut-head"><span class="pill">Tutorial ${tu.step+1}/${STEPS.length}</span><button type="button" data-tut="skip" class="tut-link">Pular tutorial</button></div><h3>${st.t}</h3><div class="tut-text">${body}</div>${cta?`<div class="tut-cta">${cta}</div>`:""}${msg?`<div class="tut-warn">${msg}</div>`:""}${st.action&&cta?"":`<div class="tut-actions">${st.action?'<span class="small muted">Faça a ação indicada para continuar.</span>':`<button type="button" class="primary" data-tut="next">${st.last?"Terminar tutorial":"Próximo →"}</button>`}</div>`}`;
-  bind();place();
+  const modal=$("modalRoot").firstChild,tg=st.target(),el=tg?.[0];
+  if(!el||!el.isConnected||el.offsetParent===null||(modal&&!modal.contains(el))){hide();return}
+  const r=el.getBoundingClientRect(),key=[tu.step,tg[1],warn,Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height),innerWidth,innerHeight].join("|");
+  if(!force&&key===lastKey&&!box.hidden)return;lastKey=key;
+  if(focused!==el){clearFocus();focused=el;el.classList.add("tut-focus")}
+  const dots=STEPS.map((_,k)=>`<i class="${k===tu.step?"on":k<tu.step?"done":""}"></i>`).join("");
+  box.innerHTML=`<div class="tut-head"><span class="tut-dots" aria-hidden="true">${dots}</span><span class="tut-count">Passo ${tu.step+1} de ${STEPS.length}</span><button type="button" data-tut="skip" class="tut-link">Pular</button></div><p class="tut-tip${warn?" tut-warn":""}">${warn||tg[1]}</p>${st.last?`<div class="tut-actions"><button type="button" class="primary" data-tut="next">Jogar!</button></div>`:""}`;
+  box.hidden=false;spot.hidden=false;bind();place(r);
  }
- // Telemóvel (≤ 640 px): o balão fica acima ou abaixo do elemento destacado, do lado com mais espaço,
- // e nunca por cima da barra fixa de baixo. Se o elemento ocupar a tela toda, o balão fica em baixo.
- const safeProbe=document.createElement("div");safeProbe.style.cssText="position:fixed;left:0;top:env(safe-area-inset-top,0px);width:0;height:0;visibility:hidden;pointer-events:none";document.body.appendChild(safeProbe);
- // Texto mais comprido que o balão: esbate o fim para mostrar que dá para rolar.
- const markMore=()=>{const tt=box.querySelector(".tut-text");box.classList.toggle("more",!!tt&&tt.scrollHeight>tt.clientHeight+2&&tt.scrollTop+tt.clientHeight<tt.scrollHeight-2)};
- box.addEventListener("scroll",markMore,true);
- function place(){requestAnimationFrame(markMore);
-  const reset=()=>{box.style.top="";box.style.bottom="";box.style.maxHeight=""};
-  if(box.hidden||box.classList.contains("tut-mini")||!focused||window.innerWidth>640){reset();return}
-  const vh=innerHeight,gap=10,minH=170,r=focused.getBoundingClientRect(),bar=document.querySelector(".actionbar");
-  const sTop=safeProbe.getBoundingClientRect().top+8,barTop=bar&&bar.offsetParent?Math.min(vh,bar.getBoundingClientRect().top):vh;
-  const inBar=bar&&bar.contains(focused),limitBot=inBar?vh:barTop;
-  const visTop=Math.max(sTop,r.top),visBot=Math.min(limitBot,r.bottom);
-  const above=visTop-gap-sTop,below=inBar?-1:barTop-8-(visBot+gap);
-  if(below>=minH&&below>=above){box.style.top=(visBot+gap)+"px";box.style.bottom="auto";box.style.maxHeight=below+"px";return}
-  if(above>=minH){box.style.top="auto";box.style.bottom=(vh-visTop+gap)+"px";box.style.maxHeight=above+"px";return}
-  // Sem espaço livre suficiente (elemento grande): balão em baixo, por cima da barra, ocupando no máximo 45% da tela.
-  box.style.top="auto";box.style.bottom=(vh-barTop+8)+"px";box.style.maxHeight=Math.round(Math.min(vh*0.45,barTop-sTop-8))+"px";
+ // O balão fica do lado oposto ao alvo (alvo na metade de baixo → balão em cima, e vice-versa) e nunca o cobre.
+ const safeProbe=document.createElement("div");safeProbe.style.cssText="position:fixed;left:0;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);width:0;visibility:hidden;pointer-events:none";document.body.appendChild(safeProbe);
+ function place(r){
+  const vw=innerWidth,vh=innerHeight,pad=6,gap=14,sp=safeProbe.getBoundingClientRect(),sTop=sp.top+8,sBot=sp.bottom-8;
+  spot.style.left=(r.left-pad)+"px";spot.style.top=(r.top-pad)+"px";spot.style.width=(r.width+2*pad)+"px";spot.style.height=(r.height+2*pad)+"px";
+  const w=Math.min(420,vw-24),cx=r.left+r.width/2,left=Math.max(12,Math.min(vw-12-w,cx-w/2));
+  box.style.width=w+"px";box.style.left=left+"px";box.style.setProperty("--ax",Math.max(22,Math.min(w-22,cx-left))+"px");
+  const h=box.offsetHeight,upper=r.top+r.height/2<vh/2;
+  let below=upper;if(below&&r.bottom+pad+gap+h>sBot&&r.top-pad-gap-h>=sTop)below=false;if(!below&&r.top-pad-gap-h<sTop&&r.bottom+pad+gap+h<=sBot)below=true;
+  box.classList.toggle("below",below);box.classList.toggle("above",!below);
+  box.style.top=(below?Math.min(sBot-h,r.bottom+pad+gap):Math.max(sTop,r.top-pad-gap-h))+"px";box.style.bottom="auto";
  }
- let placeQueued=false;const queuePlace=()=>{if(placeQueued)return;placeQueued=true;requestAnimationFrame(()=>{placeQueued=false;place()})};
- window.addEventListener("scroll",queuePlace,{passive:true});window.addEventListener("resize",queuePlace);
+ window.addEventListener("resize",()=>draw(true));window.addEventListener("scroll",()=>draw(),{passive:true});
  function bind(){box.querySelectorAll("[data-tut]").forEach(b=>b.onclick=()=>{
   if(b.dataset.tut==="skip"){endTutorial(true);return}
-  const tu=cur(),st=STEPS[tu.step];st.after?.();if(st.last){endTutorial(false);return}tu.step++;saveGame();enterStep()})}
- // Avanço automático das etapas com ação e retoma depois das eras de espera.
- setInterval(()=>{const tu=cur();if(!tu||!$("homeScreen").hidden)return;
-  if(tu.waitEra){if(state.era>=tu.waitEra){tu.waitEra=0;saveGame();enterStep()}return}
-  const st=STEPS[tu.step];if(st?.action&&st.done()){tu.step++;saveGame();enterStep()}},250);
- // Durante as etapas de ação, não deixa concluir a era antes do tempo.
- onHook("beforeConclude",()=>{const tu=cur();
-  if(tu&&!tu.waitEra&&tu.step<=2){draw("Primeiro coloque pelo menos "+fmt(needMil(),0)+" de ouro em Militar (plano “Ataque”).");return false}
-  if(tu&&!tu.waitEra&&tu.step===4){draw("Primeiro dê a ordem de ataque a "+regionName(TARGET)+" ("+(TARGET+1)+").");return false}
+  const tu=cur(),st=STEPS[tu.step];if(st.last){endTutorial(false);return}tu.step++;saveGame();enterStep()})}
+ // Avança sozinho quando a ação do passo foi feita, e acompanha o alvo (folhas que abrem, resumo, rotação).
+ setInterval(()=>{const tu=cur();if(!tu||!$("homeScreen").hidden){if(!box.hidden)hide();return}
+  const st=STEPS[tu.step];if(st?.action&&st.done()){tu.step++;saveGame();enterStep();return}draw()},250);
+ // Durante os passos de ação, não deixa concluir a era antes do tempo (a dica vira o aviso).
+ onHook("beforeConclude",()=>{const tu=cur();if(!tu)return;const st=STEPS[tu.step];
+  if(tu.step===0&&!st.done()){warn="Primeiro escolha o plano “Ataque” (Militar).";draw(true);return false}
+  if(tu.step<=1&&readAlloc()[0]+1e-9<needMil()){warn=`Deixe pelo menos ${fmt(needMil(),0)} de ouro em Militar.`;draw(true);return false}
+  if(tu.step===2&&!st.done()){warn=`Primeiro dê a ordem de ataque a ${tname()}.`;draw(true);return false}
  });
- // Depois de cada desenho completo, redesenha o balão por cima.
- onHook("afterRender",()=>{if(cur())setTimeout(()=>{if(focused||box.hidden===false)draw()},0)});
+ // Depois de cada desenho completo, o balão acompanha o alvo.
+ onHook("afterRender",()=>{if(cur())setTimeout(()=>draw(true),0)});
  // Tela inicial: botão e oferta na primeira visita.
  const how=$("homeHowTo");if(how){const b=document.createElement("button");b.type="button";b.className="home-secondary";b.id="homeTutorial";b.textContent="🎓 Tutorial";how.insertAdjacentElement("beforebegin",b);
   b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()}}
  let offered=false;try{offered=!!await storage.get(TUT_KEY)}catch(e){offered=true}
  const fresh=!state||(!state.history.length&&state.era<=1);
- if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Uma partida guiada mostra, em poucos minutos, como investir, atacar, defender e vencer. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}]),300);
- if(cur())setTimeout(draw,0);
+ if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Aprenda jogando: 5 passos, cerca de 2 minutos. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}]),300);
+ if(cur())setTimeout(()=>draw(true),0);
  // Ao voltar ao jogo a partir da tela inicial, mostra de novo o balão.
- onHook("continueGame",()=>setTimeout(draw,0));
- onHook("returnHome",()=>{clearFocus();box.hidden=true});
+ onHook("continueGame",()=>setTimeout(()=>draw(true),0));
+ onHook("returnHome",hide);
 }
