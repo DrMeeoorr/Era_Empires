@@ -3,9 +3,24 @@ import {SEED} from "../core/config.js";
 import {releaseMilitaryInvestments,invest} from "../core/economy.js";
 import {fmtCore} from "../core/format.js";
 import {countTerritories,eligibleTargets} from "../core/map.js";
-import {territoryDefense,attackNeed,orderAttack,attackTerritory,orderCostMultiplier} from "../core/military.js";
+import {territoryDefense,attackNeed,orderAttack,attackTerritory,orderCostMultiplier,fullAttackCost} from "../core/military.js";
+import {terrainEffectsOn,ruleTerrain,TERRAIN_EFFECTS} from "../core/terrain.js";
 import {rand} from "../core/rng.js";
 import {clamp} from "../core/util.js";
+
+// Terrenos com efeitos: a IA mede cada alvo pelo custo dividido pelo valor do terreno = ouro que ele rende
+// (Campina/Montanha/Deserto 1,2; os outros 0,8) + a afinidade do seu estilo (Construtor gosta de Obras,
+// Científico de Ciência, Militar/Agressivo de Força; Adaptativo um pouco de tudo). Desligado, nada disto é lido.
+export const AI_TERRAIN_AFFINITY=Object.freeze({
+ economist:{campina:0.4,floresta:0.4},
+ technologist:{deserto:0.4,pantano:0.4,tundra:0.4},
+ military:{colinas:0.4},aggressive:{colinas:0.4},
+ adaptive:{campina:0.2,floresta:0.2,colinas:0.2,deserto:0.2,pantano:0.2,tundra:0.2},
+ reference:{},
+});
+export function aiTerrainValue(s,i,style){const k=ruleTerrain(s,i);return (TERRAIN_EFFECTS[k]?.income??1)+(AI_TERRAIN_AFFINITY[style]?.[k]||0)}
+// Menor = alvo melhor (com os efeitos ligados).
+export function aiTargetScore(s,i,civ,cfg,style){return attackNeed(s,i,civ.id,cfg)/aiTerrainValue(s,i,style)}
 
 // Decisão de uma IA: mesmos perfis do MVP, agora comparando-se com o rival mais forte.
 export function aiDecide(s,civ,cfg,era){
@@ -53,24 +68,27 @@ export function aiDecide(s,civ,cfg,era){
  // Tutorial: a IA pode ter de evitar o jogador ou territórios reservados.
  const av=s.aiAvoid,targets=eligibleTargets(s,civ.id).filter(t=>!(av&&((av.player&&t.o==="player")||(av.idx||[]).includes(t.i))));let action;
  if(targets.length&&roll<aggression/100){
-  const priority=cfg.military.aiTarget||"neutralFirst";
+  const priority=cfg.military.aiTarget||"neutralFirst",fx=terrainEffectsOn(s);
   // Coligação contra o líder: alvos pagáveis (custo cheio) primeiro; depois o líder em territórios
   // (exceto a própria IA; em empate, o jogador), os neutros e, por último, as outras IAs; o mais barato em cada grupo.
   let leaderId=null,payable=null,leaderClass=null;
   if(priority==="leader"){const others=s.civs.filter(c=>c.active&&c.id!==civ.id),top=Math.max(...others.map(c=>countTerritories(s,c.id)));
    leaderId=(others.find(c=>c.id==="player"&&countTerritories(s,c.id)===top)||others.find(c=>countTerritories(s,c.id)===top))?.id??null;
-   payable=t=>civ.military+1e-9>=cfg.military.conquestCost+territoryDefense(s,t.i,cfg);leaderClass=t=>t.o===leaderId?0:t.o==="neutral"?1:2}
+   payable=t=>civ.military+1e-9>=(fx?fullAttackCost(s,t.i,cfg):cfg.military.conquestCost+territoryDefense(s,t.i,cfg));leaderClass=t=>t.o===leaderId?0:t.o==="neutral"?1:2}
+  // Com terrenos com efeitos, os empates de cada critério desfazem-se pelo valor do terreno (aiTargetScore).
+  const score=fx?new Map(targets.map(t=>[t.i,aiTargetScore(s,t.i,civ,cfg,style)])):null,tie=(a,b)=>fx?score.get(a.i)-score.get(b.i)||a.i-b.i:a.i-b.i;
   targets.sort((a,b)=>{
-   if(priority==="leader")return (payable(a)?0:1)-(payable(b)?0:1)||leaderClass(a)-leaderClass(b)||territoryDefense(s,a.i,cfg)-territoryDefense(s,b.i,cfg)||a.i-b.i;
+   if(priority==="leader")return (payable(a)?0:1)-(payable(b)?0:1)||leaderClass(a)-leaderClass(b)||(fx?tie(a,b):territoryDefense(s,a.i,cfg)-territoryDefense(s,b.i,cfg)||a.i-b.i);
    if(priority==="playerFirst")return (a.o==="player"?0:1)-(b.o==="player"?0:1)||a.i-b.i;
    // Estratega: o alvo mais barato (menor defesa); em empate prefere o jogador humano.
+   if(priority==="cheapest"&&fx)return tie(a,b);
    if(priority==="cheapest"){const da=territoryDefense(s,a.i,cfg),db=territoryDefense(s,b.i,cfg);return da-db||(a.o==="player"?-1:b.o==="player"?1:0)||a.i-b.i}
    if(priority==="weakest")return a.i-b.i;
    if(priority==="strongest")return b.i-a.i;
-   return (a.o==="neutral"?0:1)-(b.o==="neutral"?0:1)||a.i-b.i;
+   return (a.o==="neutral"?0:1)-(b.o==="neutral"?0:1)||tie(a,b);
   });
   // IA prudente: só dá a 1ª ordem com o custo cheio (sem desconto tecnológico), mas paga o custo com desconto.
-  const t=targets[0],required=cfg.military.conquestCost+territoryDefense(s,t.i,cfg);
+  const t=targets[0],required=fx?fullAttackCost(s,t.i,cfg):cfg.military.conquestCost+territoryDefense(s,t.i,cfg);
   if(civ.military+1e-9>=required){const result=cfg.military.simultaneousOrders?orderAttack(s,t.i,civ.id,cfg):attackTerritory(s,t.i,civ.id,cfg,true);action=result.ok?(result.queued?`${civ.name} ordenou ataque ao território ${t.i+1}`:result.win?`${civ.name} conquistou território ${t.i+1}`:`${civ.name} atacou território ${t.i+1} e foi repelida`):`${civ.name}: ${result.reason}`;}
   else action=`${civ.name} acumulando poder militar (precisa ${fmtCore(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.

@@ -4,10 +4,13 @@ import {fmtCore} from "./format.js";
 import {countTerritories,adjacentOwned} from "./map.js";
 import {rand} from "./rng.js";
 import {getCiv,addLog,ownerLabel} from "./state.js";
+import {terrainEffectsOn,terrainDefenseBonus,terrainAttackFactor} from "./terrain.js";
 
 // Defesa de um território: neutro = valor fixo; com dono = base + fortificações pela receita de
 // infraestrutura do dono + defesa pelo progresso tecnológico do dono (ambas configuráveis; 0 desliga).
-export function territoryDefense(s,idx,cfg){
+// Terrenos com efeitos: soma a defesa do terreno (só regiões com dono; nunca abaixo de 0).
+export function territoryDefense(s,idx,cfg){const d=baseDefense(s,idx,cfg);return terrainEffectsOn(s)?Math.max(0,d+terrainDefenseBonus(s,idx)):d}
+function baseDefense(s,idx,cfg){
  const o=s.owners[idx],m=cfg.military;if(o==="neutral")return m.defenseNeutral;
  const civ=getCiv(s,o);if(!civ)return m.defenseOwned;
  const econ=(m.defensePerInfraRevenue||0)*(civ.lastRevenue?.infrastructure||0)+(m.defensePerTechProgress||0)*(civ.techProgress||0);
@@ -23,8 +26,11 @@ export function techAttackFactor(s,owner,cfg){
 }
 // Desconto tecnológico do atacante como fração do custo (0,2 = custo 20% menor).
 export function techAttackDiscount(s,owner,cfg){return 1-1/techAttackFactor(s,owner,cfg)}
-// Custo base de um ataque (antes do multiplicador de ordens extra): (conquista + defesa do alvo) com o desconto tecnológico do atacante.
-export function attackNeed(s,idx,owner,cfg){return (cfg.military.conquestCost+territoryDefense(s,idx,cfg))/techAttackFactor(s,owner,cfg)}
+// Custo base de um ataque (antes do multiplicador de ordens extra): custo cheio com o desconto tecnológico do atacante.
+export function attackNeed(s,idx,owner,cfg){return fullAttackCost(s,idx,cfg)/techAttackFactor(s,owner,cfg)}
+// Custo cheio de um ataque, sem o desconto da Ciência: conquista + defesa do alvo; com terrenos com efeitos,
+// × o custo de ataque do terreno (Pântano +20%, só se a região tem dono).
+export function fullAttackCost(s,idx,cfg){const c=cfg.military.conquestCost+territoryDefense(s,idx,cfg);return terrainEffectsOn(s)?c*terrainAttackFactor(s,idx):c}
 /* Saque: ao conquistar um território de outra civilização, o vencedor leva uma parte da infraestrutura
    ainda ativa e da tecnologia do derrotado (pillageInvestShare × 1/territórios, até metade) e um espólio
    em tesouro de pillageRevenueEras eras da receita daquele território. Torna a guerra uma forma de crescer. */

@@ -2,6 +2,7 @@
 import {effectiveDelay,normMode} from "./config.js";
 import {countTerritories} from "./map.js";
 import {getCiv} from "./state.js";
+import {terrainEffectsOn,terrainIncomeFactor,terrainAreaBonus} from "./terrain.js";
 import {clone} from "./util.js";
 
 export function infraReturn(inv,age){
@@ -42,7 +43,10 @@ export function invest(s,type,amount,cfg,owner="player"){
  const civ=getCiv(s,owner);if(!civ)throw Error("Civilização inexistente: "+owner);
  amount=Math.max(0,amount);if(amount>civ.treasury*(1+1e-9)+1e-8)throw Error("Investimento superior ao orçamento.");amount=Math.min(amount,civ.treasury);
  if(amount===0)return null;civ.treasury=Math.max(0,civ.treasury-amount);civ.invested[type]+=amount;
- const inv=makeInvestment(type,amount,s.era,cfg,owner,s.mode);inv.id=s.nextInvestmentId++;s.investments.push(inv);return inv;
+ const inv=makeInvestment(type,amount,s.era,cfg,owner,s.mode);
+ // Terrenos com efeitos: cada região de Colinas soma +10% aos pontos de Força deste investimento.
+ if(type==="military"&&terrainEffectsOn(s))inv.points*=1+terrainAreaBonus(s,owner,"forca");
+ inv.id=s.nextInvestmentId++;s.investments.push(inv);return inv;
 }
 export function strategyWeights(strategy,custom=[34,33,33]){
  if(strategy==="military")return [100,0,0];if(strategy==="aggressive")return [85,10,5];if(strategy==="infrastructure")return [0,100,0];if(strategy==="technology")return [0,0,100];if(strategy==="techFirst")return [10,15,75];if(strategy==="growth")return [15,65,20];if(strategy==="custom")return custom;return [34,33,33];
@@ -63,6 +67,8 @@ export function collectRevenue(s,civ,era,cfg){
  // (rendimentos decrescentes da expansão); a receita por território nunca fica negativa.
  const perTerritory=Math.max(0,cfg.economy.baseIncome*Math.pow(1+cfg.economy.incomeGrowth,Math.max(0,era-1))-(cfg.economy.adminCostPerTerritory||0)*Math.max(0,territories-1));
  let normal=territories*perTerritory;
+ // Terrenos com efeitos: o ouro de cada região segue o seu terreno (Campina +20%, Floresta −20%…).
+ if(terrainEffectsOn(s)){normal=0;s.owners.forEach((o,i)=>{if(o===civ.id)normal+=perTerritory*terrainIncomeFactor(s,i)})}
  let infra=0,tech=0;const infraBy=[];
  for(const inv of s.investments){
   if(inv.owner!==civ.id)continue;
@@ -70,6 +76,8 @@ export function collectRevenue(s,civ,era,cfg){
   else if(inv.type==="technology"){const ret=techReturn(s,inv,era);inv.cumReturn+=ret;tech+=ret}
  }
  if(cfg.technology.maxBenefit>0)tech=Math.min(tech,cfg.technology.maxBenefit);
+ // Terrenos com efeitos: % de Obras e de Ciência por região de cada terreno do império.
+ if(terrainEffectsOn(s)){infra*=1+terrainAreaBonus(s,civ.id,"obras");tech*=1+terrainAreaBonus(s,civ.id,"ciencia")}
  // Bônus tecnológico permanente: o progresso já ativo (após o atraso) acrescenta uma percentagem
  // a toda a receita da era. Fica contabilizado como receita de tecnologia.
  let activeProgress=0;for(const inv of s.investments)if(inv.owner===civ.id&&inv.type==="technology"&&era>=inv.origin+effectiveDelay("technology",inv.params.delay,inv.mode))activeProgress+=inv.progress;
