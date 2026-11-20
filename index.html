@@ -78,6 +78,7 @@
 <header class="top"><div class="brand"><div class="logo">I</div><div><h1>Impérios</h1></div></div><div class="actions" id="topActions"></div></header>
 <div id="game" class="view active">
 <div id="resultBanner" class="hidden"></div>
+<section id="resultScreen" class="result-screen" aria-labelledby="resultTitle" hidden></section>
 <div class="hud" id="metrics">
  <div class="hud-row">
   <button type="button" class="hud-btn" id="menuBtn" data-open="menuSheet" aria-haspopup="dialog" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -112,7 +113,7 @@
  <button type="button" id="attackInvest" class="attack-invest" hidden>Investir em Militar</button>
 </section>
 <section class="sheet " id="menuSheet" role="dialog" aria-modal="true" aria-labelledby="menuSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="menuSheetTitle">Menu</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
+<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="summaryToggle" class="menu-item" aria-pressed="true"><span class="mi" aria-hidden="true">✓</span>Resumo de cada era: <span class="mi-state">ligado</span></button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
 </section>
 <section class="sheet sheet-tall" id="scoreSheet" role="dialog" aria-modal="true" aria-labelledby="scoreSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="scoreSheetTitle">Placar e vitória</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="small muted" id="matchInfo"></div>
@@ -131,6 +132,9 @@
 <div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 2 eras, rende para sempre e aumenta todo o ouro da era. Obras reforçam a defesa dos seus territórios; Ciência barateia os seus ataques.</p></div>
 <div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div>
 </div>
+</section>
+<section class="sheet sheet-tall" id="resultSheet" role="dialog" aria-modal="true" aria-labelledby="resultSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="resultSheetTitle">Detalhes do resultado</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div id="resultDetailsBody"></div>
 </section>
 <section class="sheet sheet-tall" id="details" role="dialog" aria-modal="true" aria-labelledby="detailsTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="detailsTitle">Detalhes da partida</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
  <div class="grid two" style="margin-top:12px">

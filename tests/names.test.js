@@ -93,10 +93,10 @@ test("nomes: rivais com nome e símbolo, regiões com nome no mapa, no painel de
   assert.ok((await page.locator("#mapStatus").innerText()).includes(REGIONS[t]), "mensagem da ordem sem o nome da região");
   await page.evaluate(() => { state.ui.skipReport = false; state.ui.skipIdleWarning = true; state.forcedAttack = { owner: "player", win: true }; });
   await page.locator("#advance").click();
-  await page.waitForSelector("#modalRoot .report", { timeout: 3000 });
-  const report = await page.locator("#modalRoot .report").innerText();
-  assert.ok(report.includes(REGIONS[t]), `relatório sem o nome da região: ${report}`);
-  genericNames("relatório da era", await bodyText(page), problems);
+  await page.waitForSelector("#eraSummary .sum-events", { timeout: 3000 });
+  const report = await page.locator("#eraSummary").innerText();
+  assert.ok(report.includes(REGIONS[t]), `resumo da era sem o nome da região: ${report}`);
+  genericNames("resumo da era", await bodyText(page), problems);
   await dismissModals(page);
 
   // Registro de eventos: textos do motor ("território N", "pelo território N") mostrados com o nome.
@@ -123,11 +123,15 @@ test("nomes: rivais com nome e símbolo, regiões com nome no mapa, no painel de
   await page.evaluate(() => { state.ui.skipReport = true; while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
   await page.waitForTimeout(200);
   await dismissModals(page);
-  const result = (await page.locator("#resultBanner").innerText()).replace(/\s+/g, " ");
+  await page.locator("#seeDetails").click();
+  await page.locator("#resultDetailsBody canvas").first().waitFor();
+  const result = (await page.locator("#resultDetailsBody").innerText()).replace(/\s+/g, " ");
   assert.match(result, /▲ Rubro jogou como Adaptativo/);
   assert.match(result, /● Ocre jogou como \S+ \(sorteado\)/);
   assert.match(result, /◆ Anil jogou como Agressivo/);
   assert.doesNotMatch(result, /estilo oculto/);
+  genericNames("detalhes do resultado", await bodyText(page), problems);
+  await page.keyboard.press("Escape");
   genericNames("tela de resultado", await bodyText(page), problems);
 
   assert.deepEqual(errors, []);
@@ -186,15 +190,19 @@ for (const [name, opts] of MOBILE_SCREENS) {
 test("nomes: tutorial fala do rival e da região pelo nome", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, offerTutorial: true });
   const problems = [], texts = {};
+  let summary = "";
   await playTutorial(page, {
     onStep: async (n) => {
       texts[n] = (await page.evaluate(() => document.getElementById("tutBox").innerText)).replace(/\s+/g, " ");
       genericNames(`tutorial passo ${n}`, texts[n], problems);
+      if (n === "4b") summary = (await page.locator("#eraSummary").innerText()).replace(/\s+/g, " ");
     },
   });
-  assert.match(texts[1], /★ Você \(verde\) e o rival ▲ Rubro/);
-  assert.match(texts[5], /Toque em Ivara \(9\)/);
-  assert.match(texts[9], /▲ Rubro atacou \S+ \(\d+\), um território seu|Os rivais também atacam/);
+  assert.match(texts[3], /Toque em Ivara/);
+  assert.match(texts["4b"], /conquistou a região/);
+  // O resumo da era do tutorial mostra o rival pelo nome, com o símbolo, no placar.
+  assert.match(summary, /▲ Rubro/);
+  genericNames("resumo da era do tutorial", summary, problems);
   assert.deepEqual(errors, []);
   await context.close();
   assert.deepEqual(problems, [], "\"território N\" ou \"IA\" genérico no tutorial");

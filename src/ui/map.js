@@ -11,6 +11,7 @@ import {renderAll} from "./game.js";
 import {civLabel,profileLabel} from "./labels.js";
 import {openSheet,isSheetOpen,closeSheet} from "./sheets.js";
 import {showToast} from "./toast.js";
+import {regionShapes} from "./mapshape.js";
 
 /* ── Mapa e painel do alvo ── */
 /* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
@@ -30,13 +31,49 @@ export function fitRegionNames(){
 }
 // Legenda mais larga que a tela: marca para esmaecer a borda (indica que rola para o lado).
 export function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
+// Mapa ilustrado (Fase 3): um desenho em SVG (mar, costa, regiões com textura por dono, contornos) e, por cima,
+// um botão por região recortado na forma dela (clip-path), com o nome, o número e o símbolo do dono.
+// O toque só acerta a região desenhada; a vizinhança é a da grade 6×4 (src/ui/mapshape.js).
+const pc=(v,t)=>(100*v/t).toFixed(3)+"%";
+const SEA_PAD=10;
+function shapeStyle(s,W,H){
+ if(!s.style){const b=s.box;s.style=`left:${pc(b.x,W)};top:${pc(b.y,H)};width:${pc(b.w,W)};height:${pc(b.h,H)};padding-left:${pc(s.safeL-b.x,W)};padding-right:${pc(b.x+b.w-s.safeR,W)};clip-path:polygon(${s.poly.map(([x,y])=>`${(100*(x-b.x)/b.w).toFixed(2)}% ${(100*(y-b.y)/b.h).toFixed(2)}%`).join(",")})`}
+ return s.style;
+}
+function mapArt(targets){
+ const {shapes,width:W,height:H}=regionShapes(),pad=SEA_PAD;
+ const rivals=state.civs.filter(c=>c.id!=="player");
+ const fill=s=>{const o=state.owners[s.i];return o==="player"?"url(#mpMeG)":o==="neutral"?`url(#mpFree${s.tone})`:`url(#mp-${o})`};
+ const ords=simOrders()?myOrders().map(o=>o.idx):[];
+ const paths=(list,attrs)=>list.map(s=>`<path d="${s.d}"${typeof attrs==="function"?attrs(s):attrs}/>`).join("");
+ const tg=shapes.filter(s=>targets.has(s.i)&&!ords.includes(s.i)),od=shapes.filter(s=>ords.includes(s.i)),sel=shapes.filter(s=>s.i===selectedTerritory);
+ return `<svg class="map-art" viewBox="${-pad} ${-pad} ${W+2*pad} ${H+2*pad}" preserveAspectRatio="none" aria-hidden="true" focusable="false" style="left:${pc(-pad,W)};top:${pc(-pad,H)};width:${pc(W+2*pad,W)};height:${pc(H+2*pad,H)}">
+<defs><linearGradient id="mpMeG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22867a"/><stop offset="1" stop-color="#16645b"/></linearGradient>
+${["#22324a","#213844","#29304a"].map((c,k)=>`<pattern id="mpFree${k}" patternUnits="userSpaceOnUse" width="16" height="16"><rect width="16" height="16" fill="${c}"/><circle cx="4" cy="4" r="1.3" fill="#3d526f"/><circle cx="12" cy="12" r="1.3" fill="#3d526f"/></pattern>`).join("")}
+${rivals.map(c=>{const col=cssColor(c.color);return `<pattern id="mp-${escapeHtml(c.id)}" patternUnits="userSpaceOnUse" width="13" height="13" patternTransform="rotate(45)"><rect width="13" height="13" fill="#2a1f2e"/><rect width="13" height="13" fill="${col}" fill-opacity=".45"/><rect width="5" height="13" fill="${col}" fill-opacity=".8"/></pattern>`}).join("")}</defs>
+<g class="coast">${paths(shapes,` fill="#cbb98c" stroke="#cbb98c" stroke-width="12"`)}${paths(shapes,` fill="#6f6448" stroke="#6f6448" stroke-width="6"`)}</g>
+<g class="lands">${paths(shapes,s=>` data-region="${s.i}" fill="${fill(s)}"`)}</g>
+<g class="relief">${shapes.filter(s=>state.owners[s.i]==="neutral").map(({deco:{x,y,kind}})=>kind==="hill"?`<path d="M${x-9} ${y+5}l6-9 3.5 4.5 3-3.5 5.5 8z" fill="#6c7d96"/>`:`<path d="M${x} ${y-8}l6 11h-12z" fill="#5d8a76"/>`).join("")}</g>
+<g class="borders">${paths(shapes,` fill="none" stroke="#0a1322" stroke-width="1.6"`)}</g>
+<g class="targets">${paths(tg,` fill="none" stroke="#f4bd50" stroke-width="2.6" stroke-dasharray="7 4"`)}</g>
+<g class="ordered">${paths(od,` fill="#f4bd50" fill-opacity=".16" stroke="#f4bd50" stroke-width="3.2"`)}</g>
+<g class="selected">${paths(sel,` fill="#ffffff" fill-opacity=".14" stroke="#ffffff" stroke-width="3.2"`)}</g>
+<g class="rings">${paths(shapes,s=>` data-ring="${s.i}" fill="none" stroke="#ffd479" stroke-width="3.5"`)}</g>
+</svg>`;
+}
+// Foco do teclado: o contorno do botão recortado não aparece, por isso o anel é desenhado no SVG.
+function bindMapFocus(){const m=$("map");if(!m||m.dataset.fb)return;m.dataset.fb=1;
+ m.addEventListener("focusin",e=>{const b=e.target.closest?.("[data-territory]");m.querySelectorAll(".rings path.on").forEach(p=>p.classList.remove("on"));if(b&&b.matches(":focus-visible"))m.querySelector(`.rings [data-ring="${b.dataset.territory}"]`)?.classList.add("on")});
+ m.addEventListener("focusout",()=>m.querySelectorAll(".rings path.on").forEach(p=>p.classList.remove("on")));
+}
 export function renderMap(){
- const targets=eligibleTargets(state,"player");
- $("map").innerHTML=state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"",style=civ&&o!=="player"?` style="background:${cssColor(civ.color)}55;border-color:${cssColor(civ.color)}"`:"",target=targets.some(t=>t.i===i)&&P(state).active&&!state.result,sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"${style}><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
- $("mapLegend").innerHTML=`<span>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq" style="background:#1a2940;border:1px solid #64758e"></i>Livre</span><span><i class="dot sq" style="border:2px solid #f4bd50"></i>Pode atacar</span>`;
+ const targets=eligibleTargets(state,"player"),live=P(state).active&&!state.result,tset=new Set(live?targets.map(t=>t.i):[]);
+ const {shapes,width:W,height:H}=regionShapes();
+ $("map").innerHTML=mapArt(tset)+state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"free",target=tset.has(i),sel=selectedTerritory===i;
+  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" style="${shapeStyle(shapes[i],W,H)}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}"><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
+ $("mapLegend").innerHTML=`<span><i class="dot sq lg-me"></i>${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span><i class="dot sq lg-rival" style="--c:${cssColor(c.color)}"></i>${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq lg-free"></i>Livre</span><span><i class="dot sq lg-target"></i>Pode atacar</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);setSelectedTerritory(i);renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
- fitRegionNames();markLegend();
+ bindMapFocus();fitRegionNames();markLegend();
  renderAttack();renderEvents();
  if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
 }

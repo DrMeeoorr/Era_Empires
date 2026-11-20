@@ -98,16 +98,16 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
   await page.locator("#attack").click();
   check("ordem dada", await bodyText(page), problems);
 
-  // Relatório da era (com ataques: força o resultado para o texto do registo aparecer).
+  // Resumo da era (com ataques: a ordem dada aparece no resumo).
   await page.evaluate(() => { state.ui.skipReport = false; state.ui.skipIdleWarning = true; });
   await page.locator("#advance").click();
-  await page.waitForSelector("#modalRoot .report", { timeout: 3000 });
-  check("relatório da era", await bodyText(page), problems);
+  await page.waitForSelector("#eraSummary .sum-events", { timeout: 3000 });
+  check("resumo da era", await bodyText(page), problems);
   await dismissModals(page);
 
   // Registo com todos os tipos de evento do motor (texto guardado em pt-PT, mostrado em pt-BR).
-  await page.evaluate(() => {
-    const e = state.era;
+  const texts = await page.evaluate(() => {
+    const e = state.era, all = [];
     for (const text of [
       "✅ Ataque bem-sucedido: território 9 (de IA) — saque: 1 234,5 u. de tesouro, 12,5 u. de infraestrutura, 0,4 de progresso tecnológico.",
       "❌ Ataque malsucedido: território 9; 1234,5 pontos comprometidos.",
@@ -116,9 +116,12 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
       "↩️ Ordem de Você contra o território 4 cancelada (já não é possível atacar); poder devolvido.",
       "↩️ Ordem de IA contra o território 4 cancelada: o alvo mudou de dono e a defesa subiu para 12; poder devolvido.",
       "⚔️ Batalha pelo território 5: IA venceu Você (força 12 × 8); Você perdeu 8 pontos.",
-    ]) state.log.unshift({ era: e - 1, text });
-    renderAll(); showEraReport(e - 1);
+    ]) { state.log.unshift({ era: e - 1, text }); all.push(uiText(text)); }
+    renderAll(); document.getElementById("details").open = true;
+    return all.join("\n");
   });
+  // Todos os textos do motor convertidos (o resumo da era não mostra o registo; os Detalhes mostram os ataques).
+  check("registo de eventos (todos os tipos)", texts, problems);
   const shown = await bodyText(page);
   check("registo de eventos e relatório", shown, problems);
   assert.match(shown, /1\.234,5 de ouro/, "números do registo não aparecem no formato 1.234,5 de ouro");
@@ -129,8 +132,11 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
   await page.evaluate(() => { while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
   await page.waitForTimeout(200);
   await dismissModals(page);
-  await page.locator("#resultBanner").waitFor({ state: "visible" });
+  await page.locator("#resultScreen").waitFor({ state: "visible" });
   check("tela de resultado", await bodyText(page), problems);
+  await page.locator("#seeDetails").click();
+  await page.locator("#resultDetailsBody canvas").first().waitFor();
+  check("detalhes do resultado", await bodyText(page), problems);
 
   assert.deepEqual(errors, []);
   await context.close();

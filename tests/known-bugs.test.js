@@ -12,41 +12,50 @@ let browser;
 before(async () => (browser = await launch()));
 after(async () => browser && browser.close());
 
-/** Quanto do elemento destacado pelo tutorial fica visível e NÃO tapado pelo balão. */
+/** Balão do tutorial em relação ao elemento destacado: cobertura, lado, linhas da dica e seta. */
 const focusVisibility = (page) =>
   page.evaluate(() => {
     const f = document.querySelector(".tut-focus"), bx = document.getElementById("tutBox");
     if (!f || bx.hidden) return null;
     const a = f.getBoundingClientRect(), c = bx.getBoundingClientRect();
     const top = Math.max(0, a.top), bot = Math.min(innerHeight, a.bottom), vis = Math.max(0, bot - top);
-    const cover = Math.max(0, Math.min(bot, c.bottom) - Math.max(top, c.top));
-    return { target: f.id || f.className, height: Math.round(a.height), uncovered: Math.round(vis - cover) };
+    const cover = Math.max(0, Math.min(bot, c.bottom) - Math.max(top, c.top)) * (Math.min(a.right, c.right) > Math.max(a.left, c.left) ? 1 : 0);
+    const tip = bx.querySelector(".tut-tip"), lh = parseFloat(getComputedStyle(tip).lineHeight);
+    const upper = a.top + a.height / 2 < innerHeight / 2, below = c.top >= a.bottom - 1, above = c.bottom <= a.top + 1;
+    const spot = document.getElementById("tutSpot").getBoundingClientRect();
+    return { target: f.id || f.className, height: Math.round(a.height), uncovered: Math.round(vis - cover), lines: Math.round(tip.getBoundingClientRect().height / lh),
+      side: below ? "below" : above ? "above" : "over", upper, arrow: bx.classList.contains(below ? "below" : "above"),
+      inScreen: c.top >= -1 && c.bottom <= innerHeight + 1 && c.left >= -1 && c.right <= innerWidth + 1,
+      spotOk: spot.left <= a.left + 1 && spot.right >= a.right - 1 && spot.top <= a.top + 1 && spot.bottom >= a.bottom - 1 };
   });
 
-// Corrigido na Fase 1 de UX (o balão fica do lado com mais espaço): era test.todo "BUG:" no Galaxy S9+ e 360x640.
-// Agora é teste normal nos 3 celulares (proteção contra regressão).
-for (const [name, opts] of MOBILE_SCREENS) {
-  test(`tutorial — o balão não pode tapar o elemento destacado no celular (${name})`, async () => {
-    const { context, page, errors } = await openGame(browser, { contextOptions: opts, offerTutorial: true });
-    const problems = [];
+// Tutorial da Fase 3 (5 passos): o balão nunca cobre o alvo, fica do lado oposto (alvo em cima → balão embaixo e
+// vice-versa, salvo se não couber), a dica tem no máximo 2 linhas, a seta aponta para o alvo e o destaque o envolve.
+// Também com a fonte larga (DejaVu Sans) no celular mais estreito.
+for (const [name, opts, wide] of [...MOBILE_SCREENS.map(([n, o]) => [n, o, false]), [MOBILE_SCREENS[1][0], MOBILE_SCREENS[1][1], true]]) {
+  test(`tutorial — o balão não tapa o alvo, fica do lado oposto e a dica tem até 2 linhas (${name}${wide ? ", fonte larga" : ""})`, async () => {
+    const { context, page, errors } = await openGame(browser, { contextOptions: { ...opts, reducedMotion: "reduce" }, offerTutorial: true });
+    if (wide) await page.addStyleTag({ content: '*{font-family:"DejaVu Sans",sans-serif!important}' });
+    const problems = [], seen = [];
     await playTutorial(page, {
       onStep: async (n) => {
-        // Espera o fim do scroll suave (posição estável durante 200 ms).
-        await page.waitForFunction(() => new Promise((ok) => { const y = scrollY; setTimeout(() => ok(scrollY === y), 200); }), null, { polling: 50 });
         const v = await focusVisibility(page);
-        if (v && v.uncovered < Math.min(40, v.height * 0.5)) {
-          problems.push(`passo ${n} (${v.target}): só ${v.uncovered}px de ${v.height}px visíveis`);
-          await screenshot(page, `BUG-tutorial-${name}-passo${n}`);
-        }
-        // A instrução de ação (👉) fica sempre visível dentro do balão, sem precisar rolar o texto.
-        const cta = await page.evaluate(() => { const c = document.querySelector("#tutBox .tut-cta"), bx = document.getElementById("tutBox"); if (!c) return null; const a = c.getBoundingClientRect(), b = bx.getBoundingClientRect(); return { inside: a.top >= b.top - 1 && a.bottom <= b.bottom + 1 && a.height > 0, text: c.innerText }; });
-        if (cta && !cta.inside) problems.push(`passo ${n}: instrução cortada no balão (${cta.text.slice(0, 40)}…)`);
+        if (!v) { problems.push(`passo ${n}: sem balão`); return; }
+        seen.push(n);
+        if (v.uncovered < v.height - 1) { problems.push(`passo ${n} (${v.target}): balão cobre ${v.height - v.uncovered}px do alvo`); await screenshot(page, `BUG-tutorial-${name}-passo${n}`); }
+        if (v.side === "over") problems.push(`passo ${n}: balão nem acima nem abaixo do alvo`);
+        else if (v.side !== (v.upper ? "below" : "above")) problems.push(`passo ${n}: balão do mesmo lado do alvo (${v.side})`);
+        if (!v.arrow) problems.push(`passo ${n}: seta não aponta para o alvo`);
+        if (v.lines > 2) problems.push(`passo ${n}: dica com ${v.lines} linhas`);
+        if (!v.inScreen) problems.push(`passo ${n}: balão sai da tela`);
+        if (!v.spotOk) problems.push(`passo ${n}: destaque não envolve o alvo`);
         const txt = await page.evaluate(() => document.getElementById("tutBox").innerText);
         if (/\bClique\b/.test(txt)) problems.push(`passo ${n}: texto diz "Clique" (no celular é "Toque")`);
       },
     });
+    assert.deepEqual(seen, [1, 2, 3, "3b", 4, "4b", 5]);
     assert.deepEqual(errors, []);
     await context.close();
-    assert.deepEqual(problems, [], "elementos destacados tapados pelo balão do tutorial");
+    assert.deepEqual(problems, [], "balão do tutorial");
   });
 }

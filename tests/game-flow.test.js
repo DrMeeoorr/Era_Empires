@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan, assertClickable } = require("./helpers");
 const { playTutorial, waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -56,12 +56,13 @@ test("partida curta completa: Nova partida → Começar → investir → conclui
   assert.ok(r.r.era <= r.max, "a partida passou do limite de eras");
   assert.ok(["victory", "draw"].includes(r.r.type));
   // Tela de resultado.
-  const banner = page.locator("#resultBanner");
+  const banner = page.locator("#resultScreen");
   await banner.waitFor({ state: "visible" });
   const txt = await banner.innerText();
-  assert.match(txt, /Vitória!|Empate|Derrota/);
-  assert.match(txt, /Era \d+/);
+  assert.match(txt, /Vitória|Empate|Derrota/);
+  assert.match(txt, /Era \d+/i);
   await page.locator("#newGameAfterEnd").waitFor({ state: "visible" });
+  for (const [sel, label] of [["#newGameAfterEnd", "Jogar de novo"], ["#seeDetails", "Ver detalhes"], ["#resultHome", "Início"]]) await assertClickable(page, sel, label);
   assert.ok(await page.locator("#actionEnded").isVisible(), "barra inferior não indica partida encerrada");
   assert.deepEqual(await horizontalOverflow(page), []);
   await screenshot(page, "resultado-pixel7");
@@ -202,7 +203,7 @@ test("salvar e recarregar: partida terminada não é retomada e save corrompido 
 for (const [name, opts] of [MOBILE_SCREENS[0], MOBILE_SCREENS[2]]) {
   test(`tutorial do início ao fim (${name})`, async () => {
     const { context, page, errors } = await openGame(browser, { contextOptions: opts, offerTutorial: true });
-    await playTutorial(page, { stopBefore: 10 });
+    await playTutorial(page, { stopBefore: 5 });
     await screenshot(page, `tutorial-final-${name}`);
     await page.locator('#tutBox [data-tut="next"]').click();
     // Fim: balão fechado, proteções do tutorial desligadas, partida continua.
@@ -211,7 +212,9 @@ for (const [name, opts] of [MOBILE_SCREENS[0], MOBILE_SCREENS[2]]) {
     assert.deepEqual(end, { done: true, avoid: null, forced: null, skipIdle: false, result: null });
     await choosePlan(page, "balanced");
     await concludeEraUI(page);
-    assert.equal(await page.evaluate(() => state.era), 6);
+    assert.equal(await page.evaluate(() => state.era), 4);
+    // As escolhas de antes do tutorial voltam na próxima partida nova.
+    assert.ok(await page.evaluate(() => !!state.tutorial.prevSetup), "o tutorial perdeu as escolhas de antes");
     assert.deepEqual(await horizontalOverflow(page), []);
     assert.deepEqual(errors, []);
     await context.close();
@@ -237,14 +240,14 @@ test("tutorial: 'Pular tutorial' termina o tutorial e a partida continua", async
 
 test("tutorial: recarregar a página a meio retoma o tutorial no mesmo passo", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, offerTutorial: true });
-  await playTutorial(page, { stopBefore: 7 });
+  await playTutorial(page, { stopBefore: 5 });
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
   assert.match(await cont.innerText(), /era 3/);
   await cont.click();
-  await waitStep(page, 7);
+  await waitStep(page, 5);
   assert.equal(await page.evaluate(() => state.owners[8]), "player");
   assert.deepEqual(errors, []);
   await context.close();

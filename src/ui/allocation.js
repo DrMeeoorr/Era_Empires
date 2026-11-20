@@ -22,7 +22,7 @@ export function renderAllocation(statusMessage=null){
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=Math.max(0,b-sum),c=configApplied;
  const shownLeft=left<0.01?0:left,ended=!!state.result,over=sum>b+1e-8;
  $("actionLeft").classList.toggle("hidden",ended);$("actionEnded").classList.toggle("hidden",!ended);
- if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?"O total passa do ouro disponível":shownLeft===0?`<span aria-hidden="true">✓</span> tudo investido`:`sobram <strong>${fmt(shownLeft,2)}</strong> de ouro`;
+ if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?"O total passa do ouro disponível":shownLeft===0?`<span aria-hidden="true">✓</span> tudo investido`:shownLeft<0.05?`sobra <strong>menos de 0,1</strong> de ouro`:`sobram <strong>${fmt(shownLeft,1)}</strong> de ouro`;
  $("advance").classList.toggle("done-all",!ended&&shownLeft===0&&!over&&!statusMessage);
  AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?clamp(100*vals[i]/b,0,100):0)+"%";$(k+"Fine").textContent=fmt(vals[i],2)});
  $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);

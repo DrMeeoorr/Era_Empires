@@ -13,7 +13,7 @@ import {renderMetrics} from "./hud.js";
 import {renderMap,fitRegionNames,attackSelected,markLegend} from "./map.js";
 import {showModal} from "./modal.js";
 import {renderForecast,renderHistory,renderNotifications,renderVictory,renderCharts,renderResult} from "./panels.js";
-import {showEraReport} from "./report.js";
+import {eraSnapshot,showEraSummary,toggleEraSummary,renderSummaryToggle} from "./report.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
 
 export function showSaveWarning(err){
@@ -43,7 +43,7 @@ export function concludeEra(){
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]};playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"})};
+ const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});showEraSummary(before)};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
   showModal(`<h2>Você ainda tem ${money(left)} para investir</h2><p class="small muted">O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.</p><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
    [{label:"Voltar e investir",cls:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}]);
@@ -52,7 +52,7 @@ export function concludeEra(){
  go();
 }
 export function startNewGame(){restoreSetupAfterTutorial();setState(newGame());setSelectedTerritory(null);saveGame();renderAll();window.scrollTo({top:0})}
-export function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts();runHook("afterRender")}
+export function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts();renderSummaryToggle();runHook("afterRender")}
 // Tela da era sem rolagem: só na versão do jogador, com a aba Jogo à vista e sem resultado (a tela de resultado
 // ainda rola; Fase 3). Na versão de desenvolvimento (dev.html) o cabeçalho e as abas ficam por cima e a página rola como antes.
 export function updateFit(){const g=$("game");document.documentElement.classList.toggle("game-fit",!DEV_MODE&&!!g&&g.classList.contains("active")&&!state?.result);if(state?.result&&sheetOpen==="attackSheet")closeSheet({focus:false})}
@@ -93,7 +93,8 @@ export async function initGame(){
  $("attack").onclick=attackSelected;
  // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
  $("restart").onclick=()=>{closeSheet({focus:false});showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}])};
- onHook("afterEra",era=>setTimeout(()=>showEraReport(era),60));
+ // Resumo da era: liga/desliga no menu ☰ (o resumo aparece em concludeEra, só quando o jogador conclui a era).
+ $("summaryToggle").onclick=toggleEraSummary;
  window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult()});
 }
 // Únicas formas de outros módulos substituírem estas variáveis (um módulo não pode reatribuir o que importa).
