@@ -345,7 +345,7 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .ter-list.ter-fx .ter-txt{display:contents}
 .ter-list.ter-fx .ter-eff{grid-column:1/-1;margin-top:0}
 .ter-eff{display:flex;flex-wrap:wrap;gap:4px 5px;margin-top:4px}
-.ter-eff .fx{display:inline-block;white-space:nowrap;padding:2px 7px;border-radius:999px;font-size:12.5px;line-height:18px;font-weight:700;letter-spacing:-.005em}
+.ter-eff .fx{display:inline-block;white-space:nowrap;padding:2px 6px;border-radius:999px;font-size:12px;line-height:18px;font-weight:700;letter-spacing:-.005em}
 .ter-eff .fx.up{background:#11372b;color:#a6f2cb;border:1px solid #2f7a5a}
 .ter-eff .fx.down{background:#3b1c24;color:#ffc2c9;border:1px dashed #b45767}
 .tgt-terrain{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}

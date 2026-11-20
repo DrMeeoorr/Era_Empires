@@ -83,8 +83,8 @@ for (const [name, opts] of MOBILE_SCREENS) {
       const r = await chipProblems(page, "#terrainSheet");
       assert.deepEqual(r.out, []);
       assert.ok(r.maxLines <= 2, `etiquetas de um terreno em ${r.maxLines} linhas (máx. 2)`);
-      // Sem a fonte larga, no Pixel 7 todas cabem numa linha só.
-      if (!wide && name === "Pixel 7") assert.equal(r.maxLines, 1, "no Pixel 7 as 3 etiquetas deviam caber numa linha");
+      // No Pixel 7 todas cabem numa linha só, também com a fonte larga (a do GitHub Actions é mais larga que a local).
+      if (name === "Pixel 7") assert.equal(r.maxLines, 1, "no Pixel 7 as 3 etiquetas deviam caber numa linha");
       // A explicação longa fica num bloco que abre com um toque.
       const more = ts.locator(".ter-more > summary");
       await assertClickable(page, "#terrainSheet .ter-more > summary", "Como os efeitos funcionam");
