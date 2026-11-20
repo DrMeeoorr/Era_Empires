@@ -12,7 +12,7 @@ import {$} from "./dom.js";
 import {money,fmtInput,parseAmount} from "./format.js";
 import {renderMetrics} from "./hud.js";
 import {renderMap,fitRegionNames,attackSelected,markLegend} from "./map.js";
-import {showModal} from "./modal.js";
+import {showDialog} from "./modal.js";
 import {renderForecast,renderHistory,renderNotifications,renderVictory,renderCharts,renderResult} from "./panels.js";
 import {eraSnapshot,showEraSummary,toggleEraSummary,renderSummaryToggle} from "./report.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
@@ -22,12 +22,13 @@ export function showSaveWarning(err){
  if(!err){if(el)el.hidden=true;return}
  if(!el){el=document.createElement("div");el.id="saveWarning";el.className="save-warning";el.setAttribute("role","alert");document.body.appendChild(el)}
  const full=err&&(err.name==="QuotaExceededError"||err.code===22);
- el.innerHTML=`<span>⚠ <strong>Não foi possível salvar a partida.</strong> ${full?"O espaço de armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se você fechar o jogo agora, pode perder o progresso desde o último salvamento.</span><button type="button" aria-label="Fechar aviso">✕</button>`;
+ // Estilo "Atlas": cartão escuro com faixa vermelha, ícone de alerta (não depende só da cor) e ✕ de 48 px.
+ el.innerHTML=`<span class="sw-ic" aria-hidden="true"><svg class="ic"><use href="#i-alert"/></svg></span><span class="sw-t"><strong>Não foi possível salvar a partida.</strong> ${full?"O armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se fechar o jogo agora, você pode perder o que fez desde o último salvamento.</span><button type="button" class="sw-x" aria-label="Fechar aviso"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>`;
  el.querySelector("button").onclick=()=>{el.hidden=true};el.hidden=false;
 }
 // savedRaw: o texto do save carregado ao abrir o jogo (para pôr de lado se falhar ao desenhar).
 export let savedGameLoaded=false,saveProblem=null,savedRaw=null;
-export function noticeBrokenSave(){setTimeout(()=>showModal(`<h2>Não foi possível continuar a partida salva</h2><p class="small muted">Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.</p>`,[{label:"Entendi",cls:"primary"}]),350)}
+export function noticeBrokenSave(){setTimeout(()=>showDialog({icon:"alert",tone:"danger",title:"Não foi possível continuar a partida salva",text:"Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.",buttons:[{label:"Entendi",kind:"primary"}],esc:0}),350)}
 // Primeiro desenho com um save carregado: se falhar, o save é posto de lado e começa uma partida nova.
 export function renderSavedSafely(render){
  try{render()}catch(e){
@@ -46,8 +47,9 @@ export function concludeEra(){
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
  const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});showEraSummary(before)};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
-  showModal(`<h2>Você ainda tem ${money(left)} para investir</h2><p class="small muted">O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.</p><label class="small" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
-   [{label:"Voltar e investir",cls:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}]);
+  showDialog({icon:"coins",title:`Você ainda tem ${money(left)} para investir`,text:"O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.",
+   body:`<label class="dlg-check"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
+   buttons:[{label:"Voltar e investir",kind:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}],esc:0});
   return;
  }
  go();
@@ -93,7 +95,7 @@ export async function initGame(){
  $("advance").onclick=concludeEra;
  $("attack").onclick=attackSelected;
  // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
- $("restart").onclick=()=>{closeSheet({focus:false});showModal(`<h2>Reiniciar a partida?</h2><p class="small muted">A partida atual será substituída por uma nova com as mesmas escolhas.</p>`,[{label:"Cancelar"},{label:"Reiniciar",cls:"danger",onClick:startNewGame}])};
+ $("restart").onclick=()=>{closeSheet({focus:false});showDialog({icon:"restart",tone:"danger",title:"Reiniciar a partida?",text:"A partida atual será substituída por uma nova com as mesmas escolhas.",buttons:[{label:"Cancelar"},{label:"Reiniciar",kind:"danger",onClick:startNewGame}],esc:0,returnFocus:()=>$("menuBtn")})};
  // Resumo da era: liga/desliga no menu ☰ (o resumo aparece em concludeEra, só quando o jogador conclui a era).
  $("summaryToggle").onclick=toggleEraSummary;
  window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult()});

@@ -204,10 +204,13 @@ test("menu ☰: Reiniciar pede confirmação; Como jogar, Placar e vitória e De
   await page.locator("#restart").click();
   await page.locator('#modalRoot button.danger:has-text("Reiniciar")').click();
   await page.waitForFunction(() => state.era === 1 && state.history.length === 0);
-  // "?" abre Como jogar; o placar e "terras" abrem Placar e vitória (com as condições de vitória); Detalhes pelo menu.
+  // "?" abre o Como jogar novo (tela "Atlas" por cima da partida, fecha com ✕); o placar e "terras" abrem Placar e
+  // vitória (com as condições de vitória); Detalhes pelo menu.
   await page.locator("#helpBtn").click();
-  assert.match(await page.locator("#howTo").innerText(), /Como vencer/);
-  await page.locator("#howTo [data-close]").click();
+  assert.match(await page.locator("#howToScreen").innerText(), /Cada era, 3 passos[\s\S]*Onde investir[\s\S]*Terrenos[\s\S]*Como vencer/i);
+  await page.locator("#howToClose").click();
+  await page.locator("#howToScreen").waitFor({ state: "hidden" });
+  assert.equal(await page.evaluate(() => document.activeElement.id), "helpBtn");
   for (const opener of ["#scorePill", "#statTerr"]) {
     await page.locator(opener).click();
     assert.ok(await page.locator("#victoryPanel").isVisible(), `${opener} não mostrou as condições de vitória`);

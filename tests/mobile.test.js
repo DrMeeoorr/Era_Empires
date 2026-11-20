@@ -97,11 +97,13 @@ for (const [name, opts] of MOBILE_SCREENS) {
     await page.locator("#menuBtn").click();
     await checkButtons(page, [
       ["#returnHome", "Início", true], ["#restart", "Reiniciar", true],
-      ['#menuSheet [data-open="howTo"]', "Como jogar", true], ['#menuSheet [data-open="details"]', "Detalhes da partida", true], ['#menuSheet [data-open="scoreSheet"]', "Placar e vitória", true],
+      ['#menuSheet [data-open="howToScreen"]', "Como jogar", true], ['#menuSheet [data-open="details"]', "Detalhes da partida", true], ['#menuSheet [data-open="scoreSheet"]', "Placar e vitória", true],
     ], "menu", smalls);
     // "Reiniciar" fica discreto (não vermelho) e pede confirmação antes de apagar a partida.
     assert.equal(await page.locator("#restart").evaluate((e) => e.classList.contains("danger")), false, "Reiniciar em vermelho no menu");
     await page.locator("#restart").click();
+    await checkButtons(page, [['#modalRoot button:has-text("Cancelar")', "Cancelar", true], ['#modalRoot button.danger:has-text("Reiniciar")', "Reiniciar (confirmação)", true]], "janela Reiniciar", smalls);
+    assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal na janela Reiniciar");
     await page.locator('#modalRoot button:has-text("Cancelar")').click();
     assert.equal(await page.evaluate(() => state.era), 1);
     // Investir com os botões +/- e concluir duas eras (com relatório e aviso de saldo).

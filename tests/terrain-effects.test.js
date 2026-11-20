@@ -318,7 +318,7 @@ test("tutorial usa sempre Só visual e devolve a escolha Com efeitos do jogador 
   await context.close();
 });
 
-test("folha da região com efeitos: linha + · + · − do terreno, custo com o terreno; ⓘ Terrenos e Como jogar ligados e desligados", async () => {
+test("folha da região com efeitos: etiquetas + / + / − do terreno, custo com o terreno; ⓘ Terrenos e Como jogar ligados e desligados", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   await startFromSetup(page, { effects: true });
   // Um alvo de Pântano com dono (custo +20%) e um de Montanha com dono (+4 defesa), vizinhos do jogador.
@@ -330,14 +330,15 @@ test("folha da região com efeitos: linha + · + · − do terreno, custo com o 
   await page.locator(`[data-territory="${t}"]`).click();
   await page.locator("#attackSheet").waitFor({ state: "visible" });
   const sheet = await page.evaluate((t) => ({
-    line: document.querySelector("#mapStatus .tgt-terrain .ter-eff")?.innerText.trim(),
+    chips: [...document.querySelectorAll("#mapStatus .tgt-terrain .ter-eff .fx")].map((c) => [c.textContent.trim(), c.classList.contains("up") ? "up" : c.classList.contains("down") ? "down" : "?"]),
     cost: document.querySelector("#mapStatus .tgt-num b")?.innerText.trim(),
     need: fmt(attackNeed(state, t, "player", configApplied), 1),
     plain: (() => { const s = JSON.parse(JSON.stringify(state)); delete s.terrainEffects; return attackNeed(s, t, "player", configApplied); })(),
     real: attackNeed(state, t, "player", configApplied),
     tip: document.querySelector("#mapStatus .tgt-info div")?.textContent,
   }), t);
-  assert.equal(sheet.line, "+20% Ciência · atacar custa +20% · −20% ouro");
+  // Etiquetas: 2 vantagens ("up") e 1 desvantagem ("down", com o sinal −), nesta ordem.
+  assert.deepEqual(sheet.chips, [["+20% Ciência", "up"], ["atacar custa +20%", "up"], ["−20% ouro", "down"]]);
   assert.equal(sheet.cost, sheet.need, "o custo mostrado devia incluir o terreno");
   assert.ok(Math.abs(sheet.real - sheet.plain * 1.2) < 1e-9, "custo do Pântano com dono = +20%");
   assert.match(sheet.tip, /× 1,2 \(Pântano\)/);
@@ -348,7 +349,7 @@ test("folha da região com efeitos: linha + · + · − do terreno, custo com o 
   await page.locator("#attackSheet").waitFor({ state: "visible" });
   const ownTxt = await page.locator("#mapStatus .tgt-terrain").innerText();
   assert.match(ownTxt, /Montanha/);
-  assert.match(ownTxt, /\+20% ouro · \+5% Obras · −2 defesa/);
+  assert.deepEqual(await page.locator("#mapStatus .tgt-terrain .ter-eff .fx").allInnerTexts(), ["+20% ouro", "+5% Obras", "−2 defesa"]);
   assert.match(ownTxt, /Região inicial: conta como Campina/);
   await page.keyboard.press("Escape");
   // ⓘ Terrenos ligado: 7 linhas com os efeitos.
@@ -357,18 +358,25 @@ test("folha da região com efeitos: linha + · + · − do terreno, custo com o 
   await ts.waitFor({ state: "visible" });
   const items = await ts.locator(".ter-list li").allInnerTexts();
   assert.equal(items.length, 7);
-  const want = await page.evaluate(() => TERRAINS.map((k) => TERRAIN_EFFECT_TEXT[k].join(" · ")));
-  items.forEach((x, k) => { assert.match(x, new RegExp(`^${NAMES[k]}`)); assert.ok(x.includes(want[k]), `${NAMES[k]} sem os efeitos`); });
+  const want = await page.evaluate(() => TERRAINS.map((k) => TERRAIN_EFFECT_TEXT[k]));
+  items.forEach((x, k) => assert.match(x, new RegExp(`^${NAMES[k]}`)));
+  for (let k = 0; k < 7; k++) {
+    const li = ts.locator(".ter-list li").nth(k);
+    assert.deepEqual(await li.locator(".ter-eff .fx").allInnerTexts(), want[k], `${NAMES[k]} sem os efeitos`);
+    assert.deepEqual(await li.locator(".ter-eff .fx").evaluateAll((cs) => cs.map((c) => c.classList.contains("up") ? "up" : "down")), ["up", "up", "down"]);
+  }
   assert.match(await ts.innerText(), /Nesta partida os terrenos têm efeito/);
   assert.doesNotMatch(await ts.innerText(), /só visual/);
   for (const li of await ts.locator(".ter-list li").all()) assert.ok((await li.boundingBox()).height >= 48);
   assert.deepEqual(await horizontalOverflow(page), []);
   await page.keyboard.press("Escape");
   await ts.waitFor({ state: "hidden" });
-  // Como jogar (folha ?) ligado.
-  await page.evaluate(() => openSheet("howTo"));
-  const how = await page.locator("#howTo").innerText();
-  for (const w of want) assert.ok(how.includes(w), "Como jogar sem: " + w);
+  // Como jogar ("?" na partida) ligado.
+  await page.locator("#helpBtn").click();
+  await page.locator("#howToScreen").waitFor({ state: "visible" });
+  const how = await page.locator("#howToScreen").innerText();
+  for (const w of want.flat()) assert.ok(how.includes(w), "Como jogar sem: " + w);
+  assert.equal(await page.locator("#howToScreen .ter-eff").count(), 7);
   assert.match(how, /Nesta partida os terrenos têm efeito/);
   await page.keyboard.press("Escape");
   // Desligado: sem as linhas, com o aviso "só visual"; a folha da região só mostra o terreno.
@@ -378,9 +386,10 @@ test("folha da região com efeitos: linha + · + · − do terreno, custo com o 
   assert.match(await ts.innerText(), /Nesta partida o terreno é só visual/);
   assert.equal(await ts.locator(".ter-eff").count(), 0);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => openSheet("howTo"));
-  assert.match(await page.locator("#howTo").innerText(), /Nesta partida o terreno é só visual/);
-  assert.equal(await page.locator("#howTo .ter-eff").count(), 0);
+  await page.locator("#helpBtn").click();
+  await page.locator("#howToScreen").waitFor({ state: "visible" });
+  assert.match(await page.locator("#howToScreen").innerText(), /Nesta partida o terreno é só visual/);
+  assert.equal(await page.locator("#howToScreen .ter-eff").count(), 0);
   await page.keyboard.press("Escape");
   const t2 = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
   await page.locator(`[data-territory="${t2}"]`).click();

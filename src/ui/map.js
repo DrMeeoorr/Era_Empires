@@ -13,7 +13,7 @@ import {openSheet,isSheetOpen,closeSheet} from "./sheets.js";
 import {showToast} from "./toast.js";
 import {regionShapes} from "./mapshape.js";
 import {TERRAINS,TERRAIN_NAMES,TERRAIN_HINTS,terrainOf,mapTypeOf,terrainEffectsOn,ruleTerrain,terrainStartsOf,terrainDefenseBonus,terrainAttackFactor} from "../core/terrain.js";
-import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectLine} from "./terrain-art.js";
+import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectChips} from "./terrain-art.js";
 
 /* ── Mapa e painel do alvo ── */
 /* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
@@ -101,20 +101,23 @@ export function renderMap(){
  renderAttack();renderEvents();
  if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
 }
-// Folha "ⓘ Terrenos": os 7 terrenos e o tipo de mapa desta partida (o terreno ainda não muda as regras).
-// Com terrenos com efeitos mostra as 2 vantagens e 1 desvantagem de cada um; só visual, avisa que nada muda.
-export const TERRAIN_FX_NOTE="Nesta partida os terrenos têm efeito: cada região dá ao dono as vantagens e a desvantagem do seu terreno (as % de Obras, Força e Ciência somam por região). Defesa e custo de ataque do terreno só valem em regiões com dono. A região inicial de cada império conta como Campina.";
+// Folha "ⓘ Terrenos": os 7 terrenos e o tipo de mapa desta partida.
+// Com terrenos com efeitos mostra as 2 vantagens e 1 desvantagem de cada um (etiquetas + / −) e, num bloco que abre
+// com um toque, os detalhes das regras; só visual, avisa que nada muda.
+export const TERRAIN_FX_NOTE="Nesta partida os terrenos têm efeito: quem ocupa a região ganha as 2 vantagens (+) e a desvantagem (−) do terreno.";
+export const TERRAIN_FX_RULES=["As % de Obras, Força e Ciência somam por região desse terreno.","Defesa e custo de ataque do terreno só valem em regiões com dono.","A região inicial de cada império conta como Campina."];
 export const TERRAIN_VISUAL_NOTE="Nesta partida o terreno é só visual: não muda as regras. Para jogar com efeitos: Nova partida → Personalizar → Terrenos → Com efeitos.";
 export const terrainNote=()=>terrainEffectsOn(state)?TERRAIN_FX_NOTE:TERRAIN_VISUAL_NOTE;
+const terrainNoteHtml=()=>terrainEffectsOn(state)?`${TERRAIN_FX_NOTE}<details class="ter-more"><summary>Como os efeitos funcionam</summary><ul>${TERRAIN_FX_RULES.map(x=>`<li>${x}</li>`).join("")}</ul></details>`:TERRAIN_VISUAL_NOTE;
 export function renderTerrainSheet(){const el=$("terrainBody");if(!el)return;const fx=terrainEffectsOn(state);
- el.innerHTML=`<p class="small muted ter-mapnote">${mapTypeOf(state)==="sorteado"?"<b>Mapa sorteado</b>: os terrenos desta partida foram sorteados.":"<b>Mapa padrão</b>: cada região tem sempre o mesmo terreno."}</p><p class="small ter-rulenote${fx?" on":""}">${terrainNote()}</p>${terrainListHtml(TERRAIN_HINTS,fx)}`}
-// Listas de terrenos do Como jogar (tela inicial e folha "?"): refeitas ao abrir, conforme a partida atual.
+ el.innerHTML=`<p class="small muted ter-mapnote">${mapTypeOf(state)==="sorteado"?"<b>Mapa sorteado</b>: os terrenos desta partida foram sorteados.":"<b>Mapa padrão</b>: cada região tem sempre o mesmo terreno."}</p><div class="small ter-rulenote${fx?" on":""}">${terrainNoteHtml()}</div>${terrainListHtml(TERRAIN_HINTS,fx)}`}
+// Listas de terrenos do Como jogar (tela inicial e dentro da partida): refeitas ao abrir, conforme a partida atual.
 export function fillTerrainLists(){const fx=terrainEffectsOn(state);
  document.querySelectorAll("[data-terrain-list]").forEach(el=>{el.innerHTML=terrainListHtml(TERRAIN_HINTS,fx)});
- document.querySelectorAll("[data-terrain-note]").forEach(el=>{el.textContent=terrainNote()})}
-// Folha da região com terrenos com efeitos: linha "+ … · + … · − …" (a região inicial conta como Campina).
+ document.querySelectorAll("[data-terrain-note]").forEach(el=>{el.innerHTML=terrainNoteHtml();el.classList.toggle("on",fx)})}
+// Folha da região com terrenos com efeitos: etiquetas + / − do terreno (a região inicial conta como Campina).
 export function regionTerrainHtml(t){const k=terrainOf(state)[t];let h=terrainChip(k);
- if(terrainEffectsOn(state)){const r=ruleTerrain(state,t);h+=`<span class="ter-eff">${terrainEffectLine(r)}</span>`;if(r!==k)h+=`<span class="ter-eff muted">Região inicial: conta como Campina.</span>`}
+ if(terrainEffectsOn(state)){const r=ruleTerrain(state,t);h+=terrainEffectChips(r);if(r!==k)h+=`<span class="ter-note">Região inicial: conta como Campina.</span>`}
  return h}
 // Parte do custo que vem do terreno (só com efeitos): "(terreno +2)" na defesa e "× 1,2 (Pântano)" no custo.
 export function terrainCostParts(t){if(!terrainEffectsOn(state))return {def:"",mult:""};const d=terrainDefenseBonus(state,t),f=terrainAttackFactor(state,t),n=TERRAIN_NAMES[ruleTerrain(state,t)];

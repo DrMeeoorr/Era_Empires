@@ -189,7 +189,7 @@ test("tutorial usa sempre o mapa padrão e devolve a escolha Sorteado do jogador
   await context.close();
 });
 
-test("folha ⓘ Terrenos (7 terrenos com ícone e nome) e terrenos no Como jogar (tela inicial e folha ?)", async () => {
+test("folha ⓘ Terrenos (7 terrenos com ícone e nome) e terrenos no Como jogar (tela inicial e \"?\" na partida)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   // Como jogar da tela inicial.
   await page.locator("#homeHowTo").click();
@@ -213,10 +213,12 @@ test("folha ⓘ Terrenos (7 terrenos com ícone e nome) e terrenos no Como jogar
   for (const li of await sheet.locator(".ter-list li").all()) assert.ok((await li.boundingBox()).height >= 48, "linha da folha com menos de 48 px");
   await page.keyboard.press("Escape");
   await sheet.waitFor({ state: "hidden" });
-  // Folha "?" (Como jogar dentro da partida).
-  await page.evaluate(() => openSheet("howTo"));
-  const how = await page.locator("#howTo [data-terrain-list]").innerText();
-  for (const n of NAMES) assert.match(how, new RegExp(n), `folha Como jogar sem ${n}`);
+  // "?" (Como jogar por cima da partida): o mesmo Como jogar da tela inicial, com os 7 terrenos.
+  await page.locator("#helpBtn").click();
+  await page.locator("#howToScreen").waitFor({ state: "visible" });
+  const how = await page.locator("#howToScreen .pg-card > [data-terrain-list]").innerText();
+  for (const n of NAMES) assert.match(how, new RegExp(n), `Como jogar (na partida) sem ${n}`);
+  assert.equal(await page.locator("#howToScreen .pg-card > [data-terrain-list] li svg.ter-ico").count(), 7);
   assert.deepEqual(errors, []);
   await context.close();
 });

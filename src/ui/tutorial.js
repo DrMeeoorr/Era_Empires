@@ -11,7 +11,7 @@ import {readAlloc} from "./allocation.js";
 import {$} from "./dom.js";
 import {fmt,escapeHtml} from "./format.js";
 import {renderAll,showView} from "./game.js";
-import {showModal} from "./modal.js";
+import {showModal,showDialog} from "./modal.js";
 
 /* ── Tutorial: partida guiada (1 rival "Equilibrado", posições fixas TUTORIAL_POS; depois jogo livre no Fácil) ──
    5 passos de ação: investir → concluir → atacar → ver o resumo → como vencer.
@@ -26,7 +26,7 @@ export async function initTutorial(){
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  const tname=()=>escapeHtml(regionName(TARGET));
  const sheetOn=id=>{const el=$(id);return !!el&&!el.hidden};
- const anySheet=()=>!!document.querySelector(".sheet:not([hidden])");
+ const anySheet=()=>!!document.querySelector(".sheet:not([hidden]),[data-sheet]:not([hidden])");
  const summaryBtn=()=>document.querySelector("#eraSummary .sum-next");
  /* ── Tutorial (Fase 3): 5 passos de ação, cada um com uma dica curta (no máximo 2 linhas) e uma seta para o alvo.
     O resto da tela fica escurecido e o balão fica sempre do lado oposto ao alvo, sem o cobrir.
@@ -68,7 +68,7 @@ export async function initTutorial(){
  function clearFocus(){if(focused)focused.classList.remove("tut-focus");focused=null}
  function hide(){clearFocus();box.hidden=true;spot.hidden=true;lastKey=""}
  function endTutorial(skipped){const tu=cur();if(!tu)return;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();hide();renderAll();
-  if(skipped)showModal(`<h2>Tutorial terminado</h2><p class="small muted">A partida continua normalmente no nível Fácil. Você pode rever o tutorial pela tela inicial (botão “Tutorial”) e as regras em “Como jogar”.</p>`,[{label:"Continuar",cls:"primary"}])}
+  if(skipped)showDialog({icon:"compass",title:"Tutorial terminado",text:"A partida continua normalmente no nível Fácil. Você pode rever o tutorial pela tela inicial (botão “Tutorial”) e as regras em “Como jogar”.",buttons:[{label:"Continuar",kind:"primary"}],esc:0})}
  function enterStep(){const tu=cur();if(!tu)return;warn="";const st=STEPS[tu.step];if(st?.enter&&!tu["entered"+tu.step]){tu["entered"+tu.step]=true;st.enter();saveGame()}draw(true)}
  // Desenha o balão: dica curta, seta e área destacada. Sem alvo visível (outra folha aberta, aviso...), esconde-se.
  function draw(force){
@@ -112,10 +112,10 @@ export async function initTutorial(){
  onHook("afterRender",()=>{if(cur())setTimeout(()=>draw(true),0)});
  // Tela inicial: botão e oferta na primeira visita.
  let b=$("homeTutorial");if(!b&&$("homeHowTo")){b=document.createElement("button");b.type="button";b.className="btn-glass";b.id="homeTutorial";b.textContent="Tutorial";$("homeHowTo").insertAdjacentElement("beforebegin",b)}
- if(b)b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()};
+ if(b)b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showDialog({icon:"compass",title:"Começar o tutorial?",text:`A partida em andamento (era ${state.era}) será substituída por uma partida guiada.`,buttons:[{label:"Cancelar"},{label:"Começar tutorial",kind:"primary",onClick:startTutorial}],esc:0});else startTutorial()};
  let offered=false;try{offered=!!await storage.get(TUT_KEY)}catch(e){offered=true}
  const fresh=!state||(!state.history.length&&state.era<=1);
- if(!offered&&fresh)setTimeout(()=>showModal(INVITE_HTML,[{label:"Jogar o tutorial",cls:"primary btn-main",onClick:startTutorial},{label:"Agora não",cls:"txtbtn",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}],{cls:"modal-invite",label:"Primeira vez em Impérios?"}),300);
+ if(!offered&&fresh)setTimeout(()=>showModal(INVITE_HTML,[{label:"Jogar o tutorial",cls:"primary btn-main",onClick:startTutorial},{label:"Agora não",cls:"txtbtn",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}],{cls:"modal-invite",label:"Primeira vez em Impérios?",esc:1}),300);
  if(cur())setTimeout(()=>draw(true),0);
  // Ao voltar ao jogo a partir da tela inicial, mostra de novo o balão.
  onHook("continueGame",()=>setTimeout(()=>draw(true),0));

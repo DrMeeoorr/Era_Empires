@@ -34,6 +34,13 @@
 <symbol id="i-temple" viewBox="0 0 24 24"><path d="M4 20h16M6 20V10M10 20V10M14 20V10M18 20V10M3 10h18L12 4z"/></symbol>
 <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/><circle cx="12" cy="12" r="2.2"/></symbol>
 <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+<symbol id="i-restart" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.3v.2"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5M10 20v-5h4v5"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.5M4.5 12h.5M4.5 18h.5" stroke-width="2.6"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.6v.4M12 16.8v.2"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 </defs></svg>
 <section class="home-screen au-home" id="homeScreen" aria-labelledby="homeTitle">
   <div class="au-frame">
@@ -113,8 +120,8 @@
   <div class="pg-sticky setup-footer"><div class="setup-summary" id="setupSummary"></div><button type="button" class="btn-main" id="setupStart"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Jogar</button></div>
 </section>
 
-<section class="home-screen pg-screen" id="howToScreen" aria-labelledby="howToScreenTitle" hidden>
-  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="howToBack" aria-label="Voltar"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="howToScreenTitle">Como jogar</h1></div>
+<section class="home-screen pg-screen" id="howToScreen" data-sheet role="dialog" aria-modal="true" aria-labelledby="howToScreenTitle" tabindex="-1" hidden>
+  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="howToBack" aria-label="Voltar"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="howToScreenTitle">Como jogar</h1><button type="button" class="pg-iconbtn pg-x" id="howToClose" data-close aria-label="Fechar"><svg class="ic" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="pg-wrap">
     <div class="pg-card">
       <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-hourglass"/></svg>Cada era, 3 passos</h2>
@@ -132,6 +139,12 @@
       <div class="pg-inv"><span class="badge b-tech" aria-hidden="true"><svg class="ic"><use href="#i-spark"/></svg></span><div><b class="purple">Ciência</b><span>Começa após 2 eras e rende para sempre. Barateia ataques.</span></div><svg class="spark" viewBox="0 0 96 44" aria-hidden="true"><path d="M4 38H92" stroke="#3a5070"/><path d="M6 38H30C40 38 40 22 50 20S78 14 90 10" fill="none" stroke="#b49aff" stroke-width="2.4"/><path d="M84 6l6 4-6 4" fill="none" stroke="#b49aff" stroke-width="2"/><text x="4" y="44">agora</text><text x="66" y="44">eras →</text></svg></div>
     </div>
     <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Terrenos</h2>
+      <p class="pg-desc">Cada região tem um terreno. Em Nova partida → Personalizar → Terrenos, escolha <b>Só visual</b> (regras de sempre) ou <b>Com efeitos</b> (cada terreno dá 2 vantagens e 1 desvantagem).</p>
+      <div class="pg-desc ter-rulenote" data-terrain-note></div>
+      <div data-terrain-list></div>
+    </div>
+    <div class="pg-card">
       <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-crown"/></svg>Como vencer</h2>
       <div class="pg-win">
         <div><b><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Domínio</b>Controle 70% das regiões.</div>
@@ -139,13 +152,10 @@
         <div><b><svg class="ic" aria-hidden="true"><use href="#i-crown"/></svg>Supremacia</b>Grande vantagem por 5 eras (só na Clássica).</div>
         <div><b><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>Pontos</b>Ninguém venceu? Ganha quem tiver mais pontos.</div>
       </div>
-      <details class="pg-full" id="howToFull"><summary>Regras completas <svg class="ic chev" aria-hidden="true"><use href="#i-next"/></svg></summary><div class="pg-fullbody" id="howToFullBody"></div></details>
-    </div>
-    <div class="pg-card">
-      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Terrenos</h2>
-      <p class="pg-desc">Cada região tem um terreno. Em Nova partida → Personalizar → Terrenos, escolha <b>Só visual</b> (regras de sempre) ou <b>Com efeitos</b> (cada terreno dá 2 vantagens e 1 desvantagem).</p>
-      <p class="pg-desc ter-rulenote" data-terrain-note></p>
-      <div data-terrain-list></div>
+      <details class="pg-full" id="howToFull"><summary>Regras completas <svg class="ic chev" aria-hidden="true"><use href="#i-next"/></svg></summary><div class="pg-fullbody" id="howToFullBody"><div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em uma região com ⚔ para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
+<div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 2 eras, rende para sempre e aumenta todo o ouro da era. Obras reforçam a defesa dos seus territórios; Ciência barateia os seus ataques.</p></div>
+<div><h3>Terrenos</h3><p class="small muted">Cada região tem um terreno: Campina, Floresta, Colinas, Montanha, Deserto, Pântano ou Tundra. Em Nova partida → Personalizar → Mapa, escolha o mapa padrão (sempre igual) ou sorteado (novo a cada partida); em Terrenos, <b>Só visual</b> (regras de sempre) ou <b>Com efeitos</b> (cada terreno dá 2 vantagens e 1 desvantagem).</p></div>
+<div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div></div></details>
     </div>
   </div>
   <div class="pg-sticky"><button type="button" class="btn-main" id="howToOk">Entendi</button></div>
@@ -163,7 +173,7 @@
   <button type="button" class="hud-btn" id="menuBtn" data-open="menuSheet" aria-haspopup="dialog" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <div class="hud-era" id="statEra"></div>
   <button type="button" class="hud-pill" id="scorePill" data-open="scoreSheet" aria-haspopup="dialog"></button>
-  <button type="button" class="hud-btn" id="helpBtn" data-open="howTo" aria-haspopup="dialog" aria-label="Como jogar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.9v.2"/></svg></button>
+  <button type="button" class="hud-btn" id="helpBtn" data-open="howToScreen" aria-haspopup="dialog" aria-label="Como jogar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.6"/><path d="M12 16.9v.2"/></svg></button>
  </div>
  <div class="hud-stats">
   <div class="hud-stat" id="statGold"></div>
@@ -195,7 +205,7 @@
 <div id="terrainBody"></div>
 </section>
 <section class="sheet " id="menuSheet" role="dialog" aria-modal="true" aria-labelledby="menuSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="menuSheetTitle">Menu</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="summaryToggle" class="menu-item" aria-pressed="true"><span class="mi" aria-hidden="true">✓</span>Resumo de cada era: <span class="mi-state">ligado</span></button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
+<nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><svg class="ic mi" aria-hidden="true"><use href="#i-home"/></svg>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><svg class="ic mi" aria-hidden="true"><use href="#i-crown"/></svg>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><svg class="ic mi" aria-hidden="true"><use href="#i-list"/></svg>Detalhes da partida</button><button type="button" class="menu-item" data-open="howToScreen"><svg class="ic mi" aria-hidden="true"><use href="#i-book"/></svg>Como jogar</button><button type="button" id="summaryToggle" class="menu-item" aria-pressed="true"><svg class="ic mi" aria-hidden="true"><use href="#i-hourglass"/></svg>Resumo de cada era: <span class="mi-state">ligado</span></button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><svg class="ic mi" aria-hidden="true"><use href="#i-restart"/></svg>Reiniciar</button></nav>
 </section>
 <section class="sheet sheet-tall" id="scoreSheet" role="dialog" aria-modal="true" aria-labelledby="scoreSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="scoreSheetTitle">Placar e vitória</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="small muted" id="matchInfo"></div>
@@ -207,14 +217,6 @@
 </section>
 <section class="sheet " id="fineSheet" role="dialog" aria-modal="true" aria-labelledby="fineSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="fineSheetTitle">Ajuste fino</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <p class="small muted sheet-hint">Toque no valor de uma área para digitar o número exato.</p><div class="fine-row" data-area="mil"><div class="fine-top"><strong><span class="gold" aria-hidden="true">⚔</span> Militar</strong><span class="fine-val" id="milFine"></span></div><div class="small muted" id="milForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar militar">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Militar">Resto</button></div></div><div class="fine-row" data-area="infra"><div class="fine-top"><strong><span class="green" aria-hidden="true">▰</span> Obras</strong><span class="fine-val" id="infraFine"></span></div><div class="small muted" id="infraForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar obras">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Obras">Resto</button></div></div><div class="fine-row" data-area="tech"><div class="fine-top"><strong><span class="purple" aria-hidden="true">✦</span> Ciência</strong><span class="fine-val" id="techFine"></span></div><div class="small muted" id="techForecast"></div><div class="fine-btns"><button type="button" data-zero aria-label="Zerar ciência">Zerar</button><button type="button" data-rest aria-label="Pôr o resto do ouro em Ciência">Resto</button></div></div><div class="status" id="allocationStatus" role="status"></div>
-</section>
-<section class="sheet sheet-tall" id="howTo" role="dialog" aria-modal="true" aria-labelledby="howToTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="howToTitle">Como jogar</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-<div class="grid three" style="margin-top:12px">
-<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em uma região com ⚔ para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
-<div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 2 eras, rende para sempre e aumenta todo o ouro da era. Obras reforçam a defesa dos seus territórios; Ciência barateia os seus ataques.</p></div>
-<div><h3>Terrenos</h3><p class="small muted">Cada região tem um terreno: Campina, Floresta, Colinas, Montanha, Deserto, Pântano ou Tundra. Em Nova partida → Personalizar → Mapa, escolha o mapa padrão (sempre igual) ou sorteado (novo a cada partida); em Terrenos, <b>Só visual</b> (regras de sempre) ou <b>Com efeitos</b> (cada terreno dá 2 vantagens e 1 desvantagem).</p><p class="small ter-rulenote" data-terrain-note></p><div data-terrain-list></div></div>
-<div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div>
-</div>
 </section>
 <section class="sheet sheet-tall" id="resultSheet" role="dialog" aria-modal="true" aria-labelledby="resultSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="resultSheetTitle">Detalhes do resultado</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div id="resultDetailsBody"></div>
