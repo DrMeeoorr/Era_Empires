@@ -291,14 +291,22 @@ export function defineTests(){
  // ── Dificuldade ──
  test("Multiplicador de receita só afeta IAs em partidas com jogador humano",()=>{const c=clone(DEFAULTS);c.economy.aiIncomeMultiplier=1.5;const s=newState(c);beginEra(s,c);if(s.pending.revenue.player.total!==22)throw Error("Jogador afetado");if(Math.abs(s.pending.revenue.ai.total-33)>1e-9)throw Error("IA sem multiplicador: "+s.pending.revenue.ai.total);const l=newState(c,{allAI:true});beginEra(l,c);if(l.pending.revenue.ai.total!==22)throw Error("Laboratório (todas IA) não deveria aplicar o multiplicador")},"IA");
  test("IA estratega escolhe o alvo mais barato e prefere o jogador no empate",()=>{const c=clone(DEFAULTS);c.military.aiTarget="cheapest";c.military.aiAggression=100;c.military.aiStyle="military";const s=newState(c);s.owners.fill("neutral");s.owners[7]="ai";s.owners[13]="player";A(s).military=50;A(s).treasury=0;s.era=1;processEra(s,c,{ai:true,playerAllocation:{military:0,infrastructure:0,technology:0}});const conq=s.log.find(x=>/IA conquistou|IA atacou/.test(x.text));if(!conq)throw Error("IA não atacou");if(!/território (1|2|7|9|8|14) /.test(conq.text+" "))throw Error("Alvo inesperado: "+conq.text)},"IA");
+ // Desde a rodada de balanceamento de 20/11/2026 a coligação contra o líder com 2+ rivais vale com terrenos com efeito
+ // (no Só visual, com 2+ rivais, vão primeiro às regiões livres; ver o teste seguinte). Por isso este corre com efeitos.
  test("IA estratega ataca o líder: prefere o líder pagável a uma IA mais fraca e a neutros",()=>{const c=clone(DEFAULTS);c.map.aiCount=2;c.military.aiTarget="leader";c.military.aiAggression=100;c.military.aiStyle="military";c.military.simultaneousOrders=false;
-  const run=(setup,mil,prep)=>{const s=newState(c);s.owners.fill("neutral");for(const [i,o] of setup)s.owners[i]=o;prep?.(s);const before=[...s.owners],ai=A(s);ai.military=mil;ai.treasury=0;s.era=1;const r=aiDecide(s,ai,c,1),m=r.action.match(/território (\d+)/);return m?before[Number(m[1])-1]:null};
+  const run=(setup,mil,prep)=>{const s=newState(c);s.owners.fill("neutral");for(const [i,o] of setup)s.owners[i]=o;s.terrain={type:"padrao",seed:null,list:Array(24).fill("campina")};enableTerrainEffects(s);prep?.(s);const before=[...s.owners],ai=A(s);ai.military=mil;ai.treasury=0;s.era=1;const r=aiDecide(s,ai,c,1),m=r.action.match(/território (\d+)/);return m?before[Number(m[1])-1]:null};
   // Jogador lidera (3 territórios): atacado antes da IA vizinha e dos neutros.
   let o=run([[8,"ai"],[7,"ai2"],[9,"player"],[10,"player"],[11,"player"]],200);if(o!=="player")throw Error("Não atacou o jogador líder: "+o);
   // Outra IA lidera: é ela o alvo, não o jogador nem os neutros.
   o=run([[8,"ai"],[7,"ai2"],[0,"ai2"],[1,"ai2"],[2,"ai2"],[9,"player"]],200);if(o!=="ai2")throw Error("Devia atacar a IA líder: "+o);
   // Líder impagável (defesa muito alta): ataca um alvo que consegue pagar.
   o=run([[8,"ai"],[9,"player"],[10,"player"]],10,s=>{P(s).lastRevenue={...P(s).lastRevenue,infrastructure:1e4}});if(o!=="neutral")throw Error("Com o líder impagável devia atacar um neutro: "+o)},"IA");
+ test("Difícil/Lendário no Só visual: com 2+ rivais vão primeiro às regiões livres; no 1×1 atacam o líder",()=>{
+  const run=(ai)=>{const c=clone(DEFAULTS);c.map.aiCount=ai;c.military.aiTarget="leader";c.military.aiAggression=100;c.military.aiStyle="military";c.military.simultaneousOrders=false;
+   const s=newState(c);s.owners.fill("neutral");for(const [i,o] of [[8,"ai"],[9,"player"],[10,"player"],[11,"player"],...(ai>1?[[0,"ai2"]]:[])])s.owners[i]=o;const before=[...s.owners],x=A(s);x.military=200;x.treasury=0;s.era=1;
+   const r=aiDecide(s,x,c,1),m=r.action.match(/território (\d+)/);return m?before[Number(m[1])-1]:null};
+  let o=run(2);if(o!=="neutral")throw Error("2 rivais no Só visual: devia ir a uma região livre, foi "+o);
+  o=run(1);if(o!=="player")throw Error("1×1 no Só visual: devia atacar o jogador líder, foi "+o)},"IA");
  test("Posição inicial: desligada mantém as posições de sempre",()=>{for(let k=1;k<=MAX_AI;k++){const c=clone(DEFAULTS);c.map.aiCount=k;if(c.map.randomStart!==false)throw Error("Padrão deveria ser desligado");
    const exp=startPositions(c.map.territories,k+1),s=newState(c,{startSeed:12345}),got=s.civs.map(civ=>s.owners.indexOf(civ.id));if(JSON.stringify(got)!==JSON.stringify(exp))throw Error(k+" IAs: "+got+" ≠ "+exp);if(k===1&&JSON.stringify(got)!=="[0,23]")throw Error("1×1 devia ser [0,23]: "+got)}},"INF");
  test("Posição inicial aleatória: posições válidas, afastadas e reprodutíveis com a mesma semente",()=>{const firsts=new Set();
@@ -328,7 +336,7 @@ export function defineTests(){
  test("Predefinições de dificuldade aplicam os valores certos",()=>{
   // Os 4 valores (incluindo aiIncomeMultiplier1v1), vindos de outra dificuldade, e a receita real das IAs.
   const saved=configApplied,base=DEFAULTS.economy.baseIncome;
-  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1.03,-1,100,"leader"],hardcore:[1.12,-1,100,"leader"]};
+  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1.05,1.03,100,"leader"],hardcore:[1.12,-1,100,"leader"]};   // Difícil: rodada de 20/11/2026
   try{for(const [k,v] of Object.entries(exp)){
    for(const prev of ["medio","dificil"]){setConfigApplied(clone(DEFAULTS));applyDifficulty(prev);applyDifficulty(k);
     const got=[configApplied.economy.aiIncomeMultiplier,configApplied.economy.aiIncomeMultiplier1v1,configApplied.military.aiAggression,configApplied.military.aiTarget];

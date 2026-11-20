@@ -54,6 +54,9 @@ export function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOppone
  s.terrain=makeMapTerrain(mapType,mapType==="sorteado"?Math.floor(Math.random()*4294967296):null,s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0),s.owners.length);
  // Com efeitos: liga as regras do terreno e guarda as regiões iniciais (contam como Campina). Só visual: nada muda.
  if(terrainEffectsChoice)enableTerrainEffects(s);
+ // Com efeitos, a dificuldade pode ter receita própria para os rivais (Médio: +3%); fica gravada na partida, por isso
+ // saves já em curso continuam com os valores com que começaram.
+ const fxInc=terrainEffectsChoice&&DIFFICULTIES[currentDifficulty]?.effectsIncome;if(fxInc)s.aiIncomeEffects={...fxInc};
  beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
 export function profileOf(c){return c.profile||configApplied.military.aiStyle||"adaptive"}
 // Conclui a era aberta e, se a partida continuar, abre a seguinte.

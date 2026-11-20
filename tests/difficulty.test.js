@@ -33,20 +33,23 @@ test("applyDifficulty('config') volta aos valores das Configurações depois de 
   const r = await page.evaluate(() => {
     const out = {};
     for (const k of ["dificil", "hardcore", "muitofacil", "medio"]) { applyDifficulty(k); applyDifficulty("config"); out[k] = [configApplied.economy.aiIncomeMultiplier, configApplied.economy.aiIncomeMultiplier1v1, configApplied.military.aiAggression, configApplied.military.aiTarget]; }
-    // Entre duas dificuldades também não sobra nada: Médio define aiIncomeMultiplier1v1, Difícil tem de o repor.
+    // Entre duas dificuldades também não sobra nada: Médio (1,00) e Difícil (1,03, desde 20/11/2026) definem
+    // aiIncomeMultiplier1v1; o Lendário não o define e tem de o repor em −1; o Difícil põe o seu, não o do Médio.
     applyDifficulty("medio"); applyDifficulty("dificil"); out.medioDificil = configApplied.economy.aiIncomeMultiplier1v1;
+    applyDifficulty("medio"); applyDifficulty("hardcore"); out.medioLendario = configApplied.economy.aiIncomeMultiplier1v1;
     return out;
   });
   await context.close();
   for (const k of ["dificil", "hardcore", "muitofacil", "medio"]) assert.deepEqual(r[k], DEFAULT_AI, k + " vazou para Configurações");
-  assert.equal(r.medioDificil, -1);
+  assert.equal(r.medioDificil, 1.03);
+  assert.equal(r.medioLendario, -1);
 });
 
 // "⚙ Configurações" só aparece com ?dev=1 (na versão do jogador a opção fica escondida).
 test("pela interface (?dev=1): Difícil → Configurações não herda agressividade/alvo do Difícil (também depois de recarregar)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, dev: true });
   await startVia(page, { diff: "dificil", ai: 2 });
-  assert.deepEqual(await aiVals(page), [1.03, -1, 100, "leader"]);
+  assert.deepEqual(await aiVals(page), [1.05, 1.03, 100, "leader"]);
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await startVia(page, { diff: "config", ai: 2 });

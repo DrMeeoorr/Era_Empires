@@ -126,7 +126,8 @@ test("dificuldades: os 4 valores (incluindo aiIncomeMultiplier1v1) e a receita r
   rule(() => {
     const exp = {
       muitofacil: [0.7, -1, 75, "neutralFirst"], facil: [0.92, -1, 75, "neutralFirst"], medio: [1.03, 1, 75, "neutralFirst"],
-      dificil: [1.03, -1, 100, "leader"], hardcore: [1.12, -1, 100, "leader"],
+      // Rodada de balanceamento de 20/11/2026: Difícil 1,05 com 2+ rivais e 1,03 no 1×1.
+      dificil: [1.05, 1.03, 100, "leader"], hardcore: [1.12, -1, 100, "leader"],
     };
     const base = DEFAULTS.economy.baseIncome;
     for (const [k, v] of Object.entries(exp)) {
