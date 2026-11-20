@@ -1,21 +1,27 @@
 // "Impressão digital" das simulações com semente fixa (SEED).
 // Calcula um código curto (hash FNV-1a) a partir de 27 partidas e simulações: se QUALQUER número de
 // qualquer era mudar, o código muda. Serve para provar que uma refatoração não alterou o jogo.
-// Referência atual: a911f8cd — rodada de balanceamento de 20/11/2026: nova ordem das posições iniciais no mapa de 24
+// Referência atual: 8ba37eca — rodada 2 de balanceamento (20/11/2026): o Científico decide atacar já com o desconto
+// da Ciência (muda todos os match_* e fixed, onde há lugares do Científico) e o reflexo de defesa dos rivais contra
+// o jogador humano (só nas simulações com jogador: mudam sim_balanced e sim_military; sim_infrastructure e
+// sim_technology ficam iguais).
+// Antes: a911f8cd — rodada de balanceamento de 20/11/2026: nova ordem das posições iniciais no mapa de 24
 // regiões (Arvela, Zênite, Esmera, Torva, Musgo, Ombral); mudam só os subcódigos match_4_* e match_6_*.
-// Antes: e82cdda4 (rebalanceamento: Obras dão defesa, Ciência barateia ataques, Ciência rende após 2 eras, Difícil/Hardcore atacam o líder).
+// Antes disso: e82cdda4 (rebalanceamento: Obras dão defesa, Ciência barateia ataques, Ciência rende após 2 eras, Difícil/Hardcore atacam o líder).
 // As dificuldades não entram nestas partidas (só IAs), por isso Difícil 1,05 e "regiões livres primeiro" não as mudam.
 //
 // Uso direto: node tests/fingerprint.js        (imprime os dois códigos — terreno só visual e com efeitos — e os subcódigos)
 // Na suíte:   tests/fingerprint.test.js (faz parte do `npm test`).
 "use strict";
 
-const EXPECTED = "a911f8cd";
+const EXPECTED = "8ba37eca";
 // Segunda impressão digital: as mesmas partidas com os terrenos COM EFEITOS (mapa padrão e sorteado).
 // Muda se mudar a tabela dos terrenos (src/core/terrain.js) ou a forma como a IA os escolhe.
-// Atual: bda662ed — rodada de balanceamento de 20/11/2026: mapa padrão com Jaspe ↔ Rochedo (todos os fx_padrao_*) e
-// nova ordem das posições iniciais (fx_sorteado_4/6 e fx_fixed). Antes: 75da3210.
-const EXPECTED_EFFECTS = "bda662ed";
+// Atual: 4010a086 — rodada 2 de balanceamento (20/11/2026): o Científico decide atacar já com o desconto da Ciência
+// (mudam todos os subcódigos; o reflexo de defesa não entra, porque estas partidas são só de IAs).
+// Antes: bda662ed — rodada de balanceamento de 20/11/2026: mapa padrão com Jaspe ↔ Rochedo (todos os fx_padrao_*) e
+// nova ordem das posições iniciais (fx_sorteado_4/6 e fx_fixed). Antes disso: 75da3210.
+const EXPECTED_EFFECTS = "4010a086";
 
 /** Corre dentro da página do jogo. Devolve {tests, all, parts}. */
 function fingerprintInPage() {
