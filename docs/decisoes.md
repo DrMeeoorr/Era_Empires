@@ -168,3 +168,25 @@ usuário, nos **dois modos de terreno** (Só visual e Com efeitos):
 - **Pendências para depois**: Médio com 3 rivais no Só visual ficou mais duro para o jogador-IA (11%; quem ataca todas as eras
   fica entre 33 e 50%); Zênite continua a dominar as partidas só de IAs no Só visual (3 a 6 impérios: Arvela 2–13%,
   Zênite 39–64%); estilo Científico/estratégia de Ciência continuam as mais fracas.
+
+## 20/11/2026 — Desafios e medalhas (mobile-ux) — aprovado (opção D da revisão do Difícil)
+Aprovado pelo usuário **só esta opção de interface** (não Fronteira viva nem Conselheiro), **só medalhas, sem prêmio
+que mude regras**, entregue junto com a rodada 4. Nenhuma regra, número ou IA mudou (impressões digitais continuam
+**39190b06** / **5c97e2c2**).
+- **Lista final (12)**, critérios lidos só do estado da partida:
+  Primeiros passos (terminar o tutorial até o último passo; pular não conta) · Primeira coroa (vencer) ·
+  Muralha (repelir 3 ataques de rivais às suas regiões na mesma partida) · Construtor (vencer com mais ouro investido em
+  Obras do que em Militar e em Ciência) · Sábio (idem com Ciência) · Diplomata (vencer sem tomar região de rival) ·
+  Relâmpago (vencer por domínio ou eliminação até a era 18) · Hegemonia (vencer por supremacia) · Contra a maré
+  (vencer no Difícil/Lendário com 3+ rivais) · Explorador (vencer num mapa sorteado) · Terra natal (vencer com
+  terrenos com efeito) · Sobrevivente (ter 5 regiões, cair para 2 ou menos e voltar a ter 5).
+- **Onde**: "Nova medalha" no resumo da era (ou aviso curto se o resumo estiver desligado); faixa compacta na tela de
+  resultado (medalhas da partida ou "Próximo desafio") que abre a tela **Medalhas**; tela Medalhas (estilo Atlas) pelo
+  botão "Medalhas N/12" na tela inicial e no menu ☰, com conquistadas e bloqueadas (critério sempre visível).
+  O "desafio da era" opcional ficou como "Próximo desafio" na tela de resultado (só quando a partida não deu medalha).
+- **Tutorial**: só dá "Primeiros passos" (incentiva terminar o tutorial); a vitória na partida do tutorial não dá
+  medalhas. **Laboratórios** e a dificuldade "Configurações" não dão medalhas.
+- **Gravação**: chave própria por versão (`imperios-jogador-medalhas` / `imperios-dev-medalhas`), via
+  `src/platform/storage.js`; dados danificados são ignorados. Cada medalha é "nova" só uma vez no aparelho.
+- A folha de uma região sua mostra "Defesa X · Força guardada +Y" com os números em destaque e a explicação numa linha
+  à parte (só apresentação).

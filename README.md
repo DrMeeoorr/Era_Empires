@@ -110,6 +110,40 @@ Atacar todas as eras ganhava demais com 2 ou 3 rivais. Mudou, nos dois modos de 
 - Saves em curso: abrem com as regras novas (saque e Força guardada) a partir da era seguinte, mas mantêm o ouro dos
   rivais e a semente com que começaram (estão gravados no save).
 
+## Desafios e medalhas
+
+12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
+leem só o estado da partida (`src/app/medals.js`, sem tela); a arte, os avisos e a tela ficam em `src/ui/medals.js`.
+
+| Medalha | Como conquistar |
+|---|---|
+| Primeiros passos | Terminar o tutorial até o último passo (pular não conta). Única medalha do tutorial. |
+| Primeira coroa | Vencer uma partida. |
+| Muralha | Repelir 3 ataques de rivais às suas regiões na mesma partida. |
+| Construtor | Vencer tendo investido mais em Obras do que em Militar e em Ciência (total da partida). |
+| Sábio | Vencer tendo investido mais em Ciência do que em Militar e em Obras. |
+| Diplomata | Vencer sem tomar nenhuma região de um rival (só regiões livres). |
+| Relâmpago | Vencer por domínio do mapa ou eliminação até a era 18. |
+| Hegemonia | Vencer por supremacia. |
+| Contra a maré | Vencer no Difícil ou no Lendário com 3 rivais ou mais. |
+| Explorador | Vencer num mapa sorteado. |
+| Terra natal | Vencer com terrenos com efeito. |
+| Sobrevivente | Ter 5 regiões, cair para 2 ou menos e voltar a ter 5. |
+
+- **Onde aparecem**: "Nova medalha" no resumo da era (Muralha e Sobrevivente podem sair a meio da partida; se a era
+  foi tranquila, o resumo abre na mesma; com o resumo desligado, aviso curto no topo); faixa compacta na tela de
+  resultado (as medalhas da partida, ou o "Próximo desafio" quando não houve nenhuma) que abre a tela **Medalhas**;
+  tela Medalhas (botão na tela inicial e no menu ☰) com as conquistadas e as que faltam, sempre com o critério à vista.
+  Animação curta da medalha, desligada com "reduzir movimento".
+- **Uma vez só**: cada medalha é anunciada como nova só na primeira vez no aparelho; numa partida seguinte que cumpra
+  o critério ela aparece na lista da partida como "de novo".
+- **Gravação**: chave própria por versão (`imperios-jogador-medalhas` / `imperios-dev-medalhas`) pelo
+  `src/platform/storage.js`; dados danificados são ignorados (começa do zero). O registo da partida (defesas que
+  seguraram e medalhas desta partida) vai no save, em `state.ui.medals` (o motor não o lê).
+- **Sem medalhas**: a partida do tutorial (só "Primeiros passos"), partidas com a dificuldade "Configurações" e
+  partidas avançadas ou reconfiguradas pelos laboratórios (`state.ui.labs`). As medalhas contam só eras concluídas
+  pelo botão "Concluir era" (Muralha) e o fim da partida.
+
 ## Organização do código
 
 ```
@@ -188,6 +222,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/balance-round.test.js` | Rodada de balanceamento de 20/11/2026: ordem das posições iniciais (Pedral nunca; 2–3 impérios e outros mapas como antes), Difícil/Lendário com 2+ rivais no Só visual vão às regiões livres e no 1×1/com efeitos atacam o líder, receitas (desde a rodada 4: Difícil 1,03; Médio 1,00 e com efeitos 1,03 só com o valor gravado na partida; o carimbo de saves antigos 1,06/1,03 continua a valer; valores estranhos ignorados), mapa padrão com Montanhas dos dois lados e, pela interface, Médio com efeitos no save. |
 | `tests/balance-round-2.test.js` | Rodada 2 de balanceamento de 20/11/2026: reflexo de defesa (só com fronteira com o jogador humano e o exército dele maior; nunca em partidas só de IAs; +15 p.p. de Militar tirados de Obras/Ciência na proporção; cada estilo mantém a prioridade principal), Científico ataca já com o desconto da Ciência e os outros não, e em partidas contra o jogador o Científico continua a gastar ≥50% em Ciência e mais que todos. |
 | `tests/balance-round-4.test.js` | Rodada 4 de balanceamento (20/11/2026): saque ≤ 20% (também em partidas inteiras), Força guardada na defesa (÷ raiz das regiões, na folha e no custo), Força reservada em ordens não defende e a resolução usa a Força livre de antes das devoluções, a IA não ataca quem guarda muita Força, semente nova a cada partida (tutorial e laboratórios fixos; save e recarregar mantêm a semente) e os textos do Como jogar. |
+| `tests/medals.test.js` | Desafios e medalhas (20/11/2026): cada critério com estados montados, Muralha só com defesas de regiões suas, "nova" uma vez só, grava e relê, dados danificados (e armazenamento bloqueado) não quebram, tutorial só dá "Primeiros passos", laboratórios e "Configurações" não dão medalhas, `runTests` no dev.html, e a tela Medalhas e a faixa do resultado nos 3 celulares (também com DejaVu Sans): diálogo, foco, Esc, 48 px, sem cortes nem rolagem lateral. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**
