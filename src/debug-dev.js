@@ -19,6 +19,7 @@ import * as ns_core_names from "./core/names.js";
 import * as ns_core_references from "./core/references.js";
 import * as ns_core_rng from "./core/rng.js";
 import * as ns_core_state from "./core/state.js";
+import * as ns_core_terrain from "./core/terrain.js";
 import * as ns_core_util from "./core/util.js";
 import * as ns_labs_ai_checks from "./labs/ai-checks.js";
 import * as ns_labs_ai_validation from "./labs/ai-validation.js";
@@ -52,7 +53,8 @@ import * as ns_ui_modal from "./ui/modal.js";
 import * as ns_ui_panels from "./ui/panels.js";
 import * as ns_ui_report from "./ui/report.js";
 import * as ns_ui_sheets from "./ui/sheets.js";
+import * as ns_ui_terrain_art from "./ui/terrain-art.js";
 import * as ns_ui_toast from "./ui/toast.js";
 import * as ns_ui_tutorial from "./ui/tutorial.js";
 
-export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_util,ns_labs_ai_checks,ns_labs_ai_validation,ns_labs_balance,ns_labs_common_ui,ns_labs_compare,ns_labs_engine,ns_labs_experiment_ui,ns_labs_experiment,ns_labs_fixed,ns_labs_index,ns_labs_settings_ui,ns_labs_settings,ns_labs_tests_def,ns_labs_tests_ui,ns_labs_validation_ui,ns_labs_validation,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_mapshape,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_toast,ns_ui_tutorial])}
+export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_terrain,ns_core_util,ns_labs_ai_checks,ns_labs_ai_validation,ns_labs_balance,ns_labs_common_ui,ns_labs_compare,ns_labs_engine,ns_labs_experiment_ui,ns_labs_experiment,ns_labs_fixed,ns_labs_index,ns_labs_settings_ui,ns_labs_settings,ns_labs_tests_def,ns_labs_tests_ui,ns_labs_validation_ui,ns_labs_validation,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_mapshape,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_terrain_art,ns_ui_toast,ns_ui_tutorial])}

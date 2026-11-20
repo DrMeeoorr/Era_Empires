@@ -95,6 +95,10 @@
           <div class="pg-seg" id="homeVictoryMode" role="group" aria-labelledby="victoryLbl"><button type="button" class="selected" id="homeClassic" aria-pressed="true">Clássica</button><button type="button" id="homeConquest" aria-pressed="false">Conquista</button></div>
           <p class="pg-desc" id="homeVictoryDesc"></p>
         </div>
+        <div class="pg-field"><h3 class="pg-fl" id="mapLbl"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Mapa</h3>
+          <div class="pg-seg" role="group" aria-labelledby="mapLbl"><button type="button" class="selected" id="mapFixed" aria-pressed="true">Padrão<small>sempre igual</small></button><button type="button" id="mapRandom" aria-pressed="false">Sorteado<small>novo a cada partida</small></button></div>
+          <p class="pg-desc" id="mapDesc"></p>
+        </div>
         <div class="pg-field"><h3 class="pg-fl"><svg class="ic" aria-hidden="true"><use href="#i-swords"/></svg>Estilo dos rivais</h3><div id="homeProfiles" class="profile-rows"></div></div>
         <label class="pg-switch"><svg class="ic" aria-hidden="true"><use href="#i-dice"/></svg><span class="t"><b>Posição inicial aleatória</b><span>Você começa em qualquer ponto do mapa.</span></span><input type="checkbox" role="switch" id="homeRandomStart"></label>
       </div>
@@ -110,7 +114,7 @@
       <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-hourglass"/></svg>Cada era, 3 passos</h2>
       <ol class="pg-steps">
         <li><span class="n" aria-hidden="true">1</span><svg class="ic" aria-hidden="true"><use href="#i-coins"/></svg><b>Divida o ouro</b>entre as 3 áreas</li>
-        <li><span class="n" aria-hidden="true">2</span><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><b>Ataque</b>regiões douradas</li>
+        <li><span class="n" aria-hidden="true">2</span><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><b>Ataque</b>regiões com ⚔</li>
         <li><span class="n" aria-hidden="true">3</span><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg><b>Conclua a era</b>tudo se resolve junto</li>
       </ol>
       <p class="pg-desc">Se dois atacam a mesma região, vence quem tiver mais Força (somada à Ciência).</p>
@@ -130,6 +134,11 @@
         <div><b><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>Pontos</b>Ninguém venceu? Ganha quem tiver mais pontos.</div>
       </div>
       <details class="pg-full" id="howToFull"><summary>Regras completas <svg class="ic chev" aria-hidden="true"><use href="#i-next"/></svg></summary><div class="pg-fullbody" id="howToFullBody"></div></details>
+    </div>
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Terrenos</h2>
+      <p class="pg-desc">Cada região tem um terreno. Por enquanto ele não muda as regras.</p>
+      <div data-terrain-list></div>
     </div>
   </div>
   <div class="pg-sticky"><button type="button" class="btn-main" id="howToOk">Entendi</button></div>
@@ -155,7 +164,7 @@
 <section class="map-card" id="mapCard" aria-labelledby="mapTitle">
  <h2 class="sr-only" id="mapTitle">Mapa</h2>
  <div class="map-box"><div class="map" id="map"></div></div>
- <div class="legend" id="mapLegend"></div>
+ <div class="legend-row"><div class="legend" id="mapLegend"></div><button type="button" class="lg-ter" id="terrainBtn" data-open="terrainSheet" aria-haspopup="dialog" aria-label="Terrenos: ver os 7 tipos"><span aria-hidden="true">ⓘ</span> Terrenos</button></div>
 </section>
 <section class="drawer" id="investCard" aria-labelledby="investTitle">
  <div class="drawer-head"><h2 id="investTitle">Dividir o ouro</h2><button type="button" class="plans-btn" id="plansBtn" data-open="planSheet" aria-haspopup="dialog">Planos <span aria-hidden="true">▾</span></button><button type="button" class="hud-btn fine-btn" id="fineBtn" data-open="fineSheet" aria-haspopup="dialog" aria-label="Ajuste fino: zerar, resto e previsões"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h10M4 14h16M18 8v4M10 12v4"/><path d="M4 18h6"/></svg></button></div>
@@ -171,6 +180,9 @@
  <div id="mapStatus" class="target-body"></div>
  <button id="attack" class="good attack-btn" disabled>Escolha um alvo</button>
  <button type="button" id="attackInvest" class="attack-invest" hidden>Investir em Militar</button>
+</section>
+<section class="sheet" id="terrainSheet" role="dialog" aria-modal="true" aria-labelledby="terrainSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="terrainSheetTitle">Terrenos</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div id="terrainBody"></div>
 </section>
 <section class="sheet " id="menuSheet" role="dialog" aria-modal="true" aria-labelledby="menuSheetTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="menuSheetTitle">Menu</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <nav class="menu-list" id="menuList" aria-label="Menu do jogo"><button type="button" id="returnHome" class="menu-item"><span class="mi" aria-hidden="true">⌂</span>Início</button><button type="button" class="menu-item" data-open="scoreSheet"><span class="mi" aria-hidden="true">🏆</span>Placar e vitória</button><button type="button" class="menu-item" data-open="details"><span class="mi" aria-hidden="true">▤</span>Detalhes da partida</button><button type="button" class="menu-item" data-open="howTo"><span class="mi" aria-hidden="true">?</span>Como jogar</button><button type="button" id="summaryToggle" class="menu-item" aria-pressed="true"><span class="mi" aria-hidden="true">✓</span>Resumo de cada era: <span class="mi-state">ligado</span></button><button type="button" id="restart" class="menu-item" aria-label="Reiniciar a partida"><span class="mi" aria-hidden="true">↺</span>Reiniciar</button></nav>
@@ -188,8 +200,9 @@
 </section>
 <section class="sheet sheet-tall" id="howTo" role="dialog" aria-modal="true" aria-labelledby="howToTitle" tabindex="-1" hidden><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-head"><h2 id="howToTitle">Como jogar</h2><button type="button" class="sheet-x" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="grid three" style="margin-top:12px">
-<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em um território dourado para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
+<div><h3>Cada era</h3><p class="small muted">O ouro da era já está no seu orçamento. Divida-o entre as três áreas (ou use um plano rápido), toque em uma região com ⚔ para dar <strong>ordens de ataque</strong> (você pode dar várias; cada ataque a mais na mesma era custa mais: 2.º ×2, 3.º ×3) e toque em <strong>Concluir era</strong>. As ordens de todos são resolvidas juntas no fim da era; se dois atacam o mesmo território, há batalha e vence quem tiver mais Força (somada à Ciência).</p></div>
 <div><h3>Os investimentos</h3><p class="small muted"><strong class="gold">Militar</strong>: gera <strong>Força</strong> para conquistar já na era seguinte; a Força não usada perde 20% por era. <strong class="green">Obras</strong>: rendem ouro a médio prazo, crescem, chegam ao pico e acabam. <strong class="purple">Ciência</strong>: começa a render depois de 2 eras, rende para sempre e aumenta todo o ouro da era. Obras reforçam a defesa dos seus territórios; Ciência barateia os seus ataques.</p></div>
+<div><h3>Terrenos</h3><p class="small muted">Cada região tem um terreno: Campina, Floresta, Colinas, Montanha, Deserto, Pântano ou Tundra. Por enquanto ele não muda as regras. Em Nova partida → Personalizar → Mapa, escolha o mapa padrão (sempre igual) ou sorteado (novo a cada partida).</p><div data-terrain-list></div></div>
 <div><h3>Como vencer</h3><p class="small muted">Controle 70% dos territórios, elimine os rivais ou, na segunda metade da partida e com o mapa quase todo ocupado, mantenha uma grande vantagem (supremacia) por 5 eras seguidas. Se ninguém vencer até a última era, ganha quem tiver mais <strong>pontos</strong> (veja o Placar): territórios valem 40%; Força, Obras, Ciência e ouro guardado, 15% cada. Cada território a mais rende um pouco menos.</p></div>
 </div>
 </section>

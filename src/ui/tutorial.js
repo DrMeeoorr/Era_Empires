@@ -40,7 +40,7 @@ export async function initTutorial(){
   {t:"Conclua a era",action:true,target:()=>anySheet()?null:[$("advance"),"Toque em <b>Concluir era</b>. O ouro em Militar vira Força."],done:()=>state.era>=2},
   {t:"Ataque",action:true,enter:()=>{state.forcedAttack={owner:"player",win:true}},
    target:()=>{if(sheetOn("attackSheet")){if(selectedTerritory===TARGET)return [$("attack"),"Toque em <b>Atacar</b>. O ataque acontece no fim da era."];return null}
-    return anySheet()?null:[document.querySelector(`[data-territory="${TARGET}"]`),`Toque em <b>${tname()}</b>, com borda dourada: é vizinha e está livre.`]},
+    return anySheet()?null:[document.querySelector(`[data-territory="${TARGET}"]`),`Toque em <b>${tname()}</b>, com ⚔: é vizinha e está livre.`]},
    done:()=>!!(state.orders||[]).find(o=>o.owner==="player")||countTerritories(state,"player")>=2},
   {t:"Veja o resumo",action:true,
    target:()=>{const b=summaryBtn();if(b)return [b,"Você conquistou a região! Toque no botão para seguir."];

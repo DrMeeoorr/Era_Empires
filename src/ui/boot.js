@@ -8,6 +8,7 @@ import {initSheets} from "./sheets.js";
 import {watchShortScreen} from "./allocation.js";
 import {initGame} from "./game.js";
 import {initHome} from "./home.js";
+import {fillTerrainLists} from "./map.js";
 import {initTutorial} from "./tutorial.js";
 import {$} from "./dom.js";
 
@@ -15,7 +16,7 @@ export async function boot({saveSlot="player",migrateOldSave=false,labs=null,deb
  if(debug)await debug();
  useSaveSlot(saveSlot);
  if(migrateOldSave)await migrateLegacySaveKey();
- initSheets();watchShortScreen();
+ initSheets();watchShortScreen();fillTerrainLists();
  await initGame();
  initHome();
  await initTutorial();

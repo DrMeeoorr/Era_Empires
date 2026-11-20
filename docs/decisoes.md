@@ -56,3 +56,29 @@ Registro das decisões do usuário. Todos os agentes devem seguir.
 - Configurar: só **Dificuldade** e **Rivais** à vista, com os padrões (Médio, 1 rival, 30 eras); o resto (duração,
   ritmo, vitória, estilo de cada rival, posição inicial aleatória) fica em **"Personalizar"**, sem tirar nenhuma opção.
 - Versão do jogador sem textos de laboratório ("MVP", "Funciona offline · sem instalação…"); título da aba: "Impérios".
+
+## 20/11/2026 — Terrenos no mapa (mobile-ux, 3 rodadas de protótipo)
+- **7 terrenos, só visuais por enquanto** (nenhuma regra muda; impressão digital continua e82cdda4):
+  Campina, Floresta, **Colinas** (dois morros sobrepostos, terracota, sem árvore), Montanha, Deserto, Pântano, Tundra.
+  Arte própria em SVG (sem imagens externas), com forma diferente para cada terreno (não depende só da cor).
+- **Mapa padrão** (tabela fixa, na ordem das regiões):
+  Campina: Arvela, Cardo, Esmera, Ivara, Urzal, Vau, Zênite · Floresta: Gralha, Musgo, Ombral, Velar ·
+  Colinas: Dorna, Jaspe, Pedral · Montanha: Quartzo, Rochedo, Xisto · Deserto: Hélia, Salgar ·
+  Pântano: Brumas, Névoa, Torva · Tundra: Fenda, Lumen.
+  Pedral (Colinas) e Torva (Pântano), regiões iniciais com 3+/4+ rivais, ficam como estão: o `game-designer` decide depois.
+- **Dono**: fronteira grossa só em volta de cada império (lisa para você, listrada para os rivais, com contorno escuro)
+  + bandeirinha com o símbolo em cada região; o símbolo continua ao lado do número; região livre = só o terreno.
+- **Ataque**: "pode atacar" = brilho interno + selo de espadas; região escolhida = contorno branco e o resto do mapa
+  escurecido enquanto a folha de ataque está aberta; ordem dada = dourado sólido + espadas cheias + "⚔ ordem".
+  O tracejado dourado saiu. A cor do Ocre ficou como estava.
+- A folha da região mostra o terreno (ícone + nome). Legenda: donos + "Pode atacar" + botão **"ⓘ Terrenos"** (folha
+  com os 7). Os 7 terrenos também no Como jogar (tela inicial e folha "?").
+- **Opção "Mapa"** em Nova partida → Personalizar: **"Padrão · sempre igual"** (padrão de fábrica) /
+  **"Sorteado · novo a cada partida"**; com Sorteado, os resumos mostram "mapa sorteado". O tutorial usa sempre o
+  mapa padrão e devolve a escolha do jogador depois.
+- **Regras do sorteio**: Campina 5–8 (e pelo menos 1 por império), Floresta 3–5, Colinas 2–5, Montanha 2–4,
+  Deserto 1–3, Pântano 2–4, Tundra 1–3; regiões iniciais sempre Campina; Tundra só nas 2 linhas de cima e Deserto
+  só nas 2 de baixo; cada região inicial com pelo menos 2 vizinhas de Campina/Floresta/Colinas e no máximo 1 de
+  Montanha; se não der, nova tentativa com a semente seguinte.
+- **Save**: guarda o tipo de mapa, a semente própria (sorteada à parte, nunca o sorteio das batalhas) e a lista dos
+  24 terrenos (`state.terrain`); saves antigos abrem com o mapa padrão.
