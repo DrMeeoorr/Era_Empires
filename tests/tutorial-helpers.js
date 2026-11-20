@@ -58,7 +58,7 @@ async function playTutorial(page, { stopBefore = Infinity, onStep = async () => 
   await onStep(6);
   // 6: resolver as ordens → conquista garantida e relatório da era.
   await page.locator("#advance").click();
-  await page.locator('#modalRoot :text("Relatório da era 2")').waitFor({ timeout: 3000 });
+  await page.locator("#eraSummary").waitFor({ timeout: 3000 });
   await dismissModals(page);
   await waitStep(page, 7);
   await onStep(7);

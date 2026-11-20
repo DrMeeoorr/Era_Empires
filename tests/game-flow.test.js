@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, screenshot, MOBILE_SCREENS, KEYS, choosePlan, assertClickable } = require("./helpers");
 const { playTutorial, waitStep } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -56,12 +56,13 @@ test("partida curta completa: Nova partida → Começar → investir → conclui
   assert.ok(r.r.era <= r.max, "a partida passou do limite de eras");
   assert.ok(["victory", "draw"].includes(r.r.type));
   // Tela de resultado.
-  const banner = page.locator("#resultBanner");
+  const banner = page.locator("#resultScreen");
   await banner.waitFor({ state: "visible" });
   const txt = await banner.innerText();
-  assert.match(txt, /Vitória!|Empate|Derrota/);
-  assert.match(txt, /Era \d+/);
+  assert.match(txt, /Vitória|Empate|Derrota/);
+  assert.match(txt, /Era \d+/i);
   await page.locator("#newGameAfterEnd").waitFor({ state: "visible" });
+  for (const [sel, label] of [["#newGameAfterEnd", "Jogar de novo"], ["#seeDetails", "Ver detalhes"], ["#resultHome", "Início"]]) await assertClickable(page, sel, label);
   assert.ok(await page.locator("#actionEnded").isVisible(), "barra inferior não indica partida encerrada");
   assert.deepEqual(await horizontalOverflow(page), []);
   await screenshot(page, "resultado-pixel7");

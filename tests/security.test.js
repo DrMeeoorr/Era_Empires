@@ -50,13 +50,24 @@ test("save com nome de IA, cor e registo maliciosos não executa código (mapa, 
     assert.ok((await page.locator("#mapLegend b").count()) === 0, "HTML do nome foi interpretado");
     // Concluir eras: relatório da era, notificações, placar; depois a tela de resultado.
     await page.evaluate(() => { state.ui.skipReport = false; });
-    await page.evaluate(() => { playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
-    await page.waitForTimeout(150);
-    await page.evaluate(() => showEraReport(state.era - 1));
+    // Resumo da era com o rival malicioso: tomou uma região sua e foi repelido noutra.
+    const shown = await page.evaluate(() => {
+      const before = eraSnapshot(), mine = state.owners.map((o, i) => (o === "player" ? i : -1)).filter((i) => i >= 0);
+      playEra({ military: 0, infrastructure: 0, technology: 0 });
+      state.owners[mine[0]] = state.civs[1].id;
+      state.log.unshift({ era: before.era, text: "🛡️ Ataque de " + state.civs[1].name + " repelido: território " + (mine[0] + 1) + "; 8 pontos comprometidos." });
+      renderAll(); return showEraSummary(before);
+    });
+    assert.equal(shown, "full", "o resumo da era não abriu");
+    assert.ok((await page.locator("#eraSummary").innerText()).includes(EVIL), "o nome devia aparecer como texto no resumo da era");
+    assert.equal(await page.locator("#eraSummary b b").count(), 0, "HTML do nome foi interpretado no resumo");
     await dismissModals(page);
     await page.evaluate(() => { while (!state.result) playEra({ military: 0, infrastructure: 0, technology: 0 }); renderAll(); });
     await page.waitForTimeout(150);
     await dismissModals(page);
+    // Tela de resultado e "Ver detalhes".
+    await page.locator("#seeDetails").click();
+    await page.locator("#resultDetailsBody canvas").first().waitFor();
   }
   await page.waitForTimeout(400); // dá tempo a um <img src=x> falhar e disparar onerror
   assert.equal(await page.evaluate(() => window.__xss), undefined, "código do save foi executado");

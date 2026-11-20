@@ -214,7 +214,7 @@ test("botão Reiniciar: 'Cancelar' mantém a partida; 'Reiniciar' volta à era 1
   await dismissModals(page);
   const restarted = await snap(page);
   assert.deepEqual(restarted, fresh, "Reiniciar não voltou ao estado de uma partida nova com as mesmas definições");
-  assert.equal(await page.locator("#resultBanner").isVisible(), false);
+  assert.equal(await page.locator("#resultScreen").isVisible(), false);
 
   // Depois de recarregar continua a partida reiniciada (o save foi substituído).
   await page.reload();

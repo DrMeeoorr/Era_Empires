@@ -3,7 +3,7 @@ import {selectedTerritory,setSelectedTerritory} from "../app/session.js";
 import {$} from "./dom.js";
 import {renderMetrics} from "./hud.js";
 import {renderMap} from "./map.js";
-import {renderForecast,renderHistory,renderNotifications,renderCharts,renderVictory} from "./panels.js";
+import {renderForecast,renderHistory,renderNotifications,renderCharts,renderVictory,renderResultDetails} from "./panels.js";
 
 /* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
    Uma folha de cada vez. Fecham com toque fora, Esc, o botão ✕ e o botão voltar do navegador/Android
@@ -13,6 +13,7 @@ export const SHEET_HOOKS={
  attackSheet:{onClose:()=>{if(selectedTerritory!==null){setSelectedTerritory(null);renderMap()}}},
  details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
  scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
+ resultSheet:{onOpen:()=>requestAnimationFrame(renderResultDetails)},
 };
 export const FOCUSABLE='button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 export let sheetOpen=null,sheetReturn=null,sheetHist=false,sheetIgnorePop=0;
