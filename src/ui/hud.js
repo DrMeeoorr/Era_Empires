@@ -20,7 +20,7 @@ export function renderMetrics(){
  $("statGold").innerHTML=`<span class="hud-ico gold-ico" aria-hidden="true">$</span><span class="hud-v"><b>${hudNum(me.treasury)} <small>ouro</small></b><span class="k"><span class="green">+${hudNum(r.total)}</span>/era</span></span>`;
  $("statGold").title=`Ouro para investir agora (já com o ouro desta era). Esta era rendeu ${money(r.total)}: territórios ${fmt(r.normal,1)} · Obras ${fmt(r.infra,1)} · Ciência ${fmt(r.tech,1)}.`;
  $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">Força</span></span>`;
- $("statForce").title="Força para atacar (perde 20% por era se não for usada).";
+ $("statForce").title="Força para atacar; a que você não usa defende suas regiões (perde 20% por era).";
  $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">terras</span></span>`;
  $("statTerr").setAttribute("aria-label",`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`);
  const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");

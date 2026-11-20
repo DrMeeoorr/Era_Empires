@@ -2,7 +2,7 @@
 import {saveGame} from "../app/save.js";
 import {state,selectedTerritory,configApplied,setSelectedTerritory} from "../app/session.js";
 import {eligibleTargets,adjacentOwned} from "../core/map.js";
-import {territoryDefense,attackNeed,techAttackDiscount,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack} from "../core/military.js";
+import {territoryDefense,defenseParts,attackNeed,techAttackDiscount,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack} from "../core/military.js";
 import {regionName,civName,civSym} from "../core/names.js";
 import {P,aiCivs,getCiv} from "../core/state.js";
 import {$} from "./dom.js";
@@ -125,6 +125,13 @@ export function terrainCostParts(t){if(!terrainEffectsOn(state))return {def:"",m
 // Folha de ataque: região + dono, 3 números (Custo, Sua força, Chance), botão com o motivo quando não dá,
 // atalho "Investir em Militar" e a explicação longa atrás de "Por quê?".
 export const ATTACK_CHANCE="82%";
+// Defesa explicada (rodada 4): "defesa 8 + 2,1 de Obras + 3,4 de Força guardada (Floresta +2)"; região livre: "defesa 3".
+export function defenseText(t){const d=defenseParts(state,t,configApplied),tc=terrainCostParts(t);
+ if(state.owners[t]==="neutral")return `defesa ${fmt(d.total,0)}`;
+ return `defesa ${fmt(d.base,0)}${d.works>0.05?` + ${fmt(d.works,1)} de Obras`:""}${d.reserve>0.05?` + ${fmt(d.reserve,1)} de Força guardada`:""}${tc.def}`}
+// Linha da folha de uma região sua: a defesa total e a parte que vem da Força guardada.
+export function ownDefenseLine(t){const d=defenseParts(state,t,configApplied);
+ return `<p class="tgt-sub">Defesa ${fmt(d.total,1)}${d.reserve>0.05?` · Força guardada +${fmt(d.reserve,1)}`:""}. Obras e a Força que você não usa em ataques reforçam a defesa.</p>`}
 export const infoTip=(html,label="Por quê?")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> O ataque acontece no fim da era. <u>${label}</u></summary><div>${html}</div></details>`;
 export const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>Custo</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>Sua força</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>Chance</span> <b>${ATTACK_CHANCE}</b></div></div>`;
 // Região no painel do alvo: nome + número pequeno (o mesmo do mapa).
@@ -142,15 +149,15 @@ export function renderOrderAttack(){
  const ordTxt=ords.length?`<p class="tgt-orders">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</p>`:"";
  const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Você pode dar várias ordens por era; cada ataque a mais custa mais (2.º ×2, 3.º ×3…).";
  const howOrders=`As ordens de todos são resolvidas juntas no fim da era: se um rival atacar o mesmo território, há <strong>batalha</strong> (vence quem tiver mais Força, somada à Ciência); depois, ${ATTACK_CHANCE} de chance de conquistar. A Força é gasta mesmo se o ataque falhar.`;
- if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}${ordTxt}<p class="tgt-sub">Toque em uma região com <span class="gold">⚔</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</p>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista.${costTxt} ${howOrders}`)}`;return}
+ if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}${ordTxt}<p class="tgt-sub">Toque em uma região com <span class="gold">⚔</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</p>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista. A defesa de um rival sobe com as Obras dele e com a Força que ele não usa em ataques (Força guardada).${costTxt} ${howOrders}`)}`;return}
  if(ord){setAttackBtn(btn,"Cancelar ordem",true,{cancel:true});$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ordem dada`)}${ordTxt}<p class="tgt-sub">${fmt(ord.need,1)} de Força reservada. Cancelar devolve a Força${ords.length>1?" e recalcula o custo das outras ordens":""}.</p>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. ${howOrders}`)}`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras reforçam a defesa.</p>`;return}
+ if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}${ownDefenseLine(t)}`;return}
  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}${ordTxt}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
- const tc=terrainCostParts(t),replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
+ const tc=terrainCostParts(t),replacing=maxO===1&&ords.length,mult=replacing?1:next,base=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
  if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${ordTxt}<p class="tgt-sub">Você já deu o máximo de ${maxO} ordens nesta era.</p>`;return}
  const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Atacar"} · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-avail,1)} de Força`,ok,{invest:!ok&&mult<=1});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = ${tc.mult?"(":""}defesa ${fmt(def,1)}${tc.def} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:""}${mult>1?` = ${fmt(base,1)} × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = ${tc.mult?"(":""}${defenseText(t)} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:""}${mult>1?` = ${fmt(base,1)} × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
 }
 // Painel do alvo com o terreno da região (ícone + nome) logo abaixo do título.
 export function renderAttack(){
@@ -166,10 +173,10 @@ function renderAttackBody(){
  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
  if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}<p class="tgt-sub">Toque em uma região com <span class="gold">⚔</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.</p>`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras reforçam a defesa.</p>`;return}
+ if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ownDefenseLine(t)}`;return}
  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
- const def=territoryDefense(state,t,configApplied),need=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),discTxt=disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:"",civ=owner==="neutral"?null:getCiv(state,owner);
- const tc=terrainCostParts(t),tdef=terrainEffectsOn(state)?terrainDefenseBonus(state,t):0,extra=civ?def-m.defenseOwned-tdef:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras`:""}${tc.def}`:`defesa ${fmt(def,0)}`;
+ const need=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),discTxt=disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:"",civ=owner==="neutral"?null:getCiv(state,owner);
+ const tc=terrainCostParts(t),defTxt=defenseText(t);
  const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-mil,1)} de Força`,ok,{invest:!ok});
  $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${tc.mult?"(":""}${defTxt} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${discTxt} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
 }
