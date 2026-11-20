@@ -1,5 +1,5 @@
 // Terrenos com efeitos (20/11/2026): opção "Terrenos: Só visual / Com efeitos" em Nova partida → Personalizar.
-// Desligado (padrão) o jogo é o de antes byte a byte (impressão digital e82cdda4 em tests/fingerprint.test.js;
+// Desligado (padrão) o jogo é o de antes byte a byte (impressão digital a911f8cd em tests/fingerprint.test.js;
 // a do modo ligado está em tests/fingerprint-effects.test.js). Aqui: cada efeito da tabela, proteção só para quem
 // ocupa, região inicial como Campina, preferência da IA pelo terreno do seu estilo, save, tutorial e textos.
 "use strict";
