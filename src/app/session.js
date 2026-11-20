@@ -7,6 +7,7 @@ import {DEFAULTS,pickAiDifficulty,DIFFICULTIES,AI_DIFF_FIELDS} from "../core/con
 import {beginEra,finishEra} from "../core/era.js";
 import {RIVAL_NAMES} from "../core/names.js";
 import {newState} from "../core/state.js";
+import {makeMapTerrain} from "../core/terrain.js";
 import {clone} from "../core/util.js";
 
 export let configDefault=clone(DEFAULTS);
@@ -37,12 +38,18 @@ export const OPPONENT_OPTIONS=[["random","🎲 Aleatório (revelado no fim)"],["
 // Na versão do jogador o padrão é "Adaptativa" (o mesmo estilo que "Definido nas Configurações" usa por padrão).
 export const DEFAULT_OPPONENT=DEV_MODE?"config":"adaptive";
 export let opponentChoices=[DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT];
+// Tipo de mapa da PRÓXIMA partida ("padrao" ou "sorteado"; Nova partida → Personalizar → Mapa). Cada partida guarda
+// os seus terrenos em state.terrain ({type, seed, list}); por enquanto são só visuais (nenhuma regra os lê).
+export let mapType="padrao";
 // Opções mostradas ao jogador: sem "Definido nas Configurações" fora do dev.html.
 export const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
 export function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}
 // Uma partida começa já com a era 1 aberta: receitas recebidas, à espera da decisão do jogador.
-export function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)],startSeed:configApplied.map.randomStart?Math.floor(Math.random()*4294967296):0});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
+export function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)],startSeed:configApplied.map.randomStart?Math.floor(Math.random()*4294967296):0});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;
+ // Terrenos: semente própria (Math.random, como a posição aleatória), nunca o sorteio das batalhas.
+ s.terrain=makeMapTerrain(mapType,mapType==="sorteado"?Math.floor(Math.random()*4294967296):null,s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0),s.owners.length);
+ beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
 export function profileOf(c){return c.profile||configApplied.military.aiStyle||"adaptive"}
 // Conclui a era aberta e, se a partida continuar, abre a seguinte.
 export function playEra(allocation){const era=state.era,row=finishEra(state,configApplied,{playerAllocation:allocation});if(!state.result)beginEra(state,configApplied);saveGame();runHook("afterEra",era,row);return row}
@@ -57,3 +64,4 @@ export function setGameMode(v){gameMode=v;return v}
 export function setCurrentDifficulty(v){currentDifficulty=v;return v}
 export function setAiConfigBase(v){aiConfigBase=v;return v}
 export function setOpponentChoices(v){opponentChoices=v;return v}
+export function setMapType(v){mapType=v==="sorteado"?"sorteado":"padrao";return mapType}
