@@ -71,7 +71,7 @@ export function showEraSummary(b){
   showToast(`<strong>Era ${escapeHtml(c.era)} concluída</strong> · +${hudNum(c.gold)} de ouro${c.rank?` · ${c.rank.pos}.º no placar`:""}${skip&&c.mine?" · veja ☰ → Detalhes":""}`);
   return "toast";
  }
- const r=c.rev,parts=[["territórios",r.normal],["Obras",r.infra],["Ciência",r.tech]].filter(([,v])=>v>=0.05).map(([n,v])=>`${n} ${hudNum(v)}`).join(" · ");
+ const r=c.rev,parts=[["dos territórios",r.normal],["das Obras",r.infra],["da Ciência",r.tech]].filter(([,v])=>v>=0.05).map(([n,v])=>`${hudNum(v)} ${n}`).join(" · ");
  showModal(`<div class="sum-kicker">Era ${escapeHtml(c.era)} concluída</div><h2 class="sum-title" id="sumTitle">${titleFor(c)}</h2>
 <div class="sum-gold"><div class="n"><span class="coin" aria-hidden="true">$</span><span id="sumGold" data-to="${c.gold}">+${hudNum(c.gold)}</span></div><div class="t">de ouro para a era ${escapeHtml(c.next)}${parts?`<br><span>${parts}</span>`:""}</div></div>
 <div class="sum-events">${c.events.map(eventHtml).join("")||`<p class="muted small">Nenhum ataque nesta era.</p>`}</div>${scoreHtml(c)}`,
