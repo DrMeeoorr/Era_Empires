@@ -46,7 +46,7 @@ Cada região tem um terreno (Campina, Floresta, Colinas, Montanha, Deserto, Pân
 Personalizar → Terrenos** o jogador escolhe:
 
 - **Só visual** (padrão para jogador novo e sempre no tutorial): o terreno só enfeita o mapa; as regras são as de
-  sempre, byte a byte (impressão digital `e82cdda4`). Saves antigos abrem assim.
+  sempre (impressão digital `a911f8cd`). Saves antigos abrem assim.
 - **Com efeitos**: cada terreno dá 2 vantagens e 1 desvantagem (`TERRAIN_EFFECTS` em `src/core/terrain.js`):
 
 | Terreno | Vantagens | Desvantagem |
@@ -67,6 +67,19 @@ Personalizar → Terrenos** o jogador escolhe:
   `state.terrainEffects=true` e as regiões iniciais em `state.terrain.starts`. Nos laboratórios,
   `runMatch`/`runFixedGame` aceitam `terrain: {type, seed, effects}`.
 
+### Rodada de balanceamento (20/11/2026)
+
+- **Posições iniciais** (mapa de 24 regiões, `START_ORDER_24` em `src/core/map.js`): Arvela, Zênite, Esmera, Torva,
+  Musgo, Ombral. Pedral (centro, espremida por todos) saiu; 2 e 3 impérios ficam como antes. A posição aleatória e
+  outros tamanhos de mapa seguem a regra de sempre (o mais afastado).
+- **Mapa padrão**: Jaspe é Montanha e Rochedo é Colinas (antes o contrário), para as 3 Montanhas não ficarem todas do
+  lado de Zênite.
+- **Difícil**: rivais com +5% de receita com 2 ou mais rivais (+3% no 1×1). **Difícil e Lendário no Só visual com 2+
+  rivais em jogo**: vão primeiro às regiões livres (atacando sempre) em vez da coligação contra o líder
+  (`leaderTargetMode` em `src/ai/decide.js`); no 1×1 e com terrenos com efeito, a coligação continua.
+- **Médio com terrenos com efeito**: rivais +3% de ouro (1,06 com 2+ rivais, 1,03 no 1×1; `effectsIncome` em
+  `DIFFICULTIES.medio`). Fica gravado na partida (`state.aiIncomeEffects`): saves já em curso não mudam.
+
 ## Organização do código
 
 ```
@@ -80,7 +93,7 @@ src/
   app/                sessão (partida atual, dificuldade, rivais), gravação do save, ganchos, depuração
   platform/           armazenamento (localStorage hoje; @capacitor/preferences no app) e ficheiros
   ui/                 telas do jogador: tela inicial, tela da era, mapa, gaveta, folhas, tutorial…
-  labs/               laboratórios (só no dev.html), incluindo os 151 testes internos
+  labs/               laboratórios (só no dev.html), incluindo os 152 testes internos
   main-player.js      entrada do index.html
   main-dev.js         entrada do dev.html
 tools/                build-player-html.js (gera o index.html) e serve.js (servidor local do npm start)
@@ -122,13 +135,13 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 
 | Ficheiro | O que verifica |
 | --- | --- |
-| `tests/internal.test.js` | Os 151 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
-| `tests/internal-node.test.js` | Os mesmos 151 testes internos, mas no Node, sem navegador. |
+| `tests/internal.test.js` | Os 152 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
+| `tests/internal-node.test.js` | Os mesmos 152 testes internos, mas no Node, sem navegador. |
 | `tests/structure.test.js` | Organização do código: regras sem tela, `localStorage` só no `storage`, sem funções substituídas em cadeia, jogador sem laboratórios, `index.html` igual ao gerado a partir do `dev.html`. |
 | `tests/rules.test.js` | Regras extra: mapa, economia, ataques, fim de partida, configuração e gravação. |
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
-| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `e82cdda4` (valor após o rebalanceamento de Obras/Ciência e dificuldades; o jogo original era `5917a5c2`). Mede o jogo com os terrenos só visuais (padrão). Para ver o código e os subcódigos: `npm run fingerprint`. |
-| `tests/fingerprint-effects.test.js` | Segunda impressão digital: 37 partidas só de IAs com os **terrenos com efeitos** (mapa padrão e sorteado, 2/4/6 impérios, ritmo normal e rápido): tem de continuar `75da3210`. Muda se mudar a tabela dos terrenos ou a escolha de alvos da IA. `npm run fingerprint` mostra as duas. |
+| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `a911f8cd` (nova ordem das posições iniciais, 20/11/2026; antes `e82cdda4`, e o jogo original era `5917a5c2`). Mede o jogo com os terrenos só visuais (padrão). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint-effects.test.js` | Segunda impressão digital: 37 partidas só de IAs com os **terrenos com efeitos** (mapa padrão e sorteado, 2/4/6 impérios, ritmo normal e rápido): tem de continuar `bda662ed` (mapa padrão com Jaspe ↔ Rochedo e novas posições iniciais, 20/11/2026; antes `75da3210`). Muda se mudar a tabela dos terrenos ou a escolha de alvos da IA. `npm run fingerprint` mostra as duas. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
 | `tests/screens.test.js` | Telas fora da partida (início "Aurora", Nova partida + Personalizar, Como jogar, convite do tutorial) nos 3 celulares, também com a fonte larga: início sem rolar, sem rolagem horizontal nem textos cortados, alvos ≥ 48 px, Personalizar com todas as opções, "Continuar · Era N" com partida salva, fonte Marcellus SC local. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
@@ -141,6 +154,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
 | `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
 | `tests/terrain-effects.test.js` | Terrenos com efeitos: tabela final, desligado idêntico (também com terrenos variados), um teste por efeito (ouro, defesa, custo de ataque, % de Obras/Força/Ciência), proteção só para quem ocupa, região inicial como Campina, IA prefere o terreno do seu estilo, laboratórios com `terrain`, opção "Terrenos" em Personalizar e resumos, save (ligado sobrevive a recarregar; save antigo = Só visual), tutorial sempre Só visual, folha da região (linha + · + · − e custo com o terreno), folha ⓘ Terrenos e Como jogar ligados e desligados. |
+| `tests/balance-round.test.js` | Rodada de balanceamento de 20/11/2026: ordem das posições iniciais (Pedral nunca; 2–3 impérios e outros mapas como antes), Difícil/Lendário com 2+ rivais no Só visual vão às regiões livres e no 1×1/com efeitos atacam o líder, receitas (Difícil 1,05/1,03; Médio com efeitos 1,06/1,03 só com o valor gravado na partida, valores estranhos ignorados), mapa padrão com Montanhas dos dois lados e, pela interface, Médio com efeitos no save. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**
