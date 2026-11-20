@@ -2,7 +2,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS, menuClick, choosePlan } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, horizontalOverflow, assertClickable, screenshot, MOBILE_SCREENS, menuClick, choosePlan, openCustomize } = require("./helpers");
 
 // Alvos de toque: as diretrizes Android pedem 48 dp. Os botões marcados como principais têm de ter
 // pelo menos 48 px de altura e de largura; os restantes abaixo disso são listados como aviso.
@@ -29,26 +29,34 @@ for (const [name, opts] of MOBILE_SCREENS) {
     await page.waitForTimeout(500); // animação de entrada
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal na tela inicial");
     await checkButtons(page, [
-      ["#homeStart", "Nova partida", true], ["#homeTutorial", "Tutorial", true], ["#homeHowTo", "Como jogar", true],
+      ["#homeStart", "Jogar", true], ["#homeTutorial", "Tutorial", true], ["#homeHowTo", "Como jogar", true],
     ], "inicial", smalls);
     // Versão do jogador (publicada): os atalhos dos laboratórios não aparecem.
     for (const sel of ["#homeCompare", "#homeLab"]) assert.equal(await page.locator(sel).isVisible(), false, `${sel} visível na versão do jogador`);
     await screenshot(page, `${name}-1-inicial`);
-    // "Como jogar" abre e fecha.
+    // "Como jogar" (tela própria) abre, mostra as regras completas e fecha com "Entendi".
     await page.locator("#homeHowTo").click();
-    await assertClickable(page, "#modalRoot .modal button.primary", "Como jogar › Entendi");
-    assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal no modal Como jogar");
-    await dismissModals(page);
+    await page.locator("#howToScreen").waitFor({ state: "visible" });
+    await checkButtons(page, [["#howToBack", "Voltar", true], ["#howToFull > summary", "Regras completas", true], ["#howToOk", "Entendi", true]], "Como jogar", smalls);
+    await page.locator("#howToFull > summary").click();
+    assert.match(await page.locator("#howToFullBody").innerText(), /Como vencer/);
+    assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal em Como jogar");
+    await page.locator("#howToOk").click();
+    await page.locator("#howToScreen").waitFor({ state: "hidden" });
     // Configuração da partida.
     await page.locator("#homeStart").click();
     await page.locator("#setupScreen").waitFor({ state: "visible" });
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal na configuração");
     await checkButtons(page, [
-      ["#setupBack", "Voltar", true], ["#modeSlow", "Modo lento", true], ["#modeFast", "Modo rápido", true],
-      ['#homeDifficulty [data-diff="medio"]', "Dificuldade Médio", true], ['#homeDifficulty [data-diff="hardcore"]', "Dificuldade Hardcore", true],
-      ['#homeOpponents [data-ai="1"]', "1 adversário", true], ['#homeOpponents [data-ai="3"]', "3 adversários", true], ["#homeProfiles select", "estilo do rival", true], ['#homeEraPresets [data-eras="15"]', "15 eras", true],
-      ["#homeConquest", "Conquista", true], ["#setupStart", "Começar", true],
+      ["#setupBack", "Voltar", true],
+      ['#homeDifficulty [data-diff="muitofacil"]', "Dificuldade Muito fácil", true], ['#homeDifficulty [data-diff="medio"]', "Dificuldade Médio", true], ['#homeDifficulty [data-diff="hardcore"]', "Dificuldade Lendário", true],
+      ['#homeOpponents [data-ai="1"]', "1 rival", true], ['#homeOpponents [data-ai="3"]', "3 rivais", true], ["#setupCustomize > summary", "Personalizar", true], ["#setupStart", "Jogar", true],
     ], "configuração", smalls);
+    await openCustomize(page);
+    await checkButtons(page, [
+      ['#homeEraPresets [data-eras="15"]', "15 eras", true], ["#homeEraPresets .pg-other", "Outra duração (toque no campo)", true], ["#modeSlow", "Ritmo Normal", true], ["#modeFast", "Ritmo Rápido", true],
+      ["#homeClassic", "Clássica", true], ["#homeConquest", "Conquista", true], ["#homeProfiles select", "estilo do rival", true], ["label.pg-switch", "Posição inicial aleatória (linha inteira)", true], ["#homeRandomStart", "interruptor (a linha inteira é o alvo)", false],
+    ], "Personalizar", smalls);
     // 3 adversários: a configuração tem de continuar sem rolagem horizontal.
     await page.locator('#homeOpponents [data-ai="3"]').click();
     assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal com 3 adversários");

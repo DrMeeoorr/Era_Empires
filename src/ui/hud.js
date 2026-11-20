@@ -29,7 +29,7 @@ export function renderMetrics(){
  else{const pos=lv.indexOf(meS)+1,lead=lv[0],d=pos===1?(lv[1]?PTS(meS.score)-PTS(lv[1].score):0):PTS(lead.score)-PTS(meS.score);
   pill.innerHTML=`<span aria-hidden="true">🏆</span> ${pos}.º <span class="gap ${pos===1?"up":"down"}">${pos===1?"+":"−"}${d}</span>`;
   pill.setAttribute("aria-label",`Placar: você está em ${pos}.º${pos===1?(lv[1]?`, ${d} pontos à frente`:""):`, ${d} pontos atrás de ${lead.name}`}. Abrir placar e condições de vitória`)}
- $("matchInfo").textContent=`${s.maxEras} eras · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · modo ${s.mode==="fast"?"rápido":"lento"}${g.supremacyEnabled===false?" · Conquista":""} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
+ $("matchInfo").textContent=`${s.maxEras} eras · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · ritmo ${s.mode==="fast"?"rápido":"normal"}${g.supremacyEnabled===false?" · Conquista":""} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
  // Placar completo (folha "Placar e vitória"): posição, pontos, diferença para o líder e variação na última era.
  const strip=$("scoreStrip");
  if(!lv){strip.innerHTML=`<p class="muted small">O placar aparece no fim da 1.ª era.</p>`;return}

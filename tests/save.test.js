@@ -152,7 +152,7 @@ test("migração: save antigo (v4) abre, é convertido e a partida continua exat
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   const cont = page.locator("#homeContinue");
   await cont.waitFor({ state: "visible" });
-  assert.match(await cont.innerText(), new RegExp(`era ${r.era}`));
+  assert.match(await cont.innerText(), new RegExp(`^Continuar · Era ${r.era}\\b`));
   const st = await page.evaluate(() => ({ v: state.formatVersion, ret: state.investments.some((i) => "returns" in i), era: state.era }));
   assert.deepEqual(st, { v: 5, ret: false, era: r.era });
   await cont.click();

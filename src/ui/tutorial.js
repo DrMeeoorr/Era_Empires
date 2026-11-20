@@ -19,6 +19,8 @@ import {showModal} from "./modal.js";
    tutorial ficam em state.tutorial.prevSetup (src/app/setup.js) e voltam na próxima partida nova.
    Proteções do motor usadas só aqui: state.aiAvoid (a IA não ataca o jogador nem o território reservado)
    e state.forcedAttack (o ataque do passo 3 dá certo). */
+// Convite da primeira visita: folha embaixo com a medalha (bússola), no estilo das telas "Atlas".
+const INVITE_HTML=`<div class="grip" aria-hidden="true"></div><svg class="medal" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#0a1322" stroke="#f4bd50" stroke-width="2"/><circle cx="50" cy="50" r="38" fill="none" stroke="#e9d9ad" stroke-dasharray="2 5"/><path d="M50 14l8 36-8 36-8-36z" fill="#e9d9ad"/><path d="M50 14l8 36h-16z" fill="#f4bd50"/><circle cx="50" cy="50" r="5" fill="#0a1322" stroke="#f4bd50" stroke-width="2"/></svg><h2>Primeira vez em Impérios?</h2><p>Aprenda jogando uma partida guiada. Você pode sair quando quiser.</p><div class="meta"><span><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>5 passos</span><span><svg class="ic" aria-hidden="true"><use href="#i-hourglass"/></svg>cerca de 2 min</span></div>`;
 export async function initTutorial(){
  const TUT_KEY="imperios-tutorial-oferecido",TARGET=TUTORIAL_POS.target;
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
@@ -109,11 +111,11 @@ export async function initTutorial(){
  // Depois de cada desenho completo, o balão acompanha o alvo.
  onHook("afterRender",()=>{if(cur())setTimeout(()=>draw(true),0)});
  // Tela inicial: botão e oferta na primeira visita.
- const how=$("homeHowTo");if(how){const b=document.createElement("button");b.type="button";b.className="home-secondary";b.id="homeTutorial";b.textContent="🎓 Tutorial";how.insertAdjacentElement("beforebegin",b);
-  b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()}}
+ let b=$("homeTutorial");if(!b&&$("homeHowTo")){b=document.createElement("button");b.type="button";b.className="btn-glass";b.id="homeTutorial";b.textContent="Tutorial";$("homeHowTo").insertAdjacentElement("beforebegin",b)}
+ if(b)b.onclick=()=>{const inProg=state&&!state.result&&(state.era>1||state.history.length>0)&&!cur();if(inProg)showModal(`<h2>Começar o tutorial?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída por uma partida guiada.</p>`,[{label:"Cancelar"},{label:"Começar tutorial",cls:"primary",onClick:startTutorial}]);else startTutorial()};
  let offered=false;try{offered=!!await storage.get(TUT_KEY)}catch(e){offered=true}
  const fresh=!state||(!state.history.length&&state.era<=1);
- if(!offered&&fresh)setTimeout(()=>showModal(`<h2>Primeira vez em Impérios?</h2><p class="small muted">Aprenda jogando: 5 passos, cerca de 2 minutos. Você pode sair quando quiser.</p>`,[{label:"Jogar o tutorial",cls:"primary",onClick:startTutorial},{label:"Agora não",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}]),300);
+ if(!offered&&fresh)setTimeout(()=>showModal(INVITE_HTML,[{label:"Jogar o tutorial",cls:"primary btn-main",onClick:startTutorial},{label:"Agora não",cls:"txtbtn",onClick:()=>{storage.set(TUT_KEY,"1").catch(()=>{})}}],{cls:"modal-invite",label:"Primeira vez em Impérios?"}),300);
  if(cur())setTimeout(()=>draw(true),0);
  // Ao voltar ao jogo a partir da tela inicial, mostra de novo o balão.
  onHook("continueGame",()=>setTimeout(()=>draw(true),0));

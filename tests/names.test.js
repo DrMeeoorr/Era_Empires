@@ -6,7 +6,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, openCustomize } = require("./helpers");
 const { playTutorial } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -37,6 +37,7 @@ test("nomes: rivais com nome e símbolo, regiões com nome no mapa, no painel de
   // Configurar partida: 3 rivais, o 2.º com estilo "Aleatório" (fica oculto até o fim).
   await page.locator("#homeStart").click();
   await page.locator('#homeOpponents [data-ai="3"]').click();
+  await openCustomize(page);
   const rows = await page.locator("#homeProfiles .profile-row > span").allInnerTexts();
   assert.deepEqual(rows.map((t) => t.trim()), ["▲ Rubro", "● Ocre", "◆ Anil"], "configurar partida: rivais sem nome/símbolo");
   await page.locator('#homeProfiles [data-prof="0"]').selectOption("adaptive");

@@ -6,7 +6,7 @@
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick } = require("./helpers");
+const { launch, openGame, dismissModals, concludeEraUI, MOBILE_SCREENS, menuClick, openCustomize } = require("./helpers");
 const { playTutorial } = require("./tutorial-helpers");
 
 const PIXEL = MOBILE_SCREENS[0][1];
@@ -16,10 +16,12 @@ const PT_PT = [
   /resolve-se/i, /resolvem-se/i, /resolveram-se/i, /\bregist(o|ad[oa]s?)\b/i, /\bficheiros?\b/i, /\bbónus\b/i, /\becrã/i,
   /Toque num\b/i, /\bnum território/i, /\bnuma\b/i, /Pode sair a qualquer momento/i, /já não (pode|é possível)/i,
   /\baceites?\b/i, /\ba meio\b/i, /\bequipas?\b/i, /\butilizador/i, /\bfacto\b/i, /por baixo d/i, /até à\b/i,
-  /está a ganhar/i, /\ba crescer\b/i, /\bdefinições\b/i, /telemóvel/i, /perder-se/i, /vence-se/i,
+  /está a ganhar/i, /\ba crescer\b/i, /\bdefinições\b/i, /telemóvel/i, /perder-se/i, /vence-se/i, /\bunem-se\b/i,
 ];
 // Nomes antigos que não podem aparecer ao jogador.
-const OLD_NAMES = [/\d u\./, /\bu\.$/m, /Poder militar/i, /pontos militares/i, /Infraestrutura/i, /\bTecnologia\b/i, /\bInfra\.(?=\s|$)/];
+const OLD_NAMES = [/\d u\./, /\bu\.$/m, /Poder militar/i, /pontos militares/i, /Infraestrutura/i, /\bTecnologia\b/i, /\bInfra\.(?=\s|$)/,
+  // Nomes aprovados em 20/11/2026: Lendário, Ritmo Normal/Rápido, vitória Clássica; e nada de textos de laboratório.
+  /Hardcore/i, /\bModo (lento|rápido)\b/i, /\bClássico\b/, /\bMVP\b/, /Funciona offline/i, /sem instalação/i];
 
 function check(where, text, problems) {
   for (const re of [...PT_PT, ...OLD_NAMES]) {
@@ -39,13 +41,16 @@ after(async () => browser && browser.close());
 test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos (u., Poder militar, Infraestrutura, Tecnologia)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   const problems = [];
-  // Tela inicial, Como jogar (modal) e configuração da partida.
+  // Tela inicial, Como jogar (com as regras completas abertas) e configuração da partida (com Personalizar aberto).
   await page.waitForTimeout(300);
   check("tela inicial", await bodyText(page), problems);
   await page.locator("#homeHowTo").click();
-  check("Como jogar (modal)", await bodyText(page), problems);
-  await dismissModals(page);
+  await page.locator("#howToFull > summary").click();
+  check("Como jogar (tela, regras completas)", await bodyText(page), problems);
+  await page.locator("#howToOk").click();
   await page.locator("#homeStart").click();
+  check("configurar partida (fechada)", await bodyText(page), problems);
+  await openCustomize(page);
   for (const n of ["1", "2", "3"]) {
     await page.locator(`#homeOpponents [data-ai="${n}"]`).click();
     check(`configurar partida (${n} rival${n === "1" ? "" : "es"})`, await bodyText(page), problems);

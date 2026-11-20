@@ -10,69 +10,129 @@
 // Versão do jogador. Endereços antigos com ?dev=1 abrem a versão de desenvolvimento (dev.html).
 (function(){const q=new URLSearchParams(location.search);if(q.get("dev")!=="1")return;q.delete("dev");window.__imperiosRedirect=true;const r=q.toString();location.replace("dev.html"+(r?"?"+r:"")+location.hash)})();
 </script>
-<title>Impérios — MVP estratégico por eras</title>
+<title>Impérios</title>
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/game.css">
+<link rel="stylesheet" href="styles/screens.css">
 </head>
 <body>
 <div id="modalRoot"></div>
-<section class="home-screen" id="homeScreen" aria-label="Tela inicial de Impérios">
-  <div class="home-shell">
-    <div class="home-top">
-      <div class="home-brand"><div class="home-mark" aria-hidden="true">I</div><div><div class="home-brand-title">IMPÉRIOS</div><div class="small muted">Economia das eras</div></div></div>
-      <span class="home-version">MVP · estratégia por eras</span>
+<svg class="icon-sprite" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/></symbol>
+<symbol id="i-swords" viewBox="0 0 24 24"><path d="M4 4l9 9M4 4h4M4 4v4M20 4l-9 9M20 4h-4M20 4v4"/><path d="M8 16l-3 3M16 16l3 3M6.5 13.5l4 4M17.5 13.5l-4 4"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+<symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24"><path d="M4 18h16L19 8l-4 4-3-6-3 6-4-4z"/></symbol>
+<symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r=".8" fill="currentColor"/><circle cx="15" cy="15" r=".8" fill="currentColor"/><circle cx="15" cy="9" r=".8" fill="currentColor"/><circle cx="9" cy="15" r=".8" fill="currentColor"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
+<symbol id="i-temple" viewBox="0 0 24 24"><path d="M4 20h16M6 20V10M10 20V10M14 20V10M18 20V10M3 10h18L12 4z"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/><circle cx="12" cy="12" r="2.2"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+</defs></svg>
+<section class="home-screen au-home" id="homeScreen" aria-labelledby="homeTitle">
+  <div class="au-frame">
+    <div class="au-stage">
+      <svg class="au-scene" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false"><defs>
+<linearGradient id="auSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1430"/><stop offset=".45" stop-color="#2a2152"/><stop offset=".72" stop-color="#7a3f55"/><stop offset=".9" stop-color="#d9823f"/></linearGradient>
+<radialGradient id="auSun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff1c4"/><stop offset=".55" stop-color="#ffc861"/><stop offset="1" stop-color="#ffc861" stop-opacity="0"/></radialGradient>
+<symbol id="auFlag" overflow="visible"><path d="M0 0V-22" stroke="#e8dcc0" stroke-width="1.6"/><path d="M0-22h13l-3.5 4.5L13-13H0z"/></symbol></defs>
+<rect width="400" height="520" fill="url(#auSky)"/>
+<g fill="#fff"><circle cx="169" cy="246" r="0.7" opacity="0.75"/><circle cx="337" cy="16" r="0.7" opacity="0.3"/><circle cx="191" cy="153" r="0.7" opacity="0.45"/><circle cx="23" cy="26" r="1.2" opacity="0.75"/><circle cx="39" cy="65" r="0.7" opacity="0.75"/><circle cx="34" cy="215" r="0.7" opacity="0.45"/><circle cx="326" cy="164" r="0.7" opacity="0.75"/><circle cx="29" cy="60" r="0.7" opacity="0.45"/><circle cx="152" cy="111" r="0.7" opacity="0.3"/><circle cx="296" cy="82" r="0.7" opacity="0.3"/><circle cx="301" cy="150" r="0.7" opacity="0.6"/><circle cx="53" cy="144" r="0.7" opacity="0.3"/><circle cx="320" cy="56" r="1.2" opacity="0.75"/><circle cx="164" cy="123" r="1.2" opacity="0.6"/><circle cx="157" cy="67" r="0.7" opacity="0.45"/><circle cx="45" cy="151" r="0.9" opacity="0.75"/><circle cx="179" cy="190" r="1.2" opacity="0.6"/><circle cx="315" cy="22" r="0.7" opacity="0.75"/><circle cx="88" cy="197" r="0.9" opacity="0.45"/><circle cx="254" cy="111" r="0.7" opacity="0.3"/><circle cx="395" cy="146" r="0.9" opacity="0.6"/><circle cx="359" cy="93" r="1.2" opacity="0.75"/><circle cx="39" cy="219" r="0.7" opacity="0.6"/><circle cx="246" cy="182" r="0.7" opacity="0.3"/><circle cx="378" cy="183" r="0.9" opacity="0.75"/><circle cx="149" cy="187" r="1.2" opacity="0.6"/><circle cx="15" cy="244" r="1.2" opacity="0.6"/><circle cx="90" cy="160" r="0.7" opacity="0.75"/><circle cx="34" cy="59" r="0.9" opacity="0.45"/><circle cx="382" cy="67" r="1.2" opacity="0.75"/><circle cx="258" cy="24" r="0.7" opacity="0.75"/><circle cx="209" cy="144" r="0.9" opacity="0.45"/><circle cx="224" cy="225" r="0.9" opacity="0.75"/><circle cx="187" cy="178" r="1.2" opacity="0.45"/></g>
+<g class="au-sun"><circle cx="200" cy="360" r="130" fill="url(#auSun)" opacity=".9"/><circle cx="200" cy="360" r="52" fill="#ffe3a1"/><g fill="none" stroke="#ffe3a1" stroke-opacity=".18"><circle cx="200" cy="360" r="78"/><circle cx="200" cy="360" r="104"/></g></g>
+<path d="M0 352L46 330 92 342 140 318 190 336 238 314 290 334 340 316 400 330V520H0Z" fill="#3a3466"/>
+<path d="M0 384L60 362 120 378 175 356 230 380 300 358 360 376 400 366V520H0Z" fill="#2a3a5e"/>
+<g font-family="system-ui,sans-serif" font-size="6.5" text-anchor="middle" fill="#fff"><g transform="translate(300 359)"><use href="#auFlag" fill="#5b7fd6"/><text x="5.5" y="-14.2">◆</text></g><g transform="translate(140 319)"><use href="#auFlag" fill="#bd5268"/><text x="5.5" y="-14.2">▲</text></g></g>
+<path d="M0 420L70 398 140 414 210 392 280 418 350 400 400 410V520H0Z" fill="#1d4a52"/>
+<g font-family="system-ui,sans-serif" font-size="6.5" text-anchor="middle" fill="#fff"><g transform="translate(210 394)"><use href="#auFlag" fill="#2c9d87"/><text x="5.5" y="-14.2">★</text></g><g transform="translate(330 405)"><use href="#auFlag" fill="#c98a2e"/><text x="5.5" y="-14.2">●</text></g></g>
+<path d="M0 462L80 440 160 456 240 436 320 458 400 444V520H0Z" fill="#15323f"/>
+<path d="M0 500L100 480 200 494 300 476 400 490V520H0Z" fill="#0f1e2e"/>
+
+</svg>
+      <header class="au-brand"><h1 class="brand-word" id="homeTitle">IMPÉRIOS</h1><p class="au-sub">Uma era de cada vez</p></header>
     </div>
-    <div class="home-hero">
-      <div>
-        <div class="home-kicker">Cada era muda o futuro</div>
-        <h1 class="home-title">Construa seu legado.<br><em>Domine as eras.</em></h1>
-        <p class="home-lede">Equilibre Militar, Obras e Ciência. Expanda seu território, antecipe os rivais controlados pela IA e descubra qual estratégia sustenta seu império.</p>
-        <div class="home-actions">
-          <button type="button" class="home-primary" id="homeStart">Nova partida <span aria-hidden="true">→</span></button>
-          <button type="button" class="home-secondary" id="homeHowTo">Como jogar</button>
-          <button type="button" class="home-secondary hidden" id="homeContinue">Continuar partida</button>
-        </div>
+    <nav class="au-acts" aria-label="Menu principal">
+      <button type="button" class="btn-main hidden" id="homeContinue"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-two"><span id="homeContinueLabel">Continuar</span><small id="homeContinueMeta"></small></span></button>
+      <button type="button" class="btn-main" id="homeStart"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span id="homeStartLabel">Jogar</span></button>
+      <div class="au-row2">
+        <button type="button" class="btn-glass" id="homeTutorial"><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg>Tutorial</button>
+        <button type="button" class="btn-glass" id="homeHowTo"><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg>Como jogar</button>
       </div>
-      <div class="home-art" aria-label="Ilustração conceitual de um mapa com territórios próprios, rivais e neutros">
-        <div class="home-map-label"><span>FRONTEIRA DO IMPÉRIO</span><span>ERA 01</span></div>
-        <div class="home-map" aria-hidden="true">
-          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile p">I</div><div class="home-tile p">II</div><div class="home-tile n">·</div>
-          <div class="home-tile n">·</div><div class="home-tile p">III</div><div class="home-tile p glow">IV</div><div class="home-tile e">V</div><div class="home-tile n">·</div>
-          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile p">VI</div><div class="home-tile e">VII</div><div class="home-tile e">VIII</div>
-          <div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile n">·</div><div class="home-tile e">IX</div><div class="home-tile n">·</div>
-        </div>
-        <div class="home-art-caption"><div><strong>Uma escolha por era.</strong><br><span>Investir · expandir · adaptar</span></div><span class="gold">◆ Estratégia</span></div>
-      </div>
-    </div>
-    <div class="home-features">
-      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">⚔️</div><strong>Dispute o território</strong><p>Conquiste regiões livres, enfrente os rivais e veja quanto custa cada conquista.</p></div>
-      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">▥</div><strong>Planeje seus investimentos</strong><p>Escolha entre Força imediata, ouro das Obras por algumas eras e Ciência que rende para sempre.</p></div>
-      <div class="home-feature"><div class="home-feature-icon" aria-hidden="true">⌁</div><strong>Escolha seus rivais</strong><p>Até 3 rivais, cada um com seu estilo: agressivo, militar, científico, construtor…</p></div>
-    </div>
-    <div class="home-footer"><span>Funciona offline · sem instalação · sua partida fica salva neste navegador</span></div>
+    </nav>
   </div>
 </section>
 
-<section class="home-screen setup-screen" id="setupScreen" aria-label="Configurar partida" hidden>
-  <div class="setup-shell">
-    <div class="home-top" style="margin-bottom:18px"><button type="button" class="home-link" id="setupBack">← Voltar</button><span class="home-version">Configurar partida</span></div>
-    <h1 class="home-title" style="font-size:clamp(28px,5vw,40px);margin-bottom:6px">Configure <em>sua partida</em></h1>
-    <p class="home-lede" style="margin:6px 0 18px">Suas escolhas ficam salvas para a próxima vez.</p>
-        <div class="home-kicker">Ritmo da partida</div>
-        <div class="mode-picker" role="group" aria-label="Modo de jogo">
-          <button type="button" class="mode-option selected" id="modeSlow" aria-pressed="true"><strong>⌛ Modo lento</strong><span>Ritmo normal; os investimentos rendem com os atrasos padrão.</span></button>
-          <button type="button" class="mode-option" id="modeFast" aria-pressed="false"><strong>⚡ Modo rápido</strong><span>Retornos antecipados: tudo acontece em menos eras.</span></button>
+<section class="home-screen pg-screen setup-screen" id="setupScreen" aria-labelledby="setupTitle" hidden>
+  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="setupBack" aria-label="Voltar"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="setupTitle">Nova partida</h1></div>
+  <div class="pg-wrap">
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Dificuldade</h2>
+      <div class="pg-seg pg-seg-diff" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" data-diff="muitofacil"><span class="pips" aria-hidden="true"><i></i></span>Muito fácil</button><button type="button" data-diff="facil"><span class="pips" aria-hidden="true"><i></i><i></i></span>Fácil</button><button type="button" class="selected" data-diff="medio"><span class="pips" aria-hidden="true"><i></i><i></i><i></i></span>Médio</button><button type="button" data-diff="dificil"><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Difícil</button><button type="button" data-diff="hardcore"><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>Lendário</button></div>
+      <p class="pg-desc" id="homeDiffDesc"></p>
+    </div>
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-swords"/></svg>Rivais</h2>
+      <div class="pg-rivals" id="homeOpponents" role="group" aria-label="Número de rivais"><button type="button" class="selected" data-ai="1"><span class="syms" aria-hidden="true"><span style="color:#e0788c">▲</span></span>1 rival<small>duelo</small></button><button type="button" data-ai="2"><span class="syms" aria-hidden="true"><span style="color:#e0788c">▲</span><span style="color:#e0a64e">●</span></span>2 rivais<small>disputa</small></button><button type="button" data-ai="3"><span class="syms" aria-hidden="true"><span style="color:#e0788c">▲</span><span style="color:#e0a64e">●</span><span style="color:#8ea8f0">◆</span></span>3 rivais<small>caos</small></button></div>
+    </div>
+    <details class="pg-perso" id="setupCustomize">
+      <summary><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span class="t"><b>Personalizar</b><span id="customizeSummary"></span></span><svg class="ic chev" aria-hidden="true"><use href="#i-next"/></svg></summary>
+      <div class="pg-pbody">
+        <div class="pg-field"><h3 class="pg-fl" id="erasLbl"><svg class="ic" aria-hidden="true"><use href="#i-hourglass"/></svg>Duração</h3>
+          <div class="pg-seg" id="homeEraPresets" role="group" aria-labelledby="erasLbl"><button type="button" data-eras="15">15<small>curta</small></button><button type="button" class="selected" data-eras="30">30<small>média</small></button><button type="button" data-eras="50">50<small>longa</small></button><label class="pg-other"><span>Outra</span><input id="homeMaxEras" type="number" min="10" max="150" step="1" value="30" inputmode="numeric" aria-label="Outra duração: limite de eras (10 a 150)" title="Limite de eras (10 a 150)"></label></div>
         </div>
-        <div class="home-settings">
-          <div><label>Dificuldade</label><div class="chips" id="homeDifficulty" role="group" aria-label="Dificuldade"><button type="button" class="chip" data-diff="muitofacil">Muito fácil</button><button type="button" class="chip" data-diff="facil">Fácil</button><button type="button" class="chip selected" data-diff="medio">Médio</button><button type="button" class="chip" data-diff="dificil">Difícil</button><button type="button" class="chip" data-diff="hardcore">Hardcore</button></div><div class="small muted" id="homeDiffDesc" style="margin-top:4px"></div></div>
-          <div><label>Rivais</label><div class="chips" id="homeOpponents" role="group" aria-label="Número de rivais"><button type="button" class="chip selected" data-ai="1">1</button><button type="button" class="chip" data-ai="2">2</button><button type="button" class="chip" data-ai="3">3</button></div></div>
-          <div><label>Estilo de cada rival</label><div id="homeProfiles" class="profile-rows"></div></div>
-          <div><label for="homeMaxEras">Duração (10 a 150 eras)</label><div class="chips" id="homeEraPresets"><button type="button" class="chip" data-eras="15">15 curta</button><button type="button" class="chip selected" data-eras="30">30 média</button><button type="button" class="chip" data-eras="50">50 longa</button><input id="homeMaxEras" type="number" min="10" max="150" title="Limite de eras (10 a 150)" step="1" value="30" inputmode="numeric" style="width:84px;min-height:48px" aria-label="Limite de eras"></div></div>
-          <div><label>Vitória</label><div class="chips" id="homeVictoryMode" role="group" aria-label="Modo de vitória"><button type="button" class="chip selected" id="homeClassic" aria-pressed="true">Clássico</button><button type="button" class="chip" id="homeConquest" aria-pressed="false">⚔ Conquista</button></div><div class="small muted" id="homeVictoryDesc" style="margin-top:4px"></div></div>
-          <div><label class="toggle-row"><input type="checkbox" id="homeRandomStart"> 🎲 Posição inicial aleatória</label></div>
+        <div class="pg-field"><h3 class="pg-fl" id="modeLbl"><svg class="ic" aria-hidden="true"><use href="#i-bolt"/></svg>Ritmo</h3>
+          <div class="pg-seg" role="group" aria-labelledby="modeLbl"><button type="button" class="selected" id="modeSlow" aria-pressed="true">Normal</button><button type="button" id="modeFast" aria-pressed="false">Rápido</button></div>
+          <p class="pg-desc" id="homeModeDesc"></p>
         </div>
-    <div class="setup-footer"><div class="setup-summary" id="setupSummary"></div><button type="button" class="home-primary" id="setupStart">Começar <span aria-hidden="true">→</span></button></div>
+        <div class="pg-field"><h3 class="pg-fl" id="victoryLbl"><svg class="ic" aria-hidden="true"><use href="#i-crown"/></svg>Vitória</h3>
+          <div class="pg-seg" id="homeVictoryMode" role="group" aria-labelledby="victoryLbl"><button type="button" class="selected" id="homeClassic" aria-pressed="true">Clássica</button><button type="button" id="homeConquest" aria-pressed="false">Conquista</button></div>
+          <p class="pg-desc" id="homeVictoryDesc"></p>
+        </div>
+        <div class="pg-field"><h3 class="pg-fl"><svg class="ic" aria-hidden="true"><use href="#i-swords"/></svg>Estilo dos rivais</h3><div id="homeProfiles" class="profile-rows"></div></div>
+        <label class="pg-switch"><svg class="ic" aria-hidden="true"><use href="#i-dice"/></svg><span class="t"><b>Posição inicial aleatória</b><span>Você começa em qualquer ponto do mapa.</span></span><input type="checkbox" role="switch" id="homeRandomStart"></label>
+      </div>
+    </details>
   </div>
+  <div class="pg-sticky setup-footer"><div class="setup-summary" id="setupSummary"></div><button type="button" class="btn-main" id="setupStart"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Jogar</button></div>
+</section>
+
+<section class="home-screen pg-screen" id="howToScreen" aria-labelledby="howToScreenTitle" hidden>
+  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="howToBack" aria-label="Voltar"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="howToScreenTitle">Como jogar</h1></div>
+  <div class="pg-wrap">
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-hourglass"/></svg>Cada era, 3 passos</h2>
+      <ol class="pg-steps">
+        <li><span class="n" aria-hidden="true">1</span><svg class="ic" aria-hidden="true"><use href="#i-coins"/></svg><b>Divida o ouro</b>entre as 3 áreas</li>
+        <li><span class="n" aria-hidden="true">2</span><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><b>Ataque</b>regiões douradas</li>
+        <li><span class="n" aria-hidden="true">3</span><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg><b>Conclua a era</b>tudo se resolve junto</li>
+      </ol>
+      <p class="pg-desc">Se dois atacam a mesma região, vence quem tiver mais Força (somada à Ciência).</p>
+    </div>
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-temple"/></svg>Onde investir</h2>
+      <div class="pg-inv"><span class="badge b-mil" aria-hidden="true"><svg class="ic"><use href="#i-swords"/></svg></span><div><b class="gold">Militar</b><span>Força já na próxima era. Parada, perde 20% por era.</span></div><svg class="spark" viewBox="0 0 96 44" aria-hidden="true"><path d="M4 38H92" stroke="#3a5070"/><rect x="14" y="8" width="12" height="30" rx="2" fill="#f4bd50"/><rect x="30" y="14" width="12" height="24" rx="2" fill="#f4bd50" opacity=".7"/><rect x="46" y="19" width="12" height="19" rx="2" fill="#f4bd50" opacity=".5"/><rect x="62" y="23" width="12" height="15" rx="2" fill="#f4bd50" opacity=".35"/><text x="4" y="44">agora</text><text x="66" y="44">eras →</text></svg></div>
+      <div class="pg-inv"><span class="badge b-infra" aria-hidden="true"><svg class="ic"><use href="#i-temple"/></svg></span><div><b class="green">Obras</b><span>Ouro por algumas eras: cresce e acaba. Defende suas regiões.</span></div><svg class="spark" viewBox="0 0 96 44" aria-hidden="true"><path d="M4 38H92" stroke="#3a5070"/><path d="M6 38C20 36 26 12 42 10S66 30 84 38" fill="#56d6a133" stroke="#56d6a1" stroke-width="2.4"/><text x="4" y="44">agora</text><text x="66" y="44">eras →</text></svg></div>
+      <div class="pg-inv"><span class="badge b-tech" aria-hidden="true"><svg class="ic"><use href="#i-spark"/></svg></span><div><b class="purple">Ciência</b><span>Começa após 2 eras e rende para sempre. Barateia ataques.</span></div><svg class="spark" viewBox="0 0 96 44" aria-hidden="true"><path d="M4 38H92" stroke="#3a5070"/><path d="M6 38H30C40 38 40 22 50 20S78 14 90 10" fill="none" stroke="#b49aff" stroke-width="2.4"/><path d="M84 6l6 4-6 4" fill="none" stroke="#b49aff" stroke-width="2"/><text x="4" y="44">agora</text><text x="66" y="44">eras →</text></svg></div>
+    </div>
+    <div class="pg-card">
+      <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-crown"/></svg>Como vencer</h2>
+      <div class="pg-win">
+        <div><b><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Domínio</b>Controle 70% das regiões.</div>
+        <div><b><svg class="ic" aria-hidden="true"><use href="#i-swords"/></svg>Eliminação</b>Derrote todos os rivais.</div>
+        <div><b><svg class="ic" aria-hidden="true"><use href="#i-crown"/></svg>Supremacia</b>Grande vantagem por 5 eras (só na Clássica).</div>
+        <div><b><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>Pontos</b>Ninguém venceu? Ganha quem tiver mais pontos.</div>
+      </div>
+      <details class="pg-full" id="howToFull"><summary>Regras completas <svg class="ic chev" aria-hidden="true"><use href="#i-next"/></svg></summary><div class="pg-fullbody" id="howToFullBody"></div></details>
+    </div>
+  </div>
+  <div class="pg-sticky"><button type="button" class="btn-main" id="howToOk">Entendi</button></div>
 </section>
 <div class="wrap">
 <header class="top"><div class="brand"><div class="logo">I</div><div><h1>Impérios</h1></div></div><div class="actions" id="topActions"></div></header>

@@ -23,23 +23,36 @@ export function initHome(){
   return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
- const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));$("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>`<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}">${visibleOpponentOptions().map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
+ const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));const opts=visibleOpponentOptions().map(([v,t])=>{const [short,desc]=t.split(" — ");return [v,short.replace(" (revelado no fim)",""),desc||(v==="random"?"revelado no fim da partida":"")]});
+  $("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>{const cur=opts.find(o=>o[0]===opponentChoices[i]);return `<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}" aria-describedby="profDesc${i}">${opts.map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select><small class="profile-desc" id="profDesc${i}">${cur?.[2]||""}</small></div>`}).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
+ const inProgress=()=>!!(state&&!state.result&&(state.era>1||state.history.length>0));
+ const rivalsTxt=n=>n===1?"1 rival":n+" rivais";
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
+  $("homeModeDesc").textContent=choice.mode==="fast"?"Os retornos chegam antes: tudo acontece em menos eras.":"Os investimentos rendem no tempo normal.";
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
-  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.classList.toggle("selected",Number(b.dataset.eras)===choice.eras));$("homeMaxEras").value=choice.eras;
+  let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
   for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("homeVictoryDesc").textContent=choice.conquest?"Sem supremacia: vence quem conquistar 70% dos territórios ou eliminar os rivais; no limite de eras, decide a pontuação.":"Maioria territorial, eliminação ou supremacia (na fase final); no limite de eras, decide a pontuação.";
+  $("homeVictoryDesc").textContent=choice.conquest?"Só domínio (70% das regiões) ou eliminação. No limite de eras, vencem os pontos.":"Domínio, eliminação ou supremacia (na fase final). No limite de eras, vencem os pontos.";
   $("homeRandomStart").checked=!!choice.randomStart;
   renderProfiles();
   document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>{const on=b.dataset.diff===choice.difficulty;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeDiffDesc").textContent=DIFFICULTIES[choice.difficulty]?.desc||"";
   const styleName=v=>v==="random"?"aleatório":v==="config"?"das Configurações":playerProfileName(v).toLowerCase();
   const styles=Array.from({length:choice.ai},(_,i)=>styleName(opponentChoices[i]||"random"));const uniq=[...new Set(styles)];
-  $("setupSummary").innerHTML=`<strong>${choice.ai===1?"1 rival":choice.ai+" rivais"}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${choice.eras} eras${choice.conquest?" · Conquista":""}${choice.randomStart?" · posição aleatória":""} · modo ${choice.mode==="fast"?"rápido":"lento"}`;
-  const inProgress=state&&!state.result&&(state.era>1||state.history.length>0);
-  $("homeContinue").classList.toggle("hidden",!inProgress);
-  if(inProgress)$("homeContinue").textContent=`Continuar partida (era ${state.era} de ${state.maxEras})`;
+  $("customizeSummary").textContent=`${choice.eras} eras · ritmo ${choice.mode==="fast"?"rápido":"normal"} · vitória ${choice.conquest?"por conquista":"clássica"}${choice.randomStart?" · posição aleatória":""}`;
+  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${choice.eras} eras${choice.conquest?" · Conquista":""}${choice.randomStart?" · posição aleatória":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
+  // Com partida salva: "Continuar · Era N" é o botão principal e "Nova partida" fica como secundário.
+  const saved=inProgress(),cont=$("homeContinue"),start=$("homeStart");
+  cont.classList.toggle("hidden",!saved);
+  start.classList.toggle("btn-main",!saved);start.classList.toggle("btn-line",saved);
+  $("homeStartLabel").textContent=saved?"Nova partida":"Jogar";start.querySelector(".ic")?.classList.toggle("hidden",saved);
+  if(saved){
+   const tut=state.tutorial&&!state.tutorial.done,diff=DIFFICULTIES[state.difficulty]&&(DEV_MODE||state.difficulty!=="config")?DIFFICULTIES[state.difficulty].name:"";
+   $("homeContinueLabel").textContent=`Continuar · Era ${state.era}`;
+   $("homeContinueMeta").textContent=[`de ${state.maxEras}`,tut?"tutorial":diff,rivalsTxt(Math.max(1,(state.civs?.length||2)-1))].filter(Boolean).join(" · ");
+   cont.setAttribute("aria-label",`Continuar a partida: era ${state.era} de ${state.maxEras}`);
+  }
  };
  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>b.onclick=()=>{choice.difficulty=b.dataset.diff;sync()});
  $("modeSlow").onclick=()=>{choice.mode="slow";sync()};$("modeFast").onclick=()=>{choice.mode="fast";sync()};
@@ -48,15 +61,20 @@ export function initHome(){
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
  const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
- $("homeStart").onclick=()=>openSetup(false);
- $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false};
- $("homeHowTo").onclick=()=>showModal(`<h2>Como jogar</h2>${$("howTo").querySelector(".grid").innerHTML}`,[{label:"Entendi",cls:"primary"}]);
+ $("homeStart").onclick=()=>{$("setupCustomize").open=false;openSetup(false)};
+ $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false;$("homeStart").focus()};
+ // Como jogar (tela própria). "Regras completas" mostra o mesmo texto da folha "?" do jogo.
+ const how=$("howToScreen"),closeHow=()=>{how.hidden=true;$("homeHowTo").focus()};
+ $("homeHowTo").onclick=()=>{if(!$("howToFullBody").childElementCount)$("howToFullBody").innerHTML=$("howTo").querySelector(".grid").innerHTML;$("howToFull").open=false;how.hidden=false;how.scrollTop=0;$("howToBack").focus()};
+ $("howToBack").onclick=closeHow;$("howToOk").onclick=closeHow;
  $("setupStart").onclick=()=>{
-  const inProgress=state&&!state.result&&(state.era>1||state.history.length>0);
-  if(inProgress)showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
+  if(inProgress())showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
  };
  const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
  $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0;runHook("returnHome")};
+ // Tecla Esc / botão Voltar do teclado: fecha Como jogar ou a configuração (se não houver janela aberta).
+ document.addEventListener("keydown",e=>{if(e.key!=="Escape"||$("modalRoot").childElementCount)return;
+  if(!how.hidden){e.preventDefault();closeHow()}else if(!setup.hidden){e.preventDefault();$("setupBack").click()}});
  sync();
 }
