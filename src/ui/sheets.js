@@ -5,23 +5,28 @@ import {renderMetrics} from "./hud.js";
 import {renderMap,renderTerrainSheet,fillTerrainLists} from "./map.js";
 import {renderForecast,renderHistory,renderNotifications,renderCharts,renderVictory,renderResultDetails} from "./panels.js";
 
-/* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino, Como jogar e Detalhes ──
+/* ── Folhas inferiores (bottom sheets): ataque, menu, placar, planos, ajuste fino e Detalhes; e o Como jogar
+   (tela cheia com data-sheet, que funciona como uma folha) ──
    Uma folha de cada vez. Fecham com toque fora, Esc, o botão ✕ e o botão voltar do navegador/Android
    (a folha aberta ocupa uma entrada do histórico). Enquanto há uma folha aberta, o resto da tela fica inerte
    e o foco fica preso dentro dela; ao fechar, o foco volta para quem a abriu. */
 export const SHEET_HOOKS={
  attackSheet:{onClose:()=>{if(selectedTerritory!==null){setSelectedTerritory(null);renderMap()}}},
  terrainSheet:{onOpen:()=>renderTerrainSheet()},
- howTo:{onOpen:()=>fillTerrainLists()},
+ // Como jogar (tela "Atlas"): a mesma na tela inicial e por cima da partida ("?" e menu ☰). Por cima da partida
+ // mostra o ✕ à direita; na tela inicial, a seta Voltar. Abre sempre com as regras completas fechadas.
+ howToScreen:{onOpen:()=>{fillTerrainLists();const f=$("howToFull");if(f)f.open=false;const h=$("homeScreen"),st=$("setupScreen");$("howToScreen").classList.toggle("over-game",!!h&&h.hidden&&(!st||st.hidden))}},
  details:{onOpen:()=>{renderForecast();renderHistory();renderNotifications();requestAnimationFrame(renderCharts)}},
  scoreSheet:{onOpen:()=>{renderMetrics();renderVictory()}},
  resultSheet:{onOpen:()=>requestAnimationFrame(renderResultDetails)},
 };
-export const FOCUSABLE='button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
+export const FOCUSABLE='button:not([disabled]):not([hidden]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 export let sheetOpen=null,sheetReturn=null,sheetHist=false,sheetIgnorePop=0;
 export function isSheetOpen(id){return id?sheetOpen===id:!!sheetOpen}
 export function setInertBehind(on){
  const keep=el=>el.classList.contains("sheet")||el.classList.contains("sheet-scrim");
+ // Telas cheias (início, Nova partida) por baixo de uma folha que é tela cheia (Como jogar).
+ document.querySelectorAll(".home-screen").forEach(el=>{el.inert=on&&el.id!==sheetOpen});
  [...document.querySelectorAll(".wrap > *"),...document.querySelectorAll("#game > *")].forEach(el=>{if(el.id==="game"||keep(el))return;if(on)el.inert=true;else el.inert=false});
  const tut=$("tutBox");if(tut)tut.inert=on;
 }
@@ -49,7 +54,7 @@ export function closeSheet({swap=false,fromPop=false,focus=true}={}){
 // Liga as folhas inferiores: propriedade .open, botão voltar do Android/navegador, toques e teclado (Esc, Tab).
 export function initSheets(){
  // .open nas folhas (como nos antigos <details> "Como jogar" e "Detalhes"): ler diz se está aberta, escrever abre/fecha.
- document.querySelectorAll(".sheet").forEach(el=>Object.defineProperty(el,"open",{configurable:true,get(){return sheetOpen===el.id},set(v){if(v)openSheet(el.id);else if(sheetOpen===el.id)closeSheet()}}));
+ document.querySelectorAll(".sheet,[data-sheet]").forEach(el=>Object.defineProperty(el,"open",{configurable:true,get(){return sheetOpen===el.id},set(v){if(v)openSheet(el.id);else if(sheetOpen===el.id)closeSheet()}}));
  window.addEventListener("popstate",()=>{
   if(sheetIgnorePop>0){sheetIgnorePop--;if(sheetOpen&&!sheetHist){try{history.pushState({imperiosSheet:sheetOpen},"");sheetHist=true}catch(e){}}return}
   if(sheetOpen)closeSheet({fromPop:true});

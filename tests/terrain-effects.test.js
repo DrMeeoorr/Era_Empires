@@ -371,10 +371,12 @@ test("folha da região com efeitos: etiquetas + / + / − do terreno, custo com 
   assert.deepEqual(await horizontalOverflow(page), []);
   await page.keyboard.press("Escape");
   await ts.waitFor({ state: "hidden" });
-  // Como jogar (folha ?) ligado.
-  await page.evaluate(() => openSheet("howTo"));
-  const how = await page.locator("#howTo").innerText();
+  // Como jogar ("?" na partida) ligado.
+  await page.locator("#helpBtn").click();
+  await page.locator("#howToScreen").waitFor({ state: "visible" });
+  const how = await page.locator("#howToScreen").innerText();
   for (const w of want.flat()) assert.ok(how.includes(w), "Como jogar sem: " + w);
+  assert.equal(await page.locator("#howToScreen .ter-eff").count(), 7);
   assert.match(how, /Nesta partida os terrenos têm efeito/);
   await page.keyboard.press("Escape");
   // Desligado: sem as linhas, com o aviso "só visual"; a folha da região só mostra o terreno.
@@ -384,9 +386,10 @@ test("folha da região com efeitos: etiquetas + / + / − do terreno, custo com 
   assert.match(await ts.innerText(), /Nesta partida o terreno é só visual/);
   assert.equal(await ts.locator(".ter-eff").count(), 0);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => openSheet("howTo"));
-  assert.match(await page.locator("#howTo").innerText(), /Nesta partida o terreno é só visual/);
-  assert.equal(await page.locator("#howTo .ter-eff").count(), 0);
+  await page.locator("#helpBtn").click();
+  await page.locator("#howToScreen").waitFor({ state: "visible" });
+  assert.match(await page.locator("#howToScreen").innerText(), /Nesta partida o terreno é só visual/);
+  assert.equal(await page.locator("#howToScreen .ter-eff").count(), 0);
   await page.keyboard.press("Escape");
   const t2 = await page.evaluate(() => eligibleTargets(state, "player")[0].i);
   await page.locator(`[data-territory="${t2}"]`).click();

@@ -7,10 +7,9 @@ import {RIVAL_NAMES} from "../core/names.js";
 import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {startNewGame,showView,renderAll} from "./game.js";
-import {fillTerrainLists} from "./map.js";
 import {civSymHtml,playerProfileName} from "./labels.js";
 import {showModal} from "./modal.js";
-import {closeSheet} from "./sheets.js";
+import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
 export function initHome(){
@@ -70,18 +69,19 @@ export function initHome(){
  const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
  $("homeStart").onclick=()=>{$("setupCustomize").open=false;openSetup(false)};
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false;$("homeStart").focus()};
- // Como jogar (tela própria). "Regras completas" mostra o mesmo texto da folha "?" do jogo.
- const how=$("howToScreen"),closeHow=()=>{how.hidden=true;$("homeHowTo").focus()};
- $("homeHowTo").onclick=()=>{if(!$("howToFullBody").childElementCount)$("howToFullBody").innerHTML=$("howTo").querySelector(".grid").innerHTML;fillTerrainLists();$("howToFull").open=false;how.hidden=false;how.scrollTop=0;$("howToBack").focus()};
- $("howToBack").onclick=closeHow;$("howToOk").onclick=closeHow;
+ // Como jogar (tela própria, a mesma que o "?" abre por cima da partida): funciona como uma folha (sheets.js), por isso
+ // fecha com Voltar, ✕, Entendi, Esc e o botão voltar do Android, e devolve o foco a quem a abriu.
+ $("homeHowTo").onclick=()=>openSheet("howToScreen",$("homeHowTo"));
+ $("howToBack").onclick=()=>closeSheet();$("howToOk").onclick=()=>closeSheet();
  $("setupStart").onclick=()=>{
   if(inProgress())showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
  };
  const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
  $("returnHome").onclick=()=>{closeSheet({focus:false});choice=currentChoice();sync();home.hidden=false;home.scrollTop=0;runHook("returnHome")};
- // Tecla Esc / botão Voltar do teclado: fecha Como jogar ou a configuração (se não houver janela aberta).
- document.addEventListener("keydown",e=>{if(e.key!=="Escape"||$("modalRoot").childElementCount)return;
-  if(!how.hidden){e.preventDefault();closeHow()}else if(!setup.hidden){e.preventDefault();$("setupBack").click()}});
+ // Tecla Esc / botão Voltar do teclado: fecha a configuração (se não houver janela nem folha aberta; o Como jogar é
+ // uma folha e fecha sozinho).
+ document.addEventListener("keydown",e=>{if(e.key!=="Escape"||e.defaultPrevented||isSheetOpen()||$("modalRoot").childElementCount)return;
+  if(!setup.hidden){e.preventDefault();$("setupBack").click()}});
  sync();
 }

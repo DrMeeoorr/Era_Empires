@@ -26,7 +26,7 @@ export async function initTutorial(){
  const needMil=()=>(configApplied.military.conquestCost+configApplied.military.defenseNeutral)/configApplied.military.pointsPerInvestment;
  const tname=()=>escapeHtml(regionName(TARGET));
  const sheetOn=id=>{const el=$(id);return !!el&&!el.hidden};
- const anySheet=()=>!!document.querySelector(".sheet:not([hidden])");
+ const anySheet=()=>!!document.querySelector(".sheet:not([hidden]),[data-sheet]:not([hidden])");
  const summaryBtn=()=>document.querySelector("#eraSummary .sum-next");
  /* ── Tutorial (Fase 3): 5 passos de ação, cada um com uma dica curta (no máximo 2 linhas) e uma seta para o alvo.
     O resto da tela fica escurecido e o balão fica sempre do lado oposto ao alvo, sem o cobrir.

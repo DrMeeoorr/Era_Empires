@@ -10,7 +10,14 @@
 /* Telas cheias (por cima do jogo) */
 .home-screen{position:fixed;inset:0;z-index:1000;overflow-x:hidden;overflow-y:auto;color:var(--text);-webkit-tap-highlight-color:transparent}
 .home-screen[hidden]{display:none!important}
-.setup-screen{z-index:1001}#howToScreen{z-index:1002}
+.setup-screen{z-index:1001}
+/* Como jogar funciona como uma folha (fica acima do véu das folhas). Na tela inicial: seta Voltar à esquerda;
+   por cima da partida ("?" ou menu ☰): ✕ à direita e entrada de baixo para cima. */
+#howToScreen{z-index:1102}#howToScreen:focus{outline:none}
+.pg-x{margin-left:auto}
+#howToScreen:not(.over-game) .pg-x,#howToScreen.over-game #howToBack{display:none}
+#howToScreen.over-game .pg-bar{padding-left:max(16px,env(safe-area-inset-left,0px))}
+@media(prefers-reduced-motion:no-preference){#howToScreen.over-game:not([hidden]){animation:howUp .22s ease-out}@keyframes howUp{from{transform:translateY(36px);opacity:.5}}}
 
 /* Botões (comuns às telas) */
 .btn-main,.btn-line,.btn-glass,.pg-iconbtn,.pg-seg>button,.pg-rivals>button,.pg-perso summary,.pg-full summary,.modal-invite .txtbtn{-webkit-tap-highlight-color:transparent}
@@ -140,3 +147,10 @@ button.btn-main,.btn-main{display:flex;align-items:center;justify-content:center
 /* dev.html: a opção "⚙ Configurações" (laboratórios) ocupa uma linha inteira. */
 .pg-seg-diff>button[data-diff="config"]{grid-column:1/-1}
 @media(min-width:431px){.pg-seg-diff:has(>[data-diff="config"]:not([hidden])){grid-auto-flow:row;grid-template-columns:repeat(5,minmax(0,1fr))}}
+/* Terrenos no Como jogar: linhas sem caixa (o cartão já faz a moldura), para as etiquetas caberem numa linha. */
+.pg-card .ter-list{gap:0}
+.pg-card .ter-list li{padding:8px 2px;border:0;border-top:1px solid #1f3150;border-radius:0;background:transparent}
+.pg-card .ter-list li:first-child{border-top:0}
+.pg-card .ter-list:not(.ter-fx){column-gap:10px}
+.pg-card .ter-list:not(.ter-fx) li:nth-child(2){border-top:0}
+

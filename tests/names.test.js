@@ -115,7 +115,10 @@ test("nomes: rivais com nome e símbolo, regiões com nome no mapa, no painel de
   ]);
 
   // Condições de vitória e jogo com "Como jogar"/"Detalhes" abertos.
-  await page.evaluate(() => { document.getElementById("howTo").open = true; document.getElementById("details").open = true; renderAll(); });
+  // Como jogar (por cima da partida, com as regras completas abertas) e, depois, Detalhes (uma folha de cada vez).
+  await page.evaluate(() => { document.getElementById("howToScreen").open = true; document.getElementById("howToFull").open = true; });
+  genericNames("jogo (Como jogar com as regras completas)", await bodyText(page), problems);
+  await page.evaluate(() => { document.getElementById("details").open = true; renderAll(); });
   const victory = (await page.locator("#victoryPanel").innerText()).replace(/\s+/g, " ");
   for (const s of ["▲ Rubro · Adaptativo", "● Ocre · estilo oculto", "◆ Anil · Agressivo"]) assert.ok(victory.includes(s), `condições de vitória sem "${s}"`);
   genericNames("jogo (Como jogar e Detalhes abertos)", await bodyText(page), problems);

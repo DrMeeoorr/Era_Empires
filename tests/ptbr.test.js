@@ -72,8 +72,12 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
   check("jogo (era 1, investimentos)", await bodyText(page), problems);
   for (const [open, label] of [["#helpBtn", "Como jogar"], ['#menuSheet [data-open="details"]', "Detalhes"], ["#scorePill", "Placar e vitória"], ["#fineBtn", "Ajuste fino"], ["#menuBtn", "Menu"]]) {
     await menuClick(page, open);
-    await page.waitForFunction(() => !!document.querySelector(".sheet:not([hidden])"));
+    await page.waitForFunction(() => !!document.querySelector(".sheet:not([hidden]),[data-sheet]:not([hidden])"));
     check(`jogo (${label})`, await bodyText(page), problems);
+    if (open === "#helpBtn") {
+      await page.locator("#howToFull > summary").click();
+      check("jogo (Como jogar, regras completas)", await bodyText(page), problems);
+    }
     await page.keyboard.press("Escape");
   }
   await page.locator('[data-plan="clear"]').click();
