@@ -332,14 +332,30 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .ter-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:#1b2a42;border:1px solid var(--line);font-size:13px;font-weight:650;color:var(--text)}
 .ter-ico{flex:none;display:inline-block}
 .ter-list{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
-.ter-list li{display:flex;align-items:center;gap:9px;min-height:48px;padding:6px 10px;border-radius:10px;background:#17243a;border:1px solid var(--line)}
-.ter-list b{display:block;font-size:14px;color:var(--text)}
-.ter-list small{display:block;font-size:12px;line-height:1.25;color:var(--muted)}
+.ter-list li{display:flex;align-items:center;gap:10px;min-width:0;min-height:52px;padding:6px 10px;border-radius:12px;background:linear-gradient(180deg,#17283f,#13213a);border:1px solid #263a5a}
+.ter-list .ter-txt{min-width:0;flex:1}
+.ter-list b{display:block;font-size:14.5px;color:var(--text)}
+.ter-list small{display:block;font-size:12.5px;line-height:1.25;color:#b4c0d2}
 .ter-mapnote{margin:4px 0 0}
 #terrainSheet .ter-list{margin-bottom:6px}
-/* Terrenos com efeitos: linha "+ … · + … · − …" na folha da região e nas listas. */
-.tgt-terrain .ter-eff{display:block;margin-top:4px;font-size:13px;color:var(--text)}
-.tgt-terrain .ter-eff.muted{color:var(--muted);font-size:12px}
-.ter-list.ter-fx small.ter-eff{color:var(--text);opacity:.9}
+/* Terrenos com efeitos: 1 coluna; embaixo do nome, as 2 vantagens (+) e a desvantagem (−) em etiquetas curtas que
+   nunca quebram no meio. Cores com contraste AA (≥ 7:1) e sinal no texto; a desvantagem tem borda tracejada. */
+.ter-list.ter-fx{grid-template-columns:minmax(0,1fr);gap:6px}
+.ter-list.ter-fx li{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:center;padding:8px 10px}
+.ter-list.ter-fx .ter-txt{display:contents}
+.ter-list.ter-fx .ter-eff{grid-column:1/-1;margin-top:0}
+.ter-eff{display:flex;flex-wrap:wrap;gap:4px 5px;margin-top:4px}
+.ter-eff .fx{display:inline-block;white-space:nowrap;padding:2px 7px;border-radius:999px;font-size:12.5px;line-height:18px;font-weight:700;letter-spacing:-.005em}
+.ter-eff .fx.up{background:#11372b;color:#a6f2cb;border:1px solid #2f7a5a}
+.ter-eff .fx.down{background:#3b1c24;color:#ffc2c9;border:1px dashed #b45767}
+.tgt-terrain{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.tgt-terrain .ter-eff{flex-basis:100%;margin-top:0}
+.tgt-terrain .ter-note{flex-basis:100%;color:var(--muted);font-size:12px}
 .ter-rulenote{margin:6px 0 0;color:var(--muted)}
 .ter-rulenote.on{color:var(--text)}
+.ter-more{margin-top:2px}
+.ter-more>summary{display:inline-flex;align-items:center;gap:6px;min-height:48px;cursor:pointer;color:var(--gold);font-weight:700;list-style:none}
+.ter-more>summary::-webkit-details-marker{display:none}
+.ter-more>summary::before{content:"ⓘ";font-weight:400}
+.ter-more[open]>summary::after{content:"▴"}.ter-more:not([open])>summary::after{content:"▾"}
+.ter-more ul{margin:0 0 4px;padding-left:18px;color:var(--muted)}.ter-more li{margin:2px 0}

@@ -50,11 +50,15 @@ export function terrainIcon(k,px=20){
 }
 // Etiqueta "ícone + nome" (folha da região).
 export const terrainChip=k=>`<span class="ter-chip">${terrainIcon(k,20)}${TERRAIN_NAMES[k]||""}</span>`;
-// Lista dos 7 terrenos (folha ⓘ Terrenos e Como jogar).
-// Linha "+ … · + … · − …" de um terreno (terrenos com efeitos).
+// Efeitos de um terreno (terrenos com efeitos) como etiquetas curtas: as 2 vantagens ("up") e a desvantagem ("down").
+// Não depende só da cor: cada etiqueta tem o sinal (+ / −) no texto e a desvantagem tem borda tracejada.
+// Cada etiqueta fica numa linha só (sem quebrar no meio); as etiquetas passam para a linha de baixo quando não cabem.
+export const terrainEffectChips=k=>{const t=TERRAIN_EFFECT_TEXT[k]||[];return `<span class="ter-eff" role="list">${t.map((x,i)=>`<span class="fx ${i<t.length-1?"up":"down"}" role="listitem">${x}</span>`).join("")}</span>`};
+// Texto corrido "+ … · + … · − …" (para leitores e resumos).
 export const terrainEffectLine=k=>(TERRAIN_EFFECT_TEXT[k]||[]).join(" · ");
-// Com fx=true, cada terreno mostra as suas 2 vantagens e 1 desvantagem no lugar da dica.
-export const terrainListHtml=(hints,fx=false)=>`<ul class="ter-list${fx?" ter-fx":""}">${TERRAINS.map(k=>`<li>${terrainIcon(k,20)}<span><b>${TERRAIN_NAMES[k]}</b>${fx?`<small class="ter-eff">${terrainEffectLine(k)}</small>`:hints?`<small>${hints[k]}</small>`:""}</span></li>`).join("")}</ul>`;
+// Lista dos 7 terrenos (folha ⓘ Terrenos e Como jogar): ícone + nome e, embaixo, a dica (só visual, 2 colunas) ou as
+// etiquetas de vantagens/desvantagem (com efeitos, 1 coluna, para caber em 360 px sem quebrar o texto).
+export const terrainListHtml=(hints,fx=false)=>`<ul class="ter-list${fx?" ter-fx":""}">${TERRAINS.map(k=>`<li>${terrainIcon(k,28)}<span class="ter-txt"><b>${TERRAIN_NAMES[k]}</b>${fx?terrainEffectChips(k):hints?`<small>${hints[k]}</small>`:""}</span></li>`).join("")}</ul>`;
 // Onde ficam os desenhos de cada região: 2 em cima e 2 embaixo, longe da faixa do nome no meio.
 // Semente fixa (por região): o desenho é sempre o mesmo e não toca no sorteio do jogo.
 export function terrainSpots(shape){
