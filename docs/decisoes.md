@@ -140,3 +140,31 @@ Medida com ~54 mil partidas por modo (semente fixa); o repositório deu exatamen
   - Médio no 1×1 ainda vencível quase sempre atacando todas as eras (exigiria mexer numa regra de base, como a perda
     de 20% do exército por era).
   - Zênite domina as partidas só de IAs no Só visual (3 a 6 impérios).
+
+## 20/11/2026 — Rodada 4 de balanceamento ("só Ataque", game-designer) — aprovada
+Problema: atacar em todas as eras ganhava demais com 2 ou 3 rivais (Médio 81/69%, Difícil 40/39%). Aprovado pelo
+usuário, nos **dois modos de terreno** (Só visual e Com efeitos):
+1. **Sorteio novo a cada partida: sim.** Cada partida nova tem a sua semente de batalha (`state.rngSeed`), guardada no
+   save; saves antigos mantêm a sua. Laboratórios, testes de regressão e impressões digitais continuam com a semente
+   fixa; o tutorial também (o roteiro é sempre igual).
+2. **Regra A — saque limitado a 20%**: cada conquista leva no máximo 20% das Obras e da Ciência do rival (antes até 50%).
+3. **Regra B — Força guardada defende**: cada ponto de Força que você não usa em ataques soma 1 à defesa das suas
+   regiões, repartido como a defesa das Obras (÷ raiz do número de regiões). A Força reservada em ordens não conta.
+   Vale para o custo mostrado ao jogador e para as decisões dos rivais. A folha da região mostra "Força guardada +X".
+4. **Ajuste pequeno do ouro dos rivais com 2+ rivais** (A + B deixaram o Médio e o Difícil com 2–3 rivais duros
+   demais): Médio 1,03 → **1,00** (com efeitos 1,06 → **1,03**), Difícil 1,05 → **1,03**. 1×1 e Lendário iguais.
+- **Não aprovado**: E (rivais que reagem ao jogador) e rival "Aleatório" como padrão no Difícil/Lendário (continua
+  Adaptativo). **Descartados por agora**: logística, manutenção do exército, chance de vitória variável, limite de
+  ordens por era.
+- Medido com ~100 mil partidas (semente fixa); o repositório deu os mesmos números do protótipo (0 diferenças).
+  "Só Ataque" (todas as eras, mirando o rival; 1/2/3 rivais, os dois modos juntos): Médio 99/81/72 → 99/56/42,
+  Difícil 81/48/42 → 69/34/23, Lendário 57/31/23 → 43/18/14. Pior estilo de rival no Médio: 64% → 42% (meta ≤60%).
+  Jogador-IA, Só visual: Médio 74/27/25 → 69/24/11, Difícil 24/11/13 → 28/9/7, Lendário 5/3/7 → 7/2/1; com efeitos
+  (mapa padrão): Médio 73/45/32 → 61/40/21, Difícil 28/7/7 → 29/10/10, Lendário 9/3/3 → 10/3/4. Muito fácil continua
+  ~97–100%. Partidas de 15 eras: quase todas decididas por pontos na última era (93%), empate 4–6%.
+- Impressões digitais novas: Só visual **39190b06** (antes 8ba37eca) e Com efeitos **5c97e2c2** (antes 4010a086).
+- Saves em curso: passam a usar o saque de 20% e a Força guardada a partir da era seguinte; mantêm a semente, o ouro
+  dos rivais e os multiplicadores com efeitos com que começaram (estão no save).
+- **Pendências para depois**: Médio com 3 rivais no Só visual ficou mais duro para o jogador-IA (11%; quem ataca todas as eras
+  fica entre 33 e 50%); Zênite continua a dominar as partidas só de IAs no Só visual (3 a 6 impérios: Arvela 2–13%,
+  Zênite 39–64%); estilo Científico/estratégia de Ciência continuam as mais fracas.
