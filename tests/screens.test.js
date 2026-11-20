@@ -94,6 +94,7 @@ for (const [name, opts] of MOBILE_SCREENS) {
       await assertTargets(page, [
         ...[15, 30, 50].map((e) => [`#homeEraPresets [data-eras="${e}"]`, `${e} eras`]), ["#homeEraPresets .pg-other", "Outra duração"],
         ["#modeSlow", "Ritmo Normal"], ["#modeFast", "Ritmo Rápido"], ["#homeClassic", "Clássica"], ["#homeConquest", "Conquista"],
+        ["#mapFixed", "Mapa Padrão"], ["#mapRandom", "Mapa Sorteado"],
         ...[0, 1, 2].map((i) => [`#homeProfiles [data-prof="${i}"]`, `estilo do rival ${i + 1}`]), ["#allRandom", "Todos aleatórios"],
         ["label.pg-switch", "Posição inicial aleatória"],
       ], "Personalizar");
@@ -109,6 +110,9 @@ for (const [name, opts] of MOBILE_SCREENS) {
       assert.equal(await page.locator("#homeRandomStart").isChecked(), true, "tocar na linha liga a posição aleatória");
       assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · vitória por conquista · posição aleatória$/);
       assert.match(await page.locator("#setupSummary").innerText(), /3 rivais.*Médio.*42 eras.*Conquista.*posição aleatória.*ritmo rápido/);
+      await page.locator("#mapRandom").click();
+      assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · vitória por conquista · posição aleatória · mapa sorteado$/);
+      assert.match(await page.locator("#setupSummary").innerText(), /posição aleatória · mapa sorteado · ritmo rápido/);
       assert.equal(await page.locator("#homeEraPresets .pg-other").evaluate((e) => e.classList.contains("on")), true, '"Outra" devia ficar marcada com 42 eras');
       assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal em Personalizar");
       assert.deepEqual(await clippedText(page, "#setupScreen"), [], "texto cortado em Nova partida/Personalizar");

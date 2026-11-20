@@ -48,7 +48,7 @@ dev.html              versão de desenvolvimento (jogo + laboratórios)
 styles/               base.css (comum), game.css (jogo), screens.css (início, Nova partida, Como jogar), labs.css (só laboratórios)
 assets/fonts/         Marcellus SC (nome IMPÉRIOS e títulos) e a licença OFL.txt
 src/
-  core/               regras do jogo: configuração, mapa, economia, militar, eras, fim de partida (sem tela)
+  core/               regras do jogo: configuração, mapa, terrenos, economia, militar, eras, fim de partida (sem tela)
   ai/                 decisões e perfis das IAs (sem tela)
   app/                sessão (partida atual, dificuldade, rivais), gravação do save, ganchos, depuração
   platform/           armazenamento (localStorage hoje; @capacitor/preferences no app) e ficheiros
@@ -111,6 +111,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/player-version.test.js` | No `index.html` não aparece (nem é baixado) nada de laboratórios/Exportar/"Versão completa"; no `dev.html` aparece tudo; `index.html?dev=1` abre o `dev.html`; a partida da chave antiga passa para a do jogador e as duas versões não mexem no save uma da outra. |
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Cinco delas já substituem os internos fracos em `src/labs/tests-def.js`; ver `tests/README.md`. |
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
+| `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**
