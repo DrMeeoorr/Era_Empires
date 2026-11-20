@@ -355,7 +355,7 @@ export function defineTests(){
  test("Predefinições de dificuldade aplicam os valores certos",()=>{
   // Os 4 valores (incluindo aiIncomeMultiplier1v1), vindos de outra dificuldade, e a receita real das IAs.
   const saved=configApplied,base=DEFAULTS.economy.baseIncome;
-  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1.05,1.03,100,"leader"],hardcore:[1.12,-1,100,"leader"]};   // Difícil: rodada de 20/11/2026
+  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1,1,75,"neutralFirst"],dificil:[1.03,1.03,100,"leader"],hardcore:[1.12,-1,100,"leader"]};   // Médio e Difícil: rodada 4 de 20/11/2026 (antes 1,03 e 1,05 com 2+ rivais)
   try{for(const [k,v] of Object.entries(exp)){
    for(const prev of ["medio","dificil"]){setConfigApplied(clone(DEFAULTS));applyDifficulty(prev);applyDifficulty(k);
     const got=[configApplied.economy.aiIncomeMultiplier,configApplied.economy.aiIncomeMultiplier1v1,configApplied.military.aiAggression,configApplied.military.aiTarget];

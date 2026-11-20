@@ -49,7 +49,7 @@ test("applyDifficulty('config') volta aos valores das Configurações depois de 
 test("pela interface (?dev=1): Difícil → Configurações não herda agressividade/alvo do Difícil (também depois de recarregar)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL, dev: true });
   await startVia(page, { diff: "dificil", ai: 2 });
-  assert.deepEqual(await aiVals(page), [1.05, 1.03, 100, "leader"]);
+  assert.deepEqual(await aiVals(page), [1.03, 1.03, 100, "leader"]); // Difícil: 1,03 com 2+ rivais desde a rodada 4 (antes 1,05)
   await page.reload();
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   await startVia(page, { diff: "config", ai: 2 });
@@ -111,7 +111,7 @@ test("tutorial não grava Fácil/1 IA/30 eras/modo lento nas escolhas do jogador
   await page.locator("#newGameAfterEnd").click();
   await page.waitForFunction(() => !state.result && state.era === 1);
   assert.deepEqual(await page.evaluate(() => ({ d: currentDifficulty, ai: configApplied.map.aiCount, eras: configApplied.endgame.maxEras, mode: gameMode, civs: state.civs.length })), { d: "medio", ai: 3, eras: 15, mode: "fast", civs: 4 });
-  assert.deepEqual(await aiVals(page), [1.03, 1, 75, "neutralFirst"]);
+  assert.deepEqual(await aiVals(page), [1, 1, 75, "neutralFirst"]); // Médio: 1,00 com 2+ rivais desde a rodada 4 (antes 1,03)
   assert.deepEqual(errors, []);
   await context.close();
 });
