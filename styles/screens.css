@@ -154,3 +154,23 @@ button.btn-main,.btn-main{display:flex;align-items:center;justify-content:center
 .pg-card .ter-list:not(.ter-fx){column-gap:10px}
 .pg-card .ter-list:not(.ter-fx) li:nth-child(2){border-top:0}
 
+/* Janelas no estilo "Atlas" (Nova partida, Reiniciar, tutorial, saldo parado, save danificado): folha embaixo como o
+   convite do tutorial, medalhão com ícone (a cor não é o único sinal), título com a fonte dos títulos e botões grandes
+   empilhados; o principal fica em cima (a ordem no HTML não muda: o foco começa em "Cancelar" nas confirmações). */
+.modal-back.modal-atlas{align-items:flex-end;padding:0;background:#050a14b3}
+.modal-atlas .modal{max-width:560px;max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));margin:0 auto;padding:10px max(20px,env(safe-area-inset-right,0px)) max(18px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));text-align:center;border:0;border-top:1px solid #3a5070;border-radius:22px 22px 0 0;background:linear-gradient(180deg,#14284a,#0d1a30);box-shadow:0 -14px 40px #000b}
+.modal-atlas .grip{width:40px;height:4px;margin:0 auto 10px;border-radius:4px;background:#4a6080}
+.dlg-ic{display:grid;place-items:center;width:56px;height:56px;margin:2px auto 6px;border-radius:50%;background:var(--scr-ink);border:1.5px solid currentColor;color:var(--scr-gold);box-shadow:0 0 0 5px #f4bd5014}
+.dlg-ic .ic{width:26px;height:26px}
+.dlg-ic.tone-danger{color:#ff9aa6;box-shadow:0 0 0 5px #ff737b14}.dlg-ic.tone-info{color:#8fc7ff}
+.modal-atlas h2{margin:4px 0 6px;font-family:var(--scr-title);font-weight:400;font-size:23px;line-height:1.2;letter-spacing:.03em;color:var(--scr-parch);overflow-wrap:anywhere}
+.modal-atlas .dlg-text{max-width:340px;margin:0 auto;color:#c9d3e2;font-size:15px;line-height:1.45}
+.modal-atlas .actions{display:flex;flex-direction:column;gap:8px;margin-top:16px!important}
+.modal-atlas .actions button{flex:none;width:100%;min-height:52px;margin:0;font-size:16px}
+.modal-atlas .actions .btn-main,.modal-atlas .actions .btn-danger{order:-1;min-height:56px;font-size:17px}
+.modal-atlas .actions .btn-line{border:1.5px solid #e9d9ad66;background:#0a1322b3;color:var(--scr-parch);font-weight:700;border-radius:14px}
+button.btn-danger{display:flex;align-items:center;justify-content:center;border-radius:14px;border:0;background:linear-gradient(180deg,#d8505f,#b23446);color:#fff;font-weight:800;box-shadow:0 1px 0 #fff4 inset,0 -2px 0 #0003 inset}
+.modal-atlas button:focus-visible{outline:3px solid #ffe2a0;outline-offset:2px}
+.dlg-check{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin:10px auto 0;color:#d7deea;font-size:14.5px;cursor:pointer}
+.dlg-check input{width:22px;height:22px;margin:0;accent-color:var(--scr-gold)}
+@media(prefers-reduced-motion:no-preference){.modal-atlas .modal{animation:invUp .22s ease-out both}}

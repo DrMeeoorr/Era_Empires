@@ -359,3 +359,16 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .ter-more>summary::before{content:"ⓘ";font-weight:400}
 .ter-more[open]>summary::after{content:"▴"}.ter-more:not([open])>summary::after{content:"▾"}
 .ter-more ul{margin:0 0 4px;padding-left:18px;color:var(--muted)}.ter-more li{margin:2px 0}
+/* ===== Acabamento "Atlas" dentro da partida: títulos das folhas, menu ☰ e aviso de falha ao salvar ===== */
+.sheet{background:linear-gradient(180deg,#152a49,#101d33 220px)}
+.sheet-head h2{font-family:"Marcellus SC",Georgia,"Times New Roman",serif;font-weight:400;font-size:21px;letter-spacing:.05em;color:#efe3c2}
+.menu-item{min-height:54px;border:1px solid #263a5a;border-radius:14px;background:linear-gradient(180deg,#17283f,#13213a)}
+.menu-item .ic.mi{width:22px;height:22px;color:#f4bd50}
+#restart.menu-item{color:#ffc7cc}#restart.menu-item .ic.mi{color:#ff9aa6}
+#summaryToggle[aria-pressed="false"] .ic.mi{color:var(--muted)}
+.save-warning{align-items:center;gap:10px;padding:8px 6px 8px 10px;border:1px solid #6b2f3a;border-left:4px solid #ff737b;border-radius:14px;background:linear-gradient(180deg,#2a1520,#1d1220);font-size:13.5px;line-height:1.35}
+.save-warning .sw-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1.5px solid #ff9aa6;color:#ff9aa6;background:#0a1322}
+.save-warning .sw-ic .ic{width:20px;height:20px}
+.save-warning .sw-t{flex:1;min-width:0}
+.save-warning .sw-x{flex:none;display:grid;place-items:center;width:48px;height:48px;padding:0;border:0;border-radius:12px;background:transparent;color:#c9d3e2}
+.save-warning .sw-x .ic{width:20px;height:20px}

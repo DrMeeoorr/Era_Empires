@@ -8,7 +8,7 @@ import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {startNewGame,showView,renderAll} from "./game.js";
 import {civSymHtml,playerProfileName} from "./labels.js";
-import {showModal} from "./modal.js";
+import {showDialog} from "./modal.js";
 import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
@@ -74,7 +74,7 @@ export function initHome(){
  $("homeHowTo").onclick=()=>openSheet("howToScreen",$("homeHowTo"));
  $("howToBack").onclick=()=>closeSheet();$("howToOk").onclick=()=>closeSheet();
  $("setupStart").onclick=()=>{
-  if(inProgress())showModal(`<h2>Começar uma nova partida?</h2><p class="small muted">A partida em andamento (era ${state.era}) será substituída.</p>`,[{label:"Cancelar"},{label:"Nova partida",cls:"primary",onClick:begin}]);else begin();
+  if(inProgress())showDialog({icon:"play",title:"Começar uma nova partida?",text:`A partida em andamento (era ${state.era}) será substituída.`,buttons:[{label:"Cancelar"},{label:"Nova partida",kind:"primary",onClick:begin}],esc:0});else begin();
  };
  const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
