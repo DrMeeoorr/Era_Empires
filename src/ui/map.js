@@ -12,8 +12,8 @@ import {civLabel,profileLabel} from "./labels.js";
 import {openSheet,isSheetOpen,closeSheet} from "./sheets.js";
 import {showToast} from "./toast.js";
 import {regionShapes} from "./mapshape.js";
-import {TERRAINS,TERRAIN_NAMES,TERRAIN_HINTS,terrainOf,mapTypeOf} from "../core/terrain.js";
-import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml} from "./terrain-art.js";
+import {TERRAINS,TERRAIN_NAMES,TERRAIN_HINTS,terrainOf,mapTypeOf,terrainEffectsOn,ruleTerrain,terrainStartsOf,terrainDefenseBonus,terrainAttackFactor} from "../core/terrain.js";
+import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectLine} from "./terrain-art.js";
 
 /* ── Mapa e painel do alvo ── */
 /* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
@@ -102,10 +102,23 @@ export function renderMap(){
  if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
 }
 // Folha "ⓘ Terrenos": os 7 terrenos e o tipo de mapa desta partida (o terreno ainda não muda as regras).
-export function renderTerrainSheet(){const el=$("terrainBody");if(!el)return;
- el.innerHTML=`<p class="small muted ter-mapnote">${mapTypeOf(state)==="sorteado"?"<b>Mapa sorteado</b>: os terrenos desta partida foram sorteados.":"<b>Mapa padrão</b>: cada região tem sempre o mesmo terreno."} Por enquanto o terreno não muda as regras.</p>${terrainListHtml(TERRAIN_HINTS)}`}
-// Listas de terrenos do Como jogar (tela inicial e folha "?").
-export function fillTerrainLists(){document.querySelectorAll("[data-terrain-list]").forEach(el=>{if(!el.childElementCount)el.innerHTML=terrainListHtml(TERRAIN_HINTS)})}
+// Com terrenos com efeitos mostra as 2 vantagens e 1 desvantagem de cada um; só visual, avisa que nada muda.
+export const TERRAIN_FX_NOTE="Nesta partida os terrenos têm efeito: cada região dá ao dono as vantagens e a desvantagem do seu terreno (as % de Obras, Força e Ciência somam por região). Defesa e custo de ataque do terreno só valem em regiões com dono. A região inicial de cada império conta como Campina.";
+export const TERRAIN_VISUAL_NOTE="Nesta partida o terreno é só visual: não muda as regras. Para jogar com efeitos: Nova partida → Personalizar → Terrenos → Com efeitos.";
+export const terrainNote=()=>terrainEffectsOn(state)?TERRAIN_FX_NOTE:TERRAIN_VISUAL_NOTE;
+export function renderTerrainSheet(){const el=$("terrainBody");if(!el)return;const fx=terrainEffectsOn(state);
+ el.innerHTML=`<p class="small muted ter-mapnote">${mapTypeOf(state)==="sorteado"?"<b>Mapa sorteado</b>: os terrenos desta partida foram sorteados.":"<b>Mapa padrão</b>: cada região tem sempre o mesmo terreno."}</p><p class="small ter-rulenote${fx?" on":""}">${terrainNote()}</p>${terrainListHtml(TERRAIN_HINTS,fx)}`}
+// Listas de terrenos do Como jogar (tela inicial e folha "?"): refeitas ao abrir, conforme a partida atual.
+export function fillTerrainLists(){const fx=terrainEffectsOn(state);
+ document.querySelectorAll("[data-terrain-list]").forEach(el=>{el.innerHTML=terrainListHtml(TERRAIN_HINTS,fx)});
+ document.querySelectorAll("[data-terrain-note]").forEach(el=>{el.textContent=terrainNote()})}
+// Folha da região com terrenos com efeitos: linha "+ … · + … · − …" (a região inicial conta como Campina).
+export function regionTerrainHtml(t){const k=terrainOf(state)[t];let h=terrainChip(k);
+ if(terrainEffectsOn(state)){const r=ruleTerrain(state,t);h+=`<span class="ter-eff">${terrainEffectLine(r)}</span>`;if(r!==k)h+=`<span class="ter-eff muted">Região inicial: conta como Campina.</span>`}
+ return h}
+// Parte do custo que vem do terreno (só com efeitos): "(terreno +2)" na defesa e "× 1,2 (Pântano)" no custo.
+export function terrainCostParts(t){if(!terrainEffectsOn(state))return {def:"",mult:""};const d=terrainDefenseBonus(state,t),f=terrainAttackFactor(state,t),n=TERRAIN_NAMES[ruleTerrain(state,t)];
+ return {def:d?` (${n} ${d>0?"+":"−"}${fmt(Math.abs(d),0)})`:"",mult:f!==1?` × ${fmt(f,1)} (${n})`:""}}
 // Folha de ataque: região + dono, 3 números (Custo, Sua força, Chance), botão com o motivo quando não dá,
 // atalho "Investir em Militar" e a explicação longa atrás de "Por quê?".
 export const ATTACK_CHANCE="82%";
@@ -131,16 +144,16 @@ export function renderOrderAttack(){
  const owner=state.owners[t];
  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras reforçam a defesa.</p>`;return}
  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}${ordTxt}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
- const replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
+ const tc=terrainCostParts(t),replacing=maxO===1&&ords.length,mult=replacing?1:next,def=territoryDefense(state,t,configApplied),base=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
  if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${ordTxt}<p class="tgt-sub">Você já deu o máximo de ${maxO} ordens nesta era.</p>`;return}
  const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Atacar"} · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-avail,1)} de Força`,ok,{invest:!ok&&mult<=1});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = defesa ${fmt(def,1)} + conquista ${fmt(m.conquestCost,0)}${disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:""}${mult>1?` = ${fmt(base,1)} × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = ${tc.mult?"(":""}defesa ${fmt(def,1)}${tc.def} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:""}${mult>1?` = ${fmt(base,1)} × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
 }
 // Painel do alvo com o terreno da região (ícone + nome) logo abaixo do título.
 export function renderAttack(){
  renderAttackBody();
  const t=selectedTerritory,h=$("mapStatus")?.querySelector(".tgt-title");
- if(t!==null&&h)h.insertAdjacentHTML("afterend",`<p class="tgt-terrain">${terrainChip(terrainOf(state)[t])}</p>`);
+ if(t!==null&&h)h.insertAdjacentHTML("afterend",`<p class="tgt-terrain">${regionTerrainHtml(t)}</p>`);
 }
 function renderAttackBody(){
  if(simOrders())return renderOrderAttack();
@@ -153,9 +166,9 @@ function renderAttackBody(){
  if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}<p class="tgt-sub">Defesa ${fmt(territoryDefense(state,t,configApplied),1)}. Obras reforçam a defesa.</p>`;return}
  if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
  const def=territoryDefense(state,t,configApplied),need=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),discTxt=disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:"",civ=owner==="neutral"?null:getCiv(state,owner);
- const extra=civ?def-m.defenseOwned:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras`:""}`:`defesa ${fmt(def,0)}`;
+ const tc=terrainCostParts(t),tdef=terrainEffectsOn(state)?terrainDefenseBonus(state,t):0,extra=civ?def-m.defenseOwned-tdef:0,defTxt=civ?`defesa ${fmt(m.defenseOwned,0)}${extra>0.05?` + ${fmt(extra,1)} de Obras`:""}${tc.def}`:`defesa ${fmt(def,0)}`;
  const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-mil,1)} de Força`,ok,{invest:!ok});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${defTxt} + conquista ${fmt(m.conquestCost,0)}${discTxt} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${tc.mult?"(":""}${defTxt} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${discTxt} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
 }
 // Botão "Atacar" do painel do alvo (ataque imediato quando as ordens simultâneas estão desligadas).
 export function attackSelected(){

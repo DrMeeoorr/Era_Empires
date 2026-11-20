@@ -337,3 +337,9 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .ter-list small{display:block;font-size:12px;line-height:1.25;color:var(--muted)}
 .ter-mapnote{margin:4px 0 0}
 #terrainSheet .ter-list{margin-bottom:6px}
+/* Terrenos com efeitos: linha "+ … · + … · − …" na folha da região e nas listas. */
+.tgt-terrain .ter-eff{display:block;margin-top:4px;font-size:13px;color:var(--text)}
+.tgt-terrain .ter-eff.muted{color:var(--muted);font-size:12px}
+.ter-list.ter-fx small.ter-eff{color:var(--text);opacity:.9}
+.ter-rulenote{margin:6px 0 0;color:var(--muted)}
+.ter-rulenote.on{color:var(--text)}
