@@ -16,7 +16,23 @@ function baseDefense(s,idx,cfg){
  const econ=(m.defensePerInfraRevenue||0)*(civ.lastRevenue?.infrastructure||0)+(m.defensePerTechProgress||0)*(civ.techProgress||0);
  // A defesa vinda da economia reparte-se pelos territórios (expoente 0,5 = raiz quadrada): um império rico
  // continua difícil de atacar, mas cada território já não recebe a força da economia inteira.
- const split=m.defenseSplitExponent||0;return m.defenseOwned+(split>0?econ/Math.pow(Math.max(1,countTerritories(s,o)),split):econ);
+ const gar=reserveDefense(s,civ,m),split=m.defenseSplitExponent||0,div=split>0?Math.pow(Math.max(1,countTerritories(s,o)),split):1;
+ return m.defenseOwned+(econ+gar)/div;
+}
+/* Rodada 4 de balanceamento (20/11/2026) — Força guardada defende: cada ponto de Força que o dono NÃO usou em ordens
+   de ataque soma defensePerReserveForce (1) à defesa, repartido pelas regiões como a defesa das Obras (÷ raiz do nº de
+   regiões). A Força reservada em ordens não conta. Enquanto as ordens se resolvem, vale a Força livre do início da
+   resolução (garrisonSnapshot), para a ordem de resolução não mudar a defesa de ninguém. */
+let garrisonSnapshot=null;
+export function reserveForce(s,civ){if(!civ)return 0;const v=garrisonSnapshot&&garrisonSnapshot.s===s&&civ.id in garrisonSnapshot.f?garrisonSnapshot.f[civ.id]:civ.military;return Math.max(0,Number(v)||0)}
+function reserveDefense(s,civ,m){const k=m.defensePerReserveForce||0;return k>0?k*reserveForce(s,civ):0}
+// Partes da defesa de uma região com dono, já repartidas (para a folha da região): base, Obras, Força guardada e terreno.
+export function defenseParts(s,idx,cfg){
+ const o=s.owners[idx],m=cfg.military,total=territoryDefense(s,idx,cfg),terrain=terrainEffectsOn(s)&&o!=="neutral"?terrainDefenseBonus(s,idx):0;
+ const civ=o==="neutral"?null:getCiv(s,o);if(!civ)return {base:total,works:0,reserve:0,terrain:0,total};
+ const split=m.defenseSplitExponent||0,div=split>0?Math.pow(Math.max(1,countTerritories(s,o)),split):1;
+ const works=((m.defensePerInfraRevenue||0)*(civ.lastRevenue?.infrastructure||0)+(m.defensePerTechProgress||0)*(civ.techProgress||0))/div;
+ return {base:m.defenseOwned,works,reserve:reserveDefense(s,civ,m)/div,terrain,total};
 }
 // Tecnologia reforça o ATAQUE: o custo de cada ataque divide-se por 1 + techAttackMax × P/(P + techAttackHalf),
 // com P = progresso tecnológico do atacante (retornos decrescentes; teto = techAttackMax). 0 desliga.
@@ -32,11 +48,12 @@ export function attackNeed(s,idx,owner,cfg){return fullAttackCost(s,idx,cfg)/tec
 // × o custo de ataque do terreno (Pântano +20%, só se a região tem dono).
 export function fullAttackCost(s,idx,cfg){const c=cfg.military.conquestCost+territoryDefense(s,idx,cfg);return terrainEffectsOn(s)?c*terrainAttackFactor(s,idx):c}
 /* Saque: ao conquistar um território de outra civilização, o vencedor leva uma parte da infraestrutura
-   ainda ativa e da tecnologia do derrotado (pillageInvestShare × 1/territórios, até metade) e um espólio
-   em tesouro de pillageRevenueEras eras da receita daquele território. Torna a guerra uma forma de crescer. */
+   ainda ativa e da tecnologia do derrotado (pillageInvestShare × 1/territórios, até pillageMaxShare = 20%; antes da
+   rodada 4 de balanceamento, até metade) e um espólio em tesouro de pillageRevenueEras eras da receita daquele
+   território. Torna a guerra uma forma de crescer. */
 export function pillage(s,victimId,owner,cfg){
  const m=cfg.military,victim=getCiv(s,victimId),civ=getCiv(s,owner),T=countTerritories(s,victimId);
- if(!victim||!civ||T<1)return null;const f=Math.min(0.5,(m.pillageInvestShare||0)/T);let infra=0,tech=0;
+ if(!victim||!civ||T<1)return null;const f=Math.min(m.pillageMaxShare??0.2,(m.pillageInvestShare||0)/T);let infra=0,tech=0;
  if(f>0){const mine=new Map(),add=[];
   for(const inv of s.investments)if(inv.owner===owner)mine.set(inv.type+"|"+inv.origin+"|"+inv.mode,inv);
   for(const inv of s.investments){
@@ -108,6 +125,11 @@ export function cancelOrder(s,owner,idx){
 }
 export function resolveOrders(s,cfg,era){
  const q=s.orders||[];s.orders=[];if(!q.length)return [];
+ // Força guardada (defesa): a Força livre de cada um ANTES de devolver as reservas fica fixa durante a resolução.
+ garrisonSnapshot={s,f:Object.fromEntries(s.civs.map(c=>[c.id,c.military]))};
+ try{return resolveQueue(s,cfg,era,q)}finally{garrisonSnapshot=null}
+}
+function resolveQueue(s,cfg,era,q){
  for(const o of q){const c=getCiv(s,o.owner);if(c)c.military+=o.need}   // devolve a reserva; o ataque real volta a cobrar
  const groups={};for(const o of q)(groups[o.idx]??=[]).push(o);
  const keys=Object.keys(groups),rng=rand(s.rngSeed+era*101+7);

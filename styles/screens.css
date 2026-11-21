@@ -174,3 +174,28 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .dlg-check{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin:10px auto 0;color:#d7deea;font-size:14.5px;cursor:pointer}
 .dlg-check input{width:22px;height:22px;margin:0;accent-color:var(--scr-gold)}
 @media(prefers-reduced-motion:no-preference){.modal-atlas .modal{animation:invUp .22s ease-out both}}
+
+/* Medalhas (20/11/2026): botão na tela inicial e a tela "Medalhas" (estilo "Atlas", funciona como uma folha) */
+.au-medals{min-height:48px;font-size:14.5px}
+.au-medals .au-count{margin-left:4px;padding:1px 8px;border-radius:99px;background:#ffffff1f;color:#ffe2a0;font-size:13px;font-weight:700}
+#medalsScreen{z-index:1102}#medalsScreen:focus{outline:none}
+#medalsScreen:not(.over-game) .pg-x,#medalsScreen.over-game #medalsBack{display:none}
+#medalsScreen.over-game .pg-bar{padding-left:max(16px,env(safe-area-inset-left,0px))}
+@media(prefers-reduced-motion:no-preference){#medalsScreen.over-game:not([hidden]){animation:howUp .22s ease-out}}
+.md-ok{width:100%;max-width:560px}
+.md-head{display:grid;gap:8px}
+.md-count{display:flex;align-items:baseline;gap:8px}.md-count b{font-size:30px;font-weight:900;color:#ffd77a;line-height:1}.md-count span{color:var(--scr-muted);font-size:14px}
+.md-bar{height:8px;border-radius:99px;background:#0a1322;border:1px solid #23375a;overflow:hidden}.md-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#e2a22c,#ffd27a)}
+.md-head .pg-desc{margin-top:2px}
+.md-n{margin-left:auto;font-family:system-ui,sans-serif;font-size:13px;font-weight:700;letter-spacing:0;color:var(--scr-muted)}
+.md-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.md-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
+.md-row.on{border-color:#f4bd5066}
+.md-row .medal-svg{width:52px;height:58px}
+.md-t{min-width:0}.md-t b{display:block;font-size:15.5px;color:var(--scr-parch)}
+.md-goal{display:block;font-size:13.5px;line-height:1.35;color:#c9d3e1}
+.md-st{display:flex;align-items:center;gap:4px;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--scr-muted)}
+.md-st .ic{width:15px;height:15px;stroke-width:2.2}
+.md-row.on .md-st{color:#6fe0b0}
+.md-tag{margin-left:4px;padding:1px 7px;border-radius:99px;background:#3a2c0e;color:#ffd58a;font-family:system-ui,sans-serif;font-size:11.5px;font-weight:800;vertical-align:2px}
+.md-match{border-color:#f4bd5066}

@@ -1,5 +1,6 @@
 // Laboratórios (só versão de desenvolvimento, dev.html): liga as abas, os botões e o "Exportar" da partida.
 import {onHook} from "../app/hooks.js";
+import {markLabGame} from "../app/medals.js";
 import {state,gameMode,configApplied,configDefault,setConfigApplied,rememberAiBase,setState,newGame,setSelectedTerritory,setCancelRequested} from "../app/session.js";
 import {VERSION,normalizeConfig} from "../core/config.js";
 import {simulate} from "../core/era.js";
@@ -35,7 +36,7 @@ export async function initLabs(){
  $("restoreConfig").onclick=()=>{setConfigEdited(clone(configDefault));renderParams();setStatus("labStatus","Padrões restaurados na área de edição; clique em Aplicar para usar.")};
  $("saveConfig").onclick=()=>{try{download("imperios-configuracao.json",JSON.stringify({formatVersion:VERSION,config:readParams()},null,2))}catch(e){setStatus("labStatus",e.message,"error")}};
  $("loadConfigBtn").onclick=()=>$("configFile").click();$("configFile").onchange=e=>{if(e.target.files[0])loadJsonFile(e.target.files[0],"config");e.target.value=""};
- $("restartWithConfig").onclick=()=>{try{setConfigApplied(readParams());rememberAiBase(configApplied);setConfigEdited(clone(configApplied));setState(newGame());setSelectedTerritory(null);renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
+ $("restartWithConfig").onclick=()=>{try{setConfigApplied(readParams());rememberAiBase(configApplied);setConfigEdited(clone(configApplied));setState(newGame());markLabGame(state);setSelectedTerritory(null);renderParams();renderAll();setStatus("labStatus","Nova partida iniciada com a configuração atual.","success")}catch(e){setStatus("labStatus",e.message,"error")}};
  document.querySelectorAll(".quick").forEach(b=>b.onclick=()=>runLong(Number(b.dataset.n)));
  $("customAdvance").onclick=()=>{try{const n=safeNum($("customEras").value,1,1e9);if(!Number.isSafeInteger(n))throw Error("Use um inteiro positivo.");runLong(n)}catch(e){setStatus("advanceStatus",e.message,"error")}};
  $("cancelAdvance").onclick=()=>{setCancelRequested(true);setStatus("advanceStatus","Cancelamento solicitado; concluindo o bloco atual...")};

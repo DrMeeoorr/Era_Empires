@@ -48,8 +48,14 @@ export let terrainEffectsChoice=false;
 export const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
 export function resolveOpponents(n){return Array.from({length:n},(_,i)=>{const c=opponentChoices[i]||"random";if(c==="random")return {profile:LAB_PROFILES[Math.floor(Math.random()*LAB_PROFILES.length)][0],hidden:true};if(c==="config")return {profile:null,hidden:false};return {profile:c,hidden:false}})}
+// Sorteio das batalhas (rodada 4 de balanceamento, 20/11/2026): cada partida nova tem a sua semente de batalha
+// (Math.random), guardada no save em state.rngSeed; saves antigos continuam com a que já tinham. Laboratórios,
+// testes de regressão e impressões digitais criam os estados com newState e a semente fixa da configuração.
+export function newBattleSeed(){return Math.floor(Math.random()*4294967296)}
 // Uma partida começa já com a era 1 aberta: receitas recebidas, à espera da decisão do jogador.
-export function newGame(){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)],startSeed:configApplied.map.randomStart?Math.floor(Math.random()*4294967296):0});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;
+// {fixedSeed:true}: usa a semente da configuração (o tutorial, que precisa de ser sempre igual).
+export function newGame({fixedSeed=false}={}){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)],startSeed:configApplied.map.randomStart?Math.floor(Math.random()*4294967296):0});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;
+ if(!fixedSeed)s.rngSeed=newBattleSeed();
  // Terrenos: semente própria (Math.random, como a posição aleatória), nunca o sorteio das batalhas.
  s.terrain=makeMapTerrain(mapType,mapType==="sorteado"?Math.floor(Math.random()*4294967296):null,s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0),s.owners.length);
  // Com efeitos: liga as regras do terreno e guarda as regiões iniciais (contam como Campina). Só visual: nada muda.

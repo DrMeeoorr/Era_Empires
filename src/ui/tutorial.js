@@ -11,6 +11,7 @@ import {readAlloc} from "./allocation.js";
 import {$} from "./dom.js";
 import {fmt,escapeHtml} from "./format.js";
 import {renderAll,showView} from "./game.js";
+import {noteTutorialMedal} from "./medals.js";
 import {showModal,showDialog} from "./modal.js";
 
 /* ── Tutorial: partida guiada (1 rival "Equilibrado", posições fixas TUTORIAL_POS; depois jogo livre no Fácil) ──
@@ -67,7 +68,8 @@ export async function initTutorial(){
  const cur=()=>{const tu=state?.tutorial;if(!tu||tu.done)return null;if(tu.v!==2){tu.step=[0,0,0,1,2,3,4,4,4,4][tu.step]??LAST;tu.waitEra=0;tu.v=2}return tu};
  function clearFocus(){if(focused)focused.classList.remove("tut-focus");focused=null}
  function hide(){clearFocus();box.hidden=true;spot.hidden=true;lastKey=""}
- function endTutorial(skipped){const tu=cur();if(!tu)return;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();hide();renderAll();
+ function endTutorial(skipped){const tu=cur();if(!tu)return;tu.skipped=!!skipped;tu.done=true;state.aiAvoid=null;state.forcedAttack=null;state.ui.skipIdleWarning=false;saveGame();hide();renderAll();
+  if(!skipped)noteTutorialMedal();   // "Primeiros passos": a única medalha do tutorial
   if(skipped)showDialog({icon:"compass",title:"Tutorial terminado",text:"A partida continua normalmente no nível Fácil. Você pode rever o tutorial pela tela inicial (botão “Tutorial”) e as regras em “Como jogar”.",buttons:[{label:"Continuar",kind:"primary"}],esc:0})}
  function enterStep(){const tu=cur();if(!tu)return;warn="";const st=STEPS[tu.step];if(st?.enter&&!tu["entered"+tu.step]){tu["entered"+tu.step]=true;st.enter();saveGame()}draw(true)}
  // Desenha o balão: dica curta, seta e área destacada. Sem alvo visível (outra folha aberta, aviso...), esconde-se.

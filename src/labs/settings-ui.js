@@ -1,6 +1,7 @@
 // Aba "Configurações" (só versão de desenvolvimento): editor de parâmetros, aplicar/guardar/carregar a configuração,
 // avanço rápido de várias eras, estratégias automáticas e cenários.
 import {configApplied,state,rememberAiBase,setConfigApplied,setState,newGame,setSelectedTerritory,gameMode,busy,setBusy,setCancelRequested,cancelRequested,playEra} from "../app/session.js";
+import {markLabGame} from "../app/medals.js";
 import {normalizeConfig,SUPPORTED_VERSIONS,DEFAULTS,VERSION} from "../core/config.js";
 import {describeResult} from "../core/endgame.js";
 import {simulate} from "../core/era.js";
@@ -33,6 +34,7 @@ export function readParams(){const next=clone(configEdited);document.querySelect
 export function applyConfig(){
  const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){setConfigApplied(clone(c));setState(newGame());setSelectedTerritory(null);addLog(state,"Partida reiniciada com recálculo explícito.");}
  else setConfigApplied(clone(c));
+ markLabGame(state);   // partida com a configuração dos laboratórios: não vale medalhas
  setConfigEdited(clone(c));renderParams();renderAll();$("configState").textContent="Configuração aplicada";setStatus("labStatus",$("recalcExisting").checked?"Configuração aplicada e partida reiniciada.":"Configuração aplicada. Investimentos existentes mantêm seus parâmetros originais.","success");
 }
 export function loadJsonFile(file,kind){
@@ -47,6 +49,7 @@ export function runStrategy(strategy,eras){
 }
 export async function runLong(n,opts={}){
  if(busy)return;setBusy(true);setCancelRequested(false);$("cancelAdvance").disabled=false;$("advance").disabled=true;let done=0;const start=performance.now();
+ markLabGame(state);   // avanço rápido: a partida deixa de valer medalhas
  try{while(done<n&&!cancelRequested&&!state.result){const batch=Math.min(configApplied.simulation.blockSize,n-done);for(let i=0;i<batch&&!state.result;i++){playEra({military:0,infrastructure:0,technology:0});done++}$("advanceProgress").style.width=(100*done/n)+"%";setStatus("advanceStatus",`Processadas ${fmt(done,0)} de ${fmt(n,0)} eras · era atual ${state.era} · ${fmt(performance.now()-start,0)} ms`);renderMetrics();await new Promise(r=>setTimeout(r,0))}
  renderAll();setStatus("advanceStatus",cancelRequested?`Cancelado após ${done} eras concluídas. O histórico foi preservado.`:state.result?`Partida encerrada após ${done} eras: ${describeResult(state,state.result)}`:`Concluído: ${done} eras processadas. Era atual: ${state.era}.`,"success");
  }catch(e){renderAll();setStatus("advanceStatus","Simulação interrompida: "+e.message,"error")}finally{setBusy(false);$("cancelAdvance").disabled=true;$("advance").disabled=false}

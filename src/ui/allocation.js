@@ -27,7 +27,7 @@ export function renderAllocation(statusMessage=null){
  AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?clamp(100*vals[i]/b,0,100):0)+"%";$(k+"Fine").textContent=fmt(vals[i],2)});
  $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);
  const milGain=vals[0]*c.military.pointsPerInvestment,infraGain=vals[1]*c.infrastructure.initialReturn,techGain=vals[2]*c.technology.progressPerInvestment*c.technology.benefitPerProgress,techEra=state.era+effectiveDelay("technology",c.technology.delay,state.mode);
- $("milForecast").textContent=`+${fmt(milGain,1)} de Força na próxima era. Curto prazo: a Força não usada perde 20% por era.`;
+ $("milForecast").textContent=`+${fmt(milGain,1)} de Força na próxima era. Curto prazo: a Força não usada defende suas regiões, mas perde 20% por era.`;
  $("infraForecast").textContent=`Rende cerca de ${money(infraGain)} por era a partir da próxima, crescendo até a 4.ª era e depois acabando.`;
  $("techForecast").textContent=`Rende ${money(techGain)} por era, para sempre, a partir da era ${techEra}.`;
  $("milPrev").innerHTML=vals[0]>0?`<span class="gold">+${fmt(milGain,1)}</span> de Força`:"curto prazo";

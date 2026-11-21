@@ -24,8 +24,9 @@ export function newTutorialGame(){
  const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false,randomStart:!!configApplied.map.randomStart,mapType,terrainEffects:terrainEffectsChoice};
  // O tutorial usa sempre o mapa padrão e os terrenos só visuais; as escolhas do jogador voltam depois (restoreSetupAfterTutorial).
  setMapType("padrao");setTerrainEffectsChoice(false);setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
- // O rival do tutorial é sempre "Equilibrado" (ai.profile); opponentChoices do jogador não muda.
- setState(newGame());
+ // O rival do tutorial é sempre "Equilibrado" (ai.profile); opponentChoices do jogador não muda. Sorteio das batalhas
+ // fixo (semente da configuração): o tutorial é sempre igual.
+ setState(newGame({fixedSeed:true}));
  state.owners=state.owners.map(()=> "neutral");state.owners[TUTORIAL_POS.player]="player";state.owners[TUTORIAL_POS.ai]=A(state).id;
  const ai=A(state);ai.profile="reference";ai.hiddenProfile=false;
  state.aiAvoid={player:true,idx:[TUTORIAL_POS.target]};state.tutorial={step:0,waitEra:0,attackDone:false,prevSetup};state.ui.skipIdleWarning=true;   // sem o aviso de saldo parado durante o tutorial

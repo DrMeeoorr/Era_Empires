@@ -116,11 +116,13 @@ test("economia: conservação do tesouro em partidas longas (saldo = anterior + 
     return checked;
   }));
 
-test("economia: aiIncomeMultiplier1v1 só vale no 1×1 (Médio: 1,00 no 1×1, 1,03 com 2+ rivais)", () =>
+// Rodada 4 (20/11/2026): nenhuma dificuldade usa hoje valores diferentes no 1×1 e com 2+ rivais (Médio 1,00/1,00,
+// Difícil 1,03/1,03), por isso a regra é testada com os valores do Médio de antes (1,00 no 1×1, 1,03 com 2+).
+test("economia: aiIncomeMultiplier1v1 só vale no 1×1 (1,00 no 1×1, 1,03 com 2+ rivais)", () =>
   rule(() => {
     for (const [ai, exp] of [[1, 1], [2, 1.03], [3, 1.03]]) {
-      const c = clone(DEFAULTS), d = DIFFICULTIES.medio;
-      c.economy.aiIncomeMultiplier = d.aiIncomeMultiplier; c.economy.aiIncomeMultiplier1v1 = d.aiIncomeMultiplier1v1; c.map.aiCount = ai;
+      const c = clone(DEFAULTS);
+      c.economy.aiIncomeMultiplier = 1.03; c.economy.aiIncomeMultiplier1v1 = 1; c.map.aiCount = ai;
       const s = newState(c); beginEra(s, c);
       const pl = s.pending.revenue.player.total;
       for (const civ of aiCivs(s)) { const v = s.pending.revenue[civ.id].total; if (Math.abs(v - pl * exp) > 1e-9) throw Error(`${ai} IA(s): receita da IA ${v}, esperado ${pl * exp}`); }

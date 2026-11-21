@@ -14,6 +14,7 @@ import {startNewGame} from "./game.js";
 import {liveScores,PTS} from "./hud.js";
 import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml} from "./labels.js";
+import {resultMedalsHtml} from "./medals.js";
 
 export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
 export function renderCharts(){
@@ -32,7 +33,7 @@ export function renderHistory(){
 export function renderForecast(){
  const era=state.era;let infra=[],tech=[];
  for(let t=1;t<=12;t++){let e=era+t,ir=0,tr=0;for(const inv of state.investments){if(inv.owner!=="player")continue;if(inv.type==="infrastructure")ir+=infraReturn(inv,e-inv.origin);if(inv.type==="technology")tr+=techReturn(state,inv,e)}infra.push(ir);tech.push(tr)}
- $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Força disponível: ${fmt(P(state).military,1)}. Perde 20% por era se não for usada.</p></div><div class="log-item"><strong class="green">Obras</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}</p></div><div class="log-item"><strong class="purple">Ciência</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bônus sobre todo o ouro da era).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
+ $("forecast").innerHTML=`<div class="log-item"><strong class="gold">Militar</strong><p class="small muted">Força disponível: ${fmt(P(state).military,1)}. A que não for usada defende suas regiões, mas perde 20% por era.</p></div><div class="log-item"><strong class="green">Obras</strong><p class="small muted">Na próxima era: ${money(infra[0]||0)}; daqui a 5 eras: ${money(infra[4]||0)}</p></div><div class="log-item"><strong class="purple">Ciência</strong><p class="small muted">Na próxima era: ${money(tech[0]||0)}; daqui a 5 eras: ${money(tech[4]||0)} (sem contar o bônus sobre todo o ouro da era).</p></div><div class="small muted">Só investimentos já feitos.</div>`;
 }
 export function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${escapeHtml(e.era)}</strong> · ${escapeHtml(uiText(e.text))}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
 /* ── Condições de vitória e fim de partida ── */
@@ -89,6 +90,7 @@ export function renderResult(){
  scr.innerHTML=`<div class="res-inner"><div class="res-emblem">${EMBLEM[sm.tone]}</div><div class="sum-kicker">Fim da partida · Era ${escapeHtml(sm.era)}</div><h2 class="res-title" id="resultTitle">${sm.title}</h2><p class="res-sub">${sm.sub}</p>
  <div class="sum-score res-score"><div class="sum-score-h"><span>Placar final</span><span>pontos</span></div>${sm.rows.map((x,i)=>`<div class="sum-row ${x.id==="player"?"me":""}"><span class="pos">${i+1}.º</span><span class="nm">${x.civ?civLabel(x.civ):escapeHtml(x.name||x.id)}</span><span class="bar"><i style="--w:${(100*PTS(x.score)/max).toFixed(1)}%;background:${cssColor(x.civ?.chartColor)}"></i></span><b>${fmt(PTS(x.score),0)}</b><span></span></div>`).join("")}</div>
  <div class="res-tiles">${sm.tiles.map(t=>`<div class="res-tile"><div class="v">${t.v}</div><div class="k">${t.k}</div></div>`).join("")}</div>
+ ${resultMedalsHtml()}
  <div class="res-actions"><button type="button" id="newGameAfterEnd" class="primary res-again">Jogar de novo</button><div class="res-two"><button type="button" id="seeDetails" data-open="resultSheet" aria-haspopup="dialog">Ver detalhes</button><button type="button" id="resultHome">Início</button></div></div></div>`;
  // A partida acabou: fecha a folha que estiver aberta (placar, detalhes...) para a tela de resultado ficar à vista.
  if(scr.hidden&&isSheetOpen()&&!isSheetOpen("resultSheet"))closeSheet({focus:false});

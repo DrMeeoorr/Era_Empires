@@ -46,7 +46,7 @@ Cada região tem um terreno (Campina, Floresta, Colinas, Montanha, Deserto, Pân
 Personalizar → Terrenos** o jogador escolhe:
 
 - **Só visual** (padrão para jogador novo e sempre no tutorial): o terreno só enfeita o mapa; as regras são as de
-  sempre (impressão digital `8ba37eca`). Saves antigos abrem assim.
+  sempre (impressão digital `39190b06`). Saves antigos abrem assim.
 - **Com efeitos**: cada terreno dá 2 vantagens e 1 desvantagem (`TERRAIN_EFFECTS` em `src/core/terrain.js`):
 
 | Terreno | Vantagens | Desvantagem |
@@ -91,6 +91,59 @@ Personalizar → Terrenos** o jogador escolhe:
 - O ouro das dificuldades não mudou: Difícil e Lendário ficam um pouco mais duros (aceito pelo usuário).
 - Não há nada novo no save: partidas em curso passam a usar a IA nova a partir da era seguinte.
 
+### Rodada 4 de balanceamento (20/11/2026) — "só Ataque"
+
+Atacar todas as eras ganhava demais com 2 ou 3 rivais. Mudou, nos dois modos de terreno:
+
+- **Saque limitado a 20%** (`pillageMaxShare` em `DEFAULTS.military`): cada conquista leva no máximo 20% das Obras
+  ativas e da Ciência do derrotado (antes min(50%, 3/regiões)); o espólio em ouro não mudou.
+- **Força guardada defende** (`defensePerReserveForce`): cada ponto de Força que o dono **não** usou em ordens de
+  ataque soma 1 à defesa das suas regiões, repartido como a defesa das Obras (÷ raiz do número de regiões). A Força
+  reservada em ordens não conta; durante a resolução vale a Força livre de antes de devolver as reservas
+  (`resolveOrders`). Entra no custo de ataque que o jogador vê, no `attackNeed` e, por isso, na decisão das IAs.
+  A folha da região mostra "Força guardada +X" (`defenseParts` em `src/core/military.js`).
+- **Ouro dos rivais com 2+ rivais** (para a escada de dificuldade continuar em ordem): Médio 1,03 → 1,00 (com
+  terrenos com efeito 1,06 → 1,03) e Difícil 1,05 → 1,03. O 1×1 e o Lendário não mudaram.
+- **Sorteio novo a cada partida**: `newGame()` sorteia `state.rngSeed` (guardado no save; saves antigos mantêm o
+  seu). O tutorial (`newGame({fixedSeed:true})`), os laboratórios, os testes de regressão e as impressões digitais
+  continuam com a semente fixa.
+- Saves em curso: abrem com as regras novas (saque e Força guardada) a partir da era seguinte, mas mantêm o ouro dos
+  rivais e a semente com que começaram (estão gravados no save).
+
+## Desafios e medalhas
+
+12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
+leem só o estado da partida (`src/app/medals.js`, sem tela); a arte, os avisos e a tela ficam em `src/ui/medals.js`.
+
+| Medalha | Como conquistar |
+|---|---|
+| Primeiros passos | Terminar o tutorial até o último passo (pular não conta). Única medalha do tutorial. |
+| Primeira coroa | Vencer uma partida. |
+| Muralha | Repelir 3 ataques de rivais às suas regiões na mesma partida. |
+| Construtor | Vencer tendo investido mais em Obras do que em Militar e em Ciência (total da partida). |
+| Sábio | Vencer tendo investido mais em Ciência do que em Militar e em Obras. |
+| Diplomata | Vencer sem tomar nenhuma região de um rival (só regiões livres). |
+| Relâmpago | Vencer por domínio do mapa ou eliminação até a era 18. |
+| Hegemonia | Vencer por supremacia. |
+| Contra a maré | Vencer no Difícil ou no Lendário com 3 rivais ou mais. |
+| Explorador | Vencer num mapa sorteado. |
+| Terra natal | Vencer com terrenos com efeito. |
+| Sobrevivente | Ter 5 regiões, cair para 2 ou menos e voltar a ter 5. |
+
+- **Onde aparecem**: "Nova medalha" no resumo da era (Muralha e Sobrevivente podem sair a meio da partida; se a era
+  foi tranquila, o resumo abre na mesma; com o resumo desligado, aviso curto no topo); faixa compacta na tela de
+  resultado (as medalhas da partida, ou o "Próximo desafio" quando não houve nenhuma) que abre a tela **Medalhas**;
+  tela Medalhas (botão na tela inicial e no menu ☰) com as conquistadas e as que faltam, sempre com o critério à vista.
+  Animação curta da medalha, desligada com "reduzir movimento".
+- **Uma vez só**: cada medalha é anunciada como nova só na primeira vez no aparelho; numa partida seguinte que cumpra
+  o critério ela aparece na lista da partida como "de novo".
+- **Gravação**: chave própria por versão (`imperios-jogador-medalhas` / `imperios-dev-medalhas`) pelo
+  `src/platform/storage.js`; dados danificados são ignorados (começa do zero). O registo da partida (defesas que
+  seguraram e medalhas desta partida) vai no save, em `state.ui.medals` (o motor não o lê).
+- **Sem medalhas**: a partida do tutorial (só "Primeiros passos"), partidas com a dificuldade "Configurações" e
+  partidas avançadas ou reconfiguradas pelos laboratórios (`state.ui.labs`). As medalhas contam só eras concluídas
+  pelo botão "Concluir era" (Muralha) e o fim da partida.
+
 ## Organização do código
 
 ```
@@ -104,7 +157,7 @@ src/
   app/                sessão (partida atual, dificuldade, rivais), gravação do save, ganchos, depuração
   platform/           armazenamento (localStorage hoje; @capacitor/preferences no app) e ficheiros
   ui/                 telas do jogador: tela inicial, tela da era, mapa, gaveta, folhas, tutorial…
-  labs/               laboratórios (só no dev.html), incluindo os 152 testes internos
+  labs/               laboratórios (só no dev.html), incluindo os 155 testes internos
   main-player.js      entrada do index.html
   main-dev.js         entrada do dev.html
 tools/                build-player-html.js (gera o index.html) e serve.js (servidor local do npm start)
@@ -146,13 +199,13 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 
 | Ficheiro | O que verifica |
 | --- | --- |
-| `tests/internal.test.js` | Os 152 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
-| `tests/internal-node.test.js` | Os mesmos 152 testes internos, mas no Node, sem navegador. |
+| `tests/internal.test.js` | Os 155 testes internos do jogo (`runTests()`, aba "Testes funcionais" do `dev.html`). |
+| `tests/internal-node.test.js` | Os mesmos 155 testes internos, mas no Node, sem navegador. |
 | `tests/structure.test.js` | Organização do código: regras sem tela, `localStorage` só no `storage`, sem funções substituídas em cadeia, jogador sem laboratórios, `index.html` igual ao gerado a partir do `dev.html`. |
 | `tests/rules.test.js` | Regras extra: mapa, economia, ataques, fim de partida, configuração e gravação. |
 | `tests/regression.test.js` | Partidas simuladas com semente fixa têm de dar sempre o mesmo resultado. |
-| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `8ba37eca` (rodada 2 de balanceamento, 20/11/2026: Científico com desconto e reflexo de defesa; antes `a911f8cd`, `e82cdda4`, e o jogo original era `5917a5c2`). Mede o jogo com os terrenos só visuais (padrão). Para ver o código e os subcódigos: `npm run fingerprint`. |
-| `tests/fingerprint-effects.test.js` | Segunda impressão digital: 37 partidas só de IAs com os **terrenos com efeitos** (mapa padrão e sorteado, 2/4/6 impérios, ritmo normal e rápido): tem de continuar `4010a086` (rodada 2 de balanceamento, 20/11/2026: Científico decide atacar com o desconto; antes `bda662ed` e `75da3210`). Muda se mudar a tabela dos terrenos ou a escolha de alvos da IA. `npm run fingerprint` mostra as duas. |
+| `tests/fingerprint.test.js` | "Impressão digital" de 27 partidas/simulações com `SEED` fixo: tem de continuar `39190b06` (rodada 4 de balanceamento, 20/11/2026: saque até 20% e Força guardada que defende; antes `8ba37eca`, `a911f8cd`, `e82cdda4`, e o jogo original era `5917a5c2`). Mede o jogo com os terrenos só visuais (padrão). Para ver o código e os subcódigos: `npm run fingerprint`. |
+| `tests/fingerprint-effects.test.js` | Segunda impressão digital: 37 partidas só de IAs com os **terrenos com efeitos** (mapa padrão e sorteado, 2/4/6 impérios, ritmo normal e rápido): tem de continuar `5c97e2c2` (rodada 4 de balanceamento, 20/11/2026: saque até 20% e Força guardada; antes `4010a086`, `bda662ed` e `75da3210`). Muda se mudar a tabela dos terrenos ou a escolha de alvos da IA. `npm run fingerprint` mostra as duas. |
 | `tests/mobile.test.js` | Celulares Pixel 7, Galaxy S9+ e 360×640: sem erros, sem rolagem horizontal, botões visíveis e clicáveis. |
 | `tests/screens.test.js` | Telas fora da partida (início "Aurora", Nova partida + Personalizar, Como jogar, convite do tutorial) nos 3 celulares, também com a fonte larga: início sem rolar, sem rolagem horizontal nem textos cortados, alvos ≥ 48 px, Personalizar com todas as opções, "Continuar · Era N" com partida salva, fonte Marcellus SC local. |
 | `tests/era-screen.test.js` | Tela da era sem rolagem vertical (Pixel 7, Galaxy S9+, 360×640; também com a fonte larga "DejaVu Sans"), sem textos cortados; folha de ataque (abre, fecha com toque fora/Esc/voltar, atacar, cancelar ordem, "Investir em Militar"); menu ☰ com Reiniciar confirmado; planos, Resto, Zerar e valor exato. |
@@ -166,8 +219,10 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
 | `tests/terrain-effects.test.js` | Terrenos com efeitos: tabela final, desligado idêntico (também com terrenos variados), um teste por efeito (ouro, defesa, custo de ataque, % de Obras/Força/Ciência), proteção só para quem ocupa, região inicial como Campina, IA prefere o terreno do seu estilo, laboratórios com `terrain`, opção "Terrenos" em Personalizar e resumos, save (ligado sobrevive a recarregar; save antigo = Só visual), tutorial sempre Só visual, folha da região (etiquetas + / + / − e custo com o terreno), folha ⓘ Terrenos e Como jogar ligados e desligados. |
 | `tests/acabamento.test.js` | Acabamento visual (21/11/2026), nos 3 celulares e com a fonte larga: etiquetas + / − dos terrenos com efeito sem quebrar nem cortar (ⓘ Terrenos, folha da região, Como jogar; contraste AA, sinal no texto), lista só visual em 2 colunas; o "?" da partida abre o Como jogar novo, que fecha com ✕, Esc, Voltar do Android e Entendi e devolve o foco; janelas no estilo novo (Reiniciar, Nova partida, tutorial, ouro parado, save danificado, aviso de falha ao salvar, menu ☰) com role="dialog", nome, descrição, foco preso, alvos ≥ 48 px e Esc que cancela. |
-| `tests/balance-round.test.js` | Rodada de balanceamento de 20/11/2026: ordem das posições iniciais (Pedral nunca; 2–3 impérios e outros mapas como antes), Difícil/Lendário com 2+ rivais no Só visual vão às regiões livres e no 1×1/com efeitos atacam o líder, receitas (Difícil 1,05/1,03; Médio com efeitos 1,06/1,03 só com o valor gravado na partida, valores estranhos ignorados), mapa padrão com Montanhas dos dois lados e, pela interface, Médio com efeitos no save. |
+| `tests/balance-round.test.js` | Rodada de balanceamento de 20/11/2026: ordem das posições iniciais (Pedral nunca; 2–3 impérios e outros mapas como antes), Difícil/Lendário com 2+ rivais no Só visual vão às regiões livres e no 1×1/com efeitos atacam o líder, receitas (desde a rodada 4: Difícil 1,03; Médio 1,00 e com efeitos 1,03 só com o valor gravado na partida; o carimbo de saves antigos 1,06/1,03 continua a valer; valores estranhos ignorados), mapa padrão com Montanhas dos dois lados e, pela interface, Médio com efeitos no save. |
 | `tests/balance-round-2.test.js` | Rodada 2 de balanceamento de 20/11/2026: reflexo de defesa (só com fronteira com o jogador humano e o exército dele maior; nunca em partidas só de IAs; +15 p.p. de Militar tirados de Obras/Ciência na proporção; cada estilo mantém a prioridade principal), Científico ataca já com o desconto da Ciência e os outros não, e em partidas contra o jogador o Científico continua a gastar ≥50% em Ciência e mais que todos. |
+| `tests/balance-round-4.test.js` | Rodada 4 de balanceamento (20/11/2026): saque ≤ 20% (também em partidas inteiras), Força guardada na defesa (÷ raiz das regiões, na folha e no custo), Força reservada em ordens não defende e a resolução usa a Força livre de antes das devoluções, a IA não ataca quem guarda muita Força, semente nova a cada partida (tutorial e laboratórios fixos; save e recarregar mantêm a semente) e os textos do Como jogar. |
+| `tests/medals.test.js` | Desafios e medalhas (20/11/2026): cada critério com estados montados, Muralha só com defesas de regiões suas, "nova" uma vez só, grava e relê, dados danificados (e armazenamento bloqueado) não quebram, tutorial só dá "Primeiros passos", laboratórios e "Configurações" não dão medalhas, `runTests` no dev.html, e a tela Medalhas e a faixa do resultado nos 3 celulares (também com DejaVu Sans): diálogo, foco, Esc, 48 px, sem cortes nem rolagem lateral. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
 **Se o teste de regressão falhar**

@@ -1,8 +1,8 @@
 // Segunda impressão digital: as partidas só de IAs com os terrenos COM EFEITOS (mapa padrão e sorteado) têm de dar
 // sempre o mesmo código. Muda se mudar a tabela dos terrenos, a forma como a IA os escolhe ou alguma regra.
 // A primeira (terreno só visual) está em tests/fingerprint.test.js. Ver tests/fingerprint.js.
-// Referências: só visual 8ba37eca e com efeitos 4010a086 desde a rodada 2 de balanceamento (20/11/2026: Científico
-// decide atacar com o desconto da Ciência; reflexo de defesa contra o jogador). Antes: a911f8cd / bda662ed.
+// Referências: só visual 39190b06 e com efeitos 5c97e2c2 desde a rodada 4 de balanceamento (20/11/2026: saque até
+// 20% e Força guardada que defende). Antes: 8ba37eca / 4010a086 (rodada 2) e a911f8cd / bda662ed.
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");

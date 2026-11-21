@@ -82,15 +82,17 @@ export function defineTests(){
  test("Avanço múltiplo equivale ao individual",()=>{let c=clone(DEFAULTS),a=simulate("balanced",5,c),b=newState(c);for(let i=0;i<5;i++)processEra(b,c,{autoStrategy:"balanced"});if(Math.abs(P(a).treasury-P(b).treasury)>1e-6)throw Error("Saldos diferentes")});
  test("Reinício restaura estado",()=>{
   // Uma partida nova (Reiniciar) com as mesmas escolhas é igual à do início, mesmo depois de jogar várias eras:
-  // nada da partida anterior (tesouro, territórios, investimentos, registo) passa para a nova.
+  // nada da partida anterior (tesouro, territórios, investimentos, registo) passa para a nova. Só a semente das
+  // batalhas muda (rodada 4: sorteio novo a cada partida), por isso compara-se sem ela.
   const saved={state,config:configApplied,mode:gameMode,diff:currentDifficulty,opp:opponentChoices};
   try{
    const c=clone(DEFAULTS);c.map.aiCount=3;c.endgame.maxEras=15;setConfigApplied(c);setGameMode("slow");setCurrentDifficulty("dificil");applyDifficulty("dificil");setOpponentChoices(["military","economist","adaptive"]);
-   const cfg0=JSON.stringify(configApplied),fresh=JSON.stringify(newGame()),s=setState(newGame());
+   const noSeed=g=>JSON.stringify({...g,rngSeed:0}),cfg0=JSON.stringify(configApplied),first=newGame(),fresh=noSeed(first),s=setState(newGame());
    for(let i=0;i<4;i++){finishEra(s,configApplied,{playerAllocation:{military:5,infrastructure:5,technology:5}});if(!s.result)beginEra(s,configApplied)}
    if(s.era<4||!s.log.length)throw Error("A partida de teste não avançou");
    const again=newGame();
-   if(JSON.stringify(again)!==fresh)throw Error("Partida nova diferente da inicial com as mesmas escolhas");
+   if(noSeed(again)!==fresh)throw Error("Partida nova diferente da inicial com as mesmas escolhas");
+   if(!Number.isInteger(again.rngSeed)||new Set([first.rngSeed,s.rngSeed,again.rngSeed]).size<2)throw Error("Partidas novas deviam ter sementes de batalha novas");
    if(again.era!==1||again.civs.length!==4||again.maxEras!==15||again.difficulty!=="dificil"||P(again).treasury<c.economy.initialBudget)throw Error("Estado inicial incorreto");
    if(JSON.stringify(configApplied)!==cfg0)throw Error("Jogar alterou a configuração aplicada");
   }finally{setState(saved.state);setConfigApplied(saved.config);setGameMode(saved.mode);setCurrentDifficulty(saved.diff);setOpponentChoices(saved.opp)}
@@ -243,11 +245,28 @@ export function defineTests(){
   const T=countTerritories(s,ai.id),idx=s.owners.indexOf(ai.id);ai.lastRevenue={...ai.lastRevenue,infrastructure:100};ai.techProgress=0;const d=territoryDefense(s,idx,c),exp=c.military.defenseOwned+100*c.military.defensePerInfraRevenue/Math.sqrt(T);
   if(T!==4||Math.abs(d-exp)>1e-9)throw Error("Defesa "+d+" esperada "+exp)},"MIL");
  test("Saque transfere infraestrutura, tecnologia e espólio em tesouro",()=>{const c=clone(DEFAULTS),s=newState(c);const ai=A(s),pl=P(s);ai.treasury=1000;invest(s,"infrastructure",100,c,ai.id);invest(s,"technology",60,c,ai.id);ai.lastRevenue={...ai.lastRevenue,total:40};
-  const T=countTerritories(s,ai.id),f=Math.min(.5,c.military.pillageInvestShare/T),tr0=pl.treasury,r=pillage(s,ai.id,pl.id,c);
+  // Rodada 4 (20/11/2026): teto do saque 20% (antes 50%); com 1 região, 3/1 passa o teto e o saque é exatamente 20%.
+  const T=countTerritories(s,ai.id),f=Math.min(c.military.pillageMaxShare,c.military.pillageInvestShare/T),tr0=pl.treasury,r=pillage(s,ai.id,pl.id,c);if(T!==1||f!==0.2)throw Error("Cenário: esperava 1 região e saque de 20%, "+f);
   const sum=(o,ty,k)=>s.investments.filter(i=>i.owner===o&&i.type===ty).reduce((a,i)=>a+i[k],0);
   if(Math.abs(sum(pl.id,"infrastructure","amount")-100*f)>1e-9||Math.abs(sum(ai.id,"infrastructure","amount")-100*(1-f))>1e-9)throw Error("Infraestrutura mal transferida");
   if(Math.abs(sum(pl.id,"technology","progress")+sum(ai.id,"technology","progress")-60*c.technology.progressPerInvestment)>1e-9||!(r.tech>0))throw Error("Progresso tecnológico não se conserva");
   if(Math.abs(pl.treasury-tr0-c.military.pillageRevenueEras*40/T)>1e-9)throw Error("Espólio "+(pl.treasury-tr0))},"MIL");
+ test("Saque nunca passa de 20% das Obras e da Ciência do derrotado",()=>{if(DEFAULTS.military.pillageMaxShare!==0.2)throw Error("Teto do saque "+DEFAULTS.military.pillageMaxShare);
+  for(const extra of [0,1,5,14,20]){const c=clone(DEFAULTS),s=newState(c);const ai=A(s),pl=P(s);let k=0;for(let i=0;i<s.owners.length&&k<extra;i++)if(s.owners[i]==="neutral"){s.owners[i]=ai.id;k++}
+   ai.treasury=1000;invest(s,"infrastructure",100,c,ai.id);invest(s,"technology",50,c,ai.id);const T=countTerritories(s,ai.id),p0=s.investments.filter(i=>i.owner===ai.id&&i.type==="technology").reduce((a,i)=>a+i.progress,0);pillage(s,ai.id,pl.id,c);
+   const got=s.investments.filter(i=>i.owner===pl.id&&i.type==="infrastructure").reduce((a,i)=>a+i.amount,0),gotT=s.investments.filter(i=>i.owner===pl.id&&i.type==="technology").reduce((a,i)=>a+i.progress,0),f=Math.min(0.2,3/T);
+   if(got>20+1e-9||gotT>0.2*p0+1e-9||Math.abs(got-100*f)>1e-9||Math.abs(gotT-p0*f)>1e-9)throw Error(`T=${T}: Obras ${got}, Ciência ${gotT} de ${p0}`)}},"MIL");
+ test("Força guardada reforça a defesa, repartida pela raiz das regiões",()=>{const c=clone(DEFAULTS),s=newState(c);const ai=A(s);let k=0;for(let i=0;i<s.owners.length&&k<3;i++)if(s.owners[i]==="neutral"){s.owners[i]=ai.id;k++}
+  const idx=s.owners.indexOf(ai.id),T=countTerritories(s,ai.id);ai.lastRevenue={...ai.lastRevenue,infrastructure:0};ai.techProgress=0;ai.military=0;const d0=territoryDefense(s,idx,c);ai.military=30;const d1=territoryDefense(s,idx,c);
+  if(T!==4||Math.abs(d0-c.military.defenseOwned)>1e-9||Math.abs(d1-d0-30*c.military.defensePerReserveForce/Math.sqrt(T))>1e-9)throw Error(`Defesa ${d0} → ${d1}`);
+  const c0=clone(c);c0.military.defensePerReserveForce=0;if(Math.abs(territoryDefense(s,idx,c0)-d0)>1e-9)throw Error("0 devia desligar a regra");
+  if(territoryDefense(s,5,c)!==c.military.defenseNeutral)throw Error("Região livre não tem Força guardada")},"MIL");
+ test("Força reservada em ordens de ataque não defende; cancelar devolve a defesa",()=>{const c=clone(DEFAULTS),s=newState(c);const pl=P(s),ai=A(s),mine=s.owners.indexOf("player");pl.military=40;ai.military=0;
+  const d0=territoryDefense(s,mine,c),t=eligibleTargets(s,"player").find(x=>x.o==="neutral"),r=orderAttack(s,t.i,"player",c);if(!r.ok)throw Error(r.reason);
+  const d1=territoryDefense(s,mine,c);if(Math.abs(d0-d1-r.need)>1e-9)throw Error(`Defesa ${d0} → ${d1} (ordem ${r.need})`);
+  // O custo de atacar o jogador (o que a IA paga e vê) acompanha a defesa.
+  const need=attackNeed(s,mine,ai.id,c);if(Math.abs(need-(c.military.conquestCost+d1))>1e-9)throw Error("Custo do ataque ao jogador "+need);
+  cancelOrder(s,"player",t.i);if(Math.abs(territoryDefense(s,mine,c)-d0)>1e-9)throw Error("Cancelar não devolveu a defesa")},"MIL");
  // Reescrito com a T1: a defesa reforçada vem da receita de infraestrutura do dono (a tecnologia passou a reforçar o ataque).
  test("Ataque usa a defesa reforçada",()=>{const c=clone(DEFAULTS);c.military.conquestCost=0;const s=newState(c);s.owners[1]="ai";A(s).lastRevenue={...A(s).lastRevenue,infrastructure:100};P(s).techProgress=0;P(s).military=c.military.defenseOwned+1;
   if(!(territoryDefense(s,1,c)>c.military.defenseOwned+1))throw Error("Infraestrutura não reforçou a defesa");const r=attackTerritory(s,1,"player",c);if(r.ok)throw Error("Ataque passou ignorando as fortificações da infraestrutura")},"MIL");
@@ -336,7 +355,7 @@ export function defineTests(){
  test("Predefinições de dificuldade aplicam os valores certos",()=>{
   // Os 4 valores (incluindo aiIncomeMultiplier1v1), vindos de outra dificuldade, e a receita real das IAs.
   const saved=configApplied,base=DEFAULTS.economy.baseIncome;
-  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1.03,1,75,"neutralFirst"],dificil:[1.05,1.03,100,"leader"],hardcore:[1.12,-1,100,"leader"]};   // Difícil: rodada de 20/11/2026
+  const exp={muitofacil:[.7,-1,75,"neutralFirst"],facil:[.92,-1,75,"neutralFirst"],medio:[1,1,75,"neutralFirst"],dificil:[1.03,1.03,100,"leader"],hardcore:[1.12,-1,100,"leader"]};   // Médio e Difícil: rodada 4 de 20/11/2026 (antes 1,03 e 1,05 com 2+ rivais)
   try{for(const [k,v] of Object.entries(exp)){
    for(const prev of ["medio","dificil"]){setConfigApplied(clone(DEFAULTS));applyDifficulty(prev);applyDifficulty(k);
     const got=[configApplied.economy.aiIncomeMultiplier,configApplied.economy.aiIncomeMultiplier1v1,configApplied.military.aiAggression,configApplied.military.aiTarget];

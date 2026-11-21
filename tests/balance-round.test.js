@@ -1,8 +1,10 @@
 // Rodada de balanceamento de 20/11/2026 (aprovada pelo usuário). Quatro mudanças:
 //  1. Médio com terrenos com efeito: rivais +3% de ouro (1,06 com 2+ rivais, 1,03 no 1×1), gravado na partida.
+//     Rodada 4 (20/11/2026): Médio com efeitos passou a 1,03 também com 2+ rivais (o carimbo continua a funcionar igual).
 //  2. Mapa padrão: Jaspe ↔ Rochedo (Jaspe Montanha, Rochedo Colinas) — tabela em tests/terrain.test.js.
 //  3. Posições iniciais (mapa de 24 regiões): Arvela, Zênite, Esmera, Torva, Musgo, Ombral (Pedral saiu).
 //  4. Difícil/Lendário com 2+ rivais no Só visual: regiões livres primeiro; Difícil 1,05 com 2+ rivais, 1,03 no 1×1.
+//     Rodada 4 (20/11/2026): Difícil 1,03 com qualquer número de rivais; Médio Só visual 1,00 (antes 1,03 com 2+).
 "use strict";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -82,7 +84,7 @@ test("Difícil/Lendário com 2+ rivais no Só visual: regiões livres primeiro; 
   assert.equal(leaderScene({ effects: true, civs: 3 }).first, 22, "Com efeitos, 2 rivais: devia atacar o líder (jogador)");
 });
 
-test("receita dos rivais: Difícil 1,05 com 2+ rivais e 1,03 no 1×1; Médio com efeitos 1,06/1,03 só com state.aiIncomeEffects", () => {
+test("receita dos rivais: Difícil 1,03; Médio 1,00 (com efeitos 1,03 só com state.aiIncomeEffects); carimbo 1×1/2+ separado", () => {
   const base = E.DEFAULTS.economy.baseIncome;
   const run = ({ diff, ai, effects, stamp }) => {
     const c = E.clone(E.DEFAULTS), d = E.DIFFICULTIES[diff]; c.map.aiCount = ai;
@@ -95,22 +97,28 @@ test("receita dos rivais: Difícil 1,05 com 2+ rivais e 1,03 no 1×1; Médio com
     return s.civs.slice(1).map((cv) => s.pending.revenue[cv.id].total / pl);
   };
   const near = (arr, m, msg) => arr.forEach((v) => assert.ok(Math.abs(v - m) < 1e-9, `${msg}: ${v} ≠ ${m}`));
-  assert.deepEqual(E.DIFFICULTIES.dificil.aiIncomeMultiplier, 1.05);
+  // Rodada 4 (20/11/2026): Difícil 1,05 → 1,03 com 2+ rivais; Médio 1,03 → 1,00 com 2+ rivais (com efeitos 1,06 → 1,03).
+  assert.deepEqual(E.DIFFICULTIES.dificil.aiIncomeMultiplier, 1.03);
   assert.deepEqual(E.DIFFICULTIES.dificil.aiIncomeMultiplier1v1, 1.03);
-  assert.deepEqual(E.DIFFICULTIES.medio.effectsIncome, { aiIncomeMultiplier: 1.06, aiIncomeMultiplier1v1: 1.03 });
+  assert.deepEqual(E.DIFFICULTIES.medio.aiIncomeMultiplier, 1);
+  assert.deepEqual(E.DIFFICULTIES.medio.effectsIncome, { aiIncomeMultiplier: 1.03, aiIncomeMultiplier1v1: 1.03 });
   for (const k of ["muitofacil", "facil", "dificil", "hardcore"]) assert.equal(E.DIFFICULTIES[k].effectsIncome, undefined, k + " não tem receita própria com efeitos");
   const fx = E.DIFFICULTIES.medio.effectsIncome;
   near(run({ diff: "dificil", ai: 1, effects: false }), 1.03, "Difícil 1×1");
-  near(run({ diff: "dificil", ai: 3, effects: false }), 1.05, "Difícil 3 rivais");
-  near(run({ diff: "dificil", ai: 3, effects: true }), 1.05, "Difícil 3 rivais com efeitos");
+  near(run({ diff: "dificil", ai: 3, effects: false }), 1.03, "Difícil 3 rivais");
+  near(run({ diff: "dificil", ai: 3, effects: true }), 1.03, "Difícil 3 rivais com efeitos");
   near(run({ diff: "medio", ai: 1, effects: false, stamp: fx }), 1, "Médio 1×1 Só visual (o carimbo é ignorado sem efeitos)");
-  near(run({ diff: "medio", ai: 3, effects: false, stamp: fx }), 1.03, "Médio 3 rivais Só visual");
+  near(run({ diff: "medio", ai: 3, effects: false, stamp: fx }), 1, "Médio 3 rivais Só visual");
   near(run({ diff: "medio", ai: 1, effects: true, stamp: fx }), 1.03, "Médio 1×1 com efeitos");
-  near(run({ diff: "medio", ai: 3, effects: true, stamp: fx }), 1.06, "Médio 3 rivais com efeitos");
-  near(run({ diff: "medio", ai: 3, effects: true }), 1.03, "save com efeitos sem o carimbo: valores da configuração");
+  near(run({ diff: "medio", ai: 3, effects: true, stamp: fx }), 1.03, "Médio 3 rivais com efeitos");
+  near(run({ diff: "medio", ai: 3, effects: true }), 1, "save com efeitos sem o carimbo: valores da configuração");
+  // O carimbo continua a separar 1×1 e 2+ rivais (ex.: o valor gravado por saves de antes da rodada 4: 1,06/1,03).
+  const old = { aiIncomeMultiplier: 1.06, aiIncomeMultiplier1v1: 1.03 };
+  near(run({ diff: "medio", ai: 1, effects: true, stamp: old }), 1.03, "save antigo, Médio 1×1 com efeitos");
+  near(run({ diff: "medio", ai: 3, effects: true, stamp: old }), 1.06, "save antigo, Médio 3 rivais com efeitos");
   // Valores estranhos no save: ignorados.
   for (const bad of [{ aiIncomeMultiplier: "x" }, { aiIncomeMultiplier: 99 }, { aiIncomeMultiplier: 1.06, aiIncomeMultiplier1v1: -3 }, [], null])
-    near(run({ diff: "medio", ai: 3, effects: true, stamp: bad }), 1.03, "carimbo inválido " + JSON.stringify(bad));
+    near(run({ diff: "medio", ai: 3, effects: true, stamp: bad }), 1, "carimbo inválido " + JSON.stringify(bad));
   // Laboratórios (todas IA): nenhum multiplicador.
   const c = E.clone(E.DEFAULTS); c.map.aiCount = 2; const s = E.newState(c, { allAI: true }); E.enableTerrainEffects(s); s.aiIncomeEffects = fx; E.beginEra(s, c);
   for (const cv of s.civs) assert.ok(Math.abs(s.pending.revenue[cv.id].total - base * 1.2) < 1e-9, "laboratório com multiplicador");
@@ -123,7 +131,7 @@ test("mapa padrão novo: mesmas quantidades de cada terreno e as 3 Montanhas já
   assert.ok(mountains.some((i) => i < 12) && mountains.some((i) => i >= 12), "Montanhas dos dois lados: " + mountains);
 });
 
-test("pela interface: Médio com efeitos dá +3% aos rivais (1,03 no 1×1, 1,06 com 3) e fica no save; Só visual e Difícil não", async () => {
+test("pela interface: Médio com efeitos dá +3% aos rivais (1,03 no 1×1 e com 3) e fica no save; Só visual e Difícil não", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   const start = async ({ diff, ai, effects }) => {
     if (await page.locator("#homeScreen").isHidden()) await page.evaluate(() => { document.getElementById("homeScreen").hidden = false; });
@@ -144,14 +152,14 @@ test("pela interface: Médio com efeitos dá +3% aos rivais (1,03 no 1×1, 1,06 
   };
   const near = (arr, m, msg) => arr.forEach((v) => assert.ok(Math.abs(v - m) < 1e-9, `${msg}: ${v} ≠ ${m}`));
   const fx1 = await start({ diff: "medio", ai: 1, effects: true });
-  assert.deepEqual(fx1.stamp, { aiIncomeMultiplier: 1.06, aiIncomeMultiplier1v1: 1.03 });
+  assert.deepEqual(fx1.stamp, { aiIncomeMultiplier: 1.03, aiIncomeMultiplier1v1: 1.03 });
   assert.deepEqual(fx1.savedStamp, fx1.stamp, "o save devia guardar os multiplicadores da partida");
   near(fx1.ratios, 1.03, "Médio 1×1 com efeitos");
-  near((await start({ diff: "medio", ai: 3, effects: true })).ratios, 1.06, "Médio 3 rivais com efeitos");
+  near((await start({ diff: "medio", ai: 3, effects: true })).ratios, 1.03, "Médio 3 rivais com efeitos");
   const vis = await start({ diff: "medio", ai: 3, effects: false });
-  assert.equal(vis.stamp, null); near(vis.ratios, 1.03, "Médio 3 rivais Só visual");
+  assert.equal(vis.stamp, null); near(vis.ratios, 1, "Médio 3 rivais Só visual");
   const dif = await start({ diff: "dificil", ai: 3, effects: true });
-  assert.equal(dif.stamp, null); near(dif.ratios, 1.05, "Difícil 3 rivais com efeitos");
+  assert.equal(dif.stamp, null); near(dif.ratios, 1.03, "Difícil 3 rivais com efeitos");
   near((await start({ diff: "dificil", ai: 1, effects: false })).ratios, 1.03, "Difícil 1×1");
   assert.deepEqual(errors, []);
   await context.close();

@@ -125,9 +125,10 @@ test("desempenho: mediana de 7 partidas de 30 eras com 4 civilizações abaixo d
 test("dificuldades: os 4 valores (incluindo aiIncomeMultiplier1v1) e a receita real das IAs em 1×1 e com 3 rivais", () =>
   rule(() => {
     const exp = {
-      muitofacil: [0.7, -1, 75, "neutralFirst"], facil: [0.92, -1, 75, "neutralFirst"], medio: [1.03, 1, 75, "neutralFirst"],
-      // Rodada de balanceamento de 20/11/2026: Difícil 1,05 com 2+ rivais e 1,03 no 1×1.
-      dificil: [1.05, 1.03, 100, "leader"], hardcore: [1.12, -1, 100, "leader"],
+      muitofacil: [0.7, -1, 75, "neutralFirst"], facil: [0.92, -1, 75, "neutralFirst"], medio: [1, 1, 75, "neutralFirst"],
+      // Rodada de balanceamento de 20/11/2026: Difícil 1,05 com 2+ rivais e 1,03 no 1×1. Rodada 4 (20/11/2026): Difícil
+      // 1,03 e Médio 1,00 também com 2+ rivais (antes 1,05 e 1,03).
+      dificil: [1.03, 1.03, 100, "leader"], hardcore: [1.12, -1, 100, "leader"],
     };
     const base = DEFAULTS.economy.baseIncome;
     for (const [k, v] of Object.entries(exp)) {
@@ -153,7 +154,7 @@ test("dificuldades: os 4 valores (incluindo aiIncomeMultiplier1v1) e a receita r
     }
   }));
 
-test("dificuldade Médio pela interface: em 1×1 o rival recebe o mesmo que o jogador; com 3 rivais, +3%", async () => {
+test("dificuldade Médio pela interface: em 1×1 e com 3 rivais o rival recebe o mesmo que o jogador (rodada 4; antes +3% com 3)", async () => {
   const { context, page, errors } = await openGame(browser, { contextOptions: PIXEL });
   const out = {};
   for (const ai of [1, 3]) {
@@ -174,7 +175,8 @@ test("dificuldade Médio pela interface: em 1×1 o rival recebe o mesmo que o jo
   await context.close();
   assert.equal(out[1].v1, 1);
   assert.deepEqual(out[1].ais, [out[1].player], "1×1 Médio: rival devia receber o mesmo que o jogador");
-  for (const r of out[3].ais) assert.ok(Math.abs(r - out[3].player * 1.03) < 1e-9, `3 rivais Médio: ${r} ≠ ${out[3].player} × 1,03`);
+  assert.equal(out[3].ais.length, 3);
+  for (const r of out[3].ais) assert.ok(Math.abs(r - out[3].player) < 1e-9, `3 rivais Médio: ${r} ≠ ${out[3].player}`);
   assert.deepEqual(errors, []);
 });
 
