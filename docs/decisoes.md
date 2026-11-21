@@ -190,3 +190,28 @@ que mude regras**, entregue junto com a rodada 4. Nenhuma regra, número ou IA m
   `src/platform/storage.js`; dados danificados são ignorados. Cada medalha é "nova" só uma vez no aparelho.
 - A folha de uma região sua mostra "Defesa X · Força guardada +Y" com os números em destaque e a explicação numa linha
   à parte (só apresentação).
+
+## 21/11/2026 — Fim por domínio e duração "Sem limite" (game-designer) — aprovado
+Problema medido: o domínio (17/24 ≈ 70%) encerrava na hora; quem chegava primeiro vencia 98–100%; a opção de 50 eras
+já terminava, em média, por volta da era 26; não havia modo sem limite.
+1. **"E — Domínio com escolha do jogador"**: quando o **jogador** chega a 70% antes da última era, aparece
+   **"Você domina o mapa!"** com **"Vencer agora"** e **"Continuar até a era N"** (ajuda: "Continuando, você ainda
+   vence por domínio no fim se mantiver 70%"). Continuando, a partida segue; no limite, com 70% vence por domínio,
+   senão decidem os pontos (eliminação e supremacia continuam a valer no caminho). **A pergunta só volta se o
+   jogador cair abaixo de 70% e subir de novo.** Se outra vitória acontece na mesma era (ex.: supremacia), o
+   domínio conta junto, como antes. **Rival a 70% termina na hora.** Partidas só de IAs, laboratórios e saves antigos
+   (sem `state.dominion`): comportamento de antes; impressões digitais iguais (**39190b06** / **5c97e2c2**).
+   - **Esc / Voltar = "Vencer agora"** (opção segura: garante a vitória já conquistada; continuar é a escolha que
+     arrisca e pede um toque de propósito). Foco inicial em "Vencer agora"; botões de 48 px ou mais.
+   - A escolha fica no save (`state.dominion`); recarregar a meio da pergunta mostra-a de novo ao tocar em
+     "Continuar". A tela de resultado mostra "Vitória por domínio do mapa!" e, quando foi no fim, "Você manteve N de
+     24 regiões até a última era"; o resumo da era lembra "Você domina o mapa · mantenha 17 regiões até a era N".
+2. **"Sem limite" substitui "50 · longa"** na Duração (Personalizar), com o texto "Termina por domínio, eliminação
+   ou supremacia" (Conquista: "Termina por domínio ou eliminação"). **Teto de segurança de 100 eras**, decidido por
+   pontos (dito de forma discreta nas regras completas e no Placar; no topo aparece "Era N/∞").
+   - **Supremacia no Sem limite: conta a partir da era 15** (a mesma era de uma partida padrão de 30 eras). Medido:
+     começar na era 10 ou na 15 dá o mesmo resultado; a 15 mantém a supremacia como vitória "da fase final".
+   - **No Sem limite, o domínio do jogador vence na hora** (sem pergunta: não há fim para onde continuar).
+   - Saves antigos de 50 eras continuam de 50; a opção "Outra" (10–150) continua. Gravado em `state.unlimited`.
+3. **Medalhas: nada muda.** Relâmpago (domínio ou eliminação até a era 18) vale a era em que a vitória acontece:
+   vencer agora na era 12 conta; continuar e vencer por domínio na era 30 não; numa partida de 15 eras, conta.

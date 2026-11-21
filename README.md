@@ -110,6 +110,29 @@ Atacar todas as eras ganhava demais com 2 ou 3 rivais. Mudou, nos dois modos de 
 - Saves em curso: abrem com as regras novas (saque e Força guardada) a partir da era seguinte, mas mantêm o ouro dos
   rivais e a semente com que começaram (estão gravados no save).
 
+## Domínio com escolha e duração "Sem limite" (21/11/2026)
+
+- **Domínio com escolha**: quando **você** chega a 70% das regiões (17 de 24) antes da última era, a partida pára e
+  aparece **"Você domina o mapa!"** com **Vencer agora** (o fim de antes) e **Continuar até a era N** ("Continuando,
+  você ainda vence por domínio no fim se mantiver 70%"). Continuando, a partida segue: no limite de eras, com 70% ou
+  mais você vence por domínio; senão, decidem os pontos (eliminação e supremacia continuam a valer pelo caminho).
+  A pergunta **só volta** se você cair abaixo de 70% e subir de novo. Se outra condição decide a mesma era (por
+  exemplo, a supremacia), o domínio conta junto, como antes. **Rival a 70% vence na hora.**
+- A janela é uma folha "Atlas" (`role="dialog"`, foco em "Vencer agora", Tab preso, botões de 48 px ou mais).
+  **Esc / Voltar = "Vencer agora"**: é a opção segura (garante a vitória que você já tem; continuar arrisca e pede um
+  toque de propósito).
+- Motor: `src/core/endgame.js` (`state.dominion`, `dominionAsking`, `resolveDominion`); sessão: `chooseDominion` em
+  `src/app/session.js` (a era seguinte só abre depois da escolha). A pergunta fica no save: recarregar a meio volta
+  a mostrá-la ao tocar em "Continuar". **Partidas só de IAs, laboratórios e saves antigos** não têm `state.dominion`
+  e encerram na hora como antes (impressões digitais iguais: **39190b06** / **5c97e2c2**).
+- **"Sem limite"** substitui "50 · longa" em Nova partida → Personalizar → Duração (texto: "Termina por domínio,
+  eliminação ou supremacia"). Teto de segurança de **100 eras**, decidido por pontos (dito nas regras completas e no
+  Placar). A supremacia conta a partir da **era 15** (a mesma era de uma partida padrão de 30), não de metade do teto.
+  No Sem limite o seu domínio **vence na hora** (não há fim para onde continuar). Gravado na partida
+  (`state.unlimited`); saves antigos de 50 eras continuam de 50 (a opção "Outra", 10–150, continua).
+- Medalhas: nada muda. Relâmpago vale a era em que a vitória acontece (vencer agora na era 12: sim; continuar e
+  vencer por domínio na era 30: não; numa partida de 15 eras, vencer no fim: sim).
+
 ## Desafios e medalhas
 
 12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
@@ -222,6 +245,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/balance-round.test.js` | Rodada de balanceamento de 20/11/2026: ordem das posições iniciais (Pedral nunca; 2–3 impérios e outros mapas como antes), Difícil/Lendário com 2+ rivais no Só visual vão às regiões livres e no 1×1/com efeitos atacam o líder, receitas (desde a rodada 4: Difícil 1,03; Médio 1,00 e com efeitos 1,03 só com o valor gravado na partida; o carimbo de saves antigos 1,06/1,03 continua a valer; valores estranhos ignorados), mapa padrão com Montanhas dos dois lados e, pela interface, Médio com efeitos no save. |
 | `tests/balance-round-2.test.js` | Rodada 2 de balanceamento de 20/11/2026: reflexo de defesa (só com fronteira com o jogador humano e o exército dele maior; nunca em partidas só de IAs; +15 p.p. de Militar tirados de Obras/Ciência na proporção; cada estilo mantém a prioridade principal), Científico ataca já com o desconto da Ciência e os outros não, e em partidas contra o jogador o Científico continua a gastar ≥50% em Ciência e mais que todos. |
 | `tests/balance-round-4.test.js` | Rodada 4 de balanceamento (20/11/2026): saque ≤ 20% (também em partidas inteiras), Força guardada na defesa (÷ raiz das regiões, na folha e no custo), Força reservada em ordens não defende e a resolução usa a Força livre de antes das devoluções, a IA não ataca quem guarda muita Força, semente nova a cada partida (tutorial e laboratórios fixos; save e recarregar mantêm a semente) e os textos do Como jogar. |
+| `tests/dominio.test.js` | Domínio com escolha e Sem limite (21/11/2026): a pergunta só para o jogador e uma vez por subida a 70%, "Vencer agora" igual ao fim de antes, "Continuar" vence por domínio no limite com 70% ou por pontos sem, rival a 70% e partidas só de IAs encerram na hora, Sem limite (100 eras, supremacia a partir da era 15, teto por pontos), save e recarregar a meio da pergunta, saves antigos de 50 eras, medalhas; na interface (Pixel 7): diálogo acessível (foco, Tab, 48 px, Esc = Vencer agora), resultado "Vitória por domínio" no fim e a opção "Sem limite" em Personalizar. |
 | `tests/medals.test.js` | Desafios e medalhas (20/11/2026): cada critério com estados montados, Muralha só com defesas de regiões suas, "nova" uma vez só, grava e relê, dados danificados (e armazenamento bloqueado) não quebram, tutorial só dá "Primeiros passos", laboratórios e "Configurações" não dão medalhas, `runTests` no dev.html, e a tela Medalhas e a faixa do resultado nos 3 celulares (também com DejaVu Sans): diálogo, foco, Esc, 48 px, sem cortes nem rolagem lateral. |
 | `tests/known-bugs.test.js` | Bugs conhecidos (marcados `BUG:` / `# todo`): descrevem o comportamento certo e não quebram o `npm test`. Hoje não há nenhum em aberto; ficam lá os testes do balão do tutorial nos 3 celulares (bug corrigido). |
 
