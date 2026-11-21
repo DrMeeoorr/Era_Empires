@@ -236,7 +236,7 @@ test("na interface: dados de medalhas danificados não quebram o jogo e são sub
   await page.waitForFunction(() => window.__imperiosReady === true && !!state);
   assert.match(await page.locator("#homeMedals").innerText(), /0\/12/);
   await startGame(page);
-  await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); } renderAll(); });
+  await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); if (dominionAsking(state)) chooseDominion(true); } renderAll(); });
   await page.locator("#resultScreen .res-medals").waitFor({ state: "visible" });
   assert.match(await page.locator("#resultScreen .res-medals").innerText(), /Primeira coroa/);
   const saved = await page.evaluate((k) => storage.get(k), PLAYER_KEY);
@@ -256,7 +256,7 @@ test("na interface: o tutorial só dá 'Primeiros passos' (ao terminar os passos
   await page.waitForFunction(() => !!earnedMedals.passos);
   await page.locator("#toast:not([hidden])").waitFor();
   assert.match(await page.locator("#toast").innerText(), /Nova medalha: Primeiros passos/);
-  await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); } renderAll(); });
+  await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); if (dominionAsking(state)) chooseDominion(true); } renderAll(); });
   await page.locator("#resultScreen .res-medals").waitFor({ state: "visible" });
   assert.match(await page.locator("#resultScreen .res-medals").innerText(), /não vale medalhas/);
   assert.deepEqual(await page.evaluate(() => Object.keys(earnedMedals)), ["passos"]);
@@ -275,7 +275,7 @@ test("dev.html: partida avançada pelos laboratórios não dá medalhas; os test
     setCurrentDifficulty("medio"); applyDifficulty("medio"); state = newGame(); renderAll();
     await runLong(2);
     const labs = !!state.ui.labs;
-    while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); }
+    while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); if (dominionAsking(state)) chooseDominion(true); }
     renderAll();
     const t = runTests();
     return { labs, earned: Object.keys(earnedMedals), allowed: medalsAllowed(state), pass: t.pass, total: t.total };
@@ -342,7 +342,7 @@ for (const [name, opts, wide] of [...MOBILE_SCREENS.map(([n, o]) => [n, o, false
     await page.locator("#medalsScreen .pg-x").click();
     await scr.waitFor({ state: "hidden" });
     // Resultado com medalhas: faixa compacta, 48 px, sem cortes; "Jogar de novo" continua visível na tela.
-    await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); } renderAll(); });
+    await page.evaluate(() => { while (!state.result) { P(state).military += 60; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); playEra({ military: 0, infrastructure: P(state).treasury, technology: 0 }); if (dominionAsking(state)) chooseDominion(true); } renderAll(); });
     const strip = page.locator("#resultScreen .res-medals");
     await strip.waitFor({ state: "visible" });
     const sb = await assertClickable(page, "#resultScreen .res-medals", "faixa das medalhas"); assert.ok(sb.height >= 47.5);

@@ -1,6 +1,6 @@
 // Escolhas da partida guardadas durante o tutorial: a próxima partida nova volta às escolhas de antes dele.
 import {runHook} from "./hooks.js";
-import {state,configApplied,gameMode,currentDifficulty,DEFAULT_DIFFICULTY,mapType,terrainEffectsChoice,setTerrainEffectsChoice,setConfigApplied,setGameMode,setCurrentDifficulty,applyDifficulty,setState,newGame,setMapType} from "./session.js";
+import {state,configApplied,gameMode,currentDifficulty,DEFAULT_DIFFICULTY,mapType,terrainEffectsChoice,setTerrainEffectsChoice,unlimitedChoice,setUnlimitedChoice,setConfigApplied,setGameMode,setCurrentDifficulty,applyDifficulty,setState,newGame,setMapType} from "./session.js";
 import {DIFFICULTIES,normalizeConfig} from "../core/config.js";
 import {A} from "../core/state.js";
 import {clone} from "../core/util.js";
@@ -12,7 +12,7 @@ export function restoreSetupAfterTutorial(){
  const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
  try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
   c.map.aiCount=p.ai;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;c.map.randomStart=p.randomStart===true;const n=normalizeConfig(c);
-  setConfigApplied(n);setGameMode(p.mode==="fast"?"fast":"slow");setMapType(p.mapType);setTerrainEffectsChoice(p.terrainEffects===true);setCurrentDifficulty(diff);applyDifficulty(diff);runHook("configChanged");
+  setConfigApplied(n);setGameMode(p.mode==="fast"?"fast":"slow");setMapType(p.mapType);setTerrainEffectsChoice(p.terrainEffects===true);setUnlimitedChoice(p.unlimited===true);setCurrentDifficulty(diff);applyDifficulty(diff);runHook("configChanged");
  }catch(e){}
 }
 // Partida do tutorial, sem tocar na tela nem gravar (ui/tutorial.js faz o resto): Fácil, 1 rival "Equilibrado",
@@ -21,9 +21,9 @@ export function restoreSetupAfterTutorial(){
 export const TUTORIAL_POS={player:7,ai:9,target:8};
 export function newTutorialGame(){
  // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
- const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false,randomStart:!!configApplied.map.randomStart,mapType,terrainEffects:terrainEffectsChoice};
+ const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false,randomStart:!!configApplied.map.randomStart,mapType,terrainEffects:terrainEffectsChoice,unlimited:unlimitedChoice};
  // O tutorial usa sempre o mapa padrão e os terrenos só visuais; as escolhas do jogador voltam depois (restoreSetupAfterTutorial).
- setMapType("padrao");setTerrainEffectsChoice(false);setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
+ setMapType("padrao");setTerrainEffectsChoice(false);setUnlimitedChoice(false);setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
  // O rival do tutorial é sempre "Equilibrado" (ai.profile); opponentChoices do jogador não muda. Sorteio das batalhas
  // fixo (semente da configuração): o tutorial é sempre igual.
  setState(newGame({fixedSeed:true}));

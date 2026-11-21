@@ -1,8 +1,9 @@
 // Tela inicial e configuração da partida (modo, rivais, dificuldade, eras, vitória, mapa, posição inicial).
 import {runHook} from "../app/hooks.js";
-import {DEV_MODE,DEFAULT_DIFFICULTY,gameMode,configApplied,currentDifficulty,setOpponentChoices,opponentChoices,visibleOpponentOptions,state,setGameMode,setCurrentDifficulty,applyDifficulty,setConfigApplied,mapType,setMapType,terrainEffectsChoice,setTerrainEffectsChoice} from "../app/session.js";
+import {DEV_MODE,DEFAULT_DIFFICULTY,gameMode,configApplied,currentDifficulty,setOpponentChoices,opponentChoices,visibleOpponentOptions,state,setGameMode,setCurrentDifficulty,applyDifficulty,setConfigApplied,mapType,setMapType,terrainEffectsChoice,setTerrainEffectsChoice,unlimitedChoice,setUnlimitedChoice} from "../app/session.js";
 import {tutorialPrevSetup,restoreSetupAfterTutorial} from "../app/setup.js";
 import {DIFFICULTIES,MAX_AI,CIV_COLORS,normalizeConfig} from "../core/config.js";
+import {UNLIMITED} from "../core/endgame.js";
 import {RIVAL_NAMES} from "../core/names.js";
 import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
@@ -19,8 +20,9 @@ export function initHome(){
  // Escolhas atuais; durante/depois do tutorial, as que o jogador tinha antes de o começar.
  // Na versão do jogador, "Configurações" (de um save antigo) aparece como "Médio" na próxima partida.
  const shownDiff=d=>DIFFICULTIES[d]&&(DEV_MODE||d!=="config")?d:"medio";
- const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY),randomStart:!!p.randomStart,map:p.mapType==="sorteado"?"sorteado":"padrao",effects:p.terrainEffects===true};
-  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,effects:terrainEffectsChoice}};
+ const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:p.unlimited===true?30:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY),randomStart:!!p.randomStart,map:p.mapType==="sorteado"?"sorteado":"padrao",effects:p.terrainEffects===true,unlimited:p.unlimited===true};
+  // Sem limite: o campo "Outra" mostra 30 (o teto de 100 eras não é uma duração escolhida).
+  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:unlimitedChoice?30:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,effects:terrainEffectsChoice,unlimited:unlimitedChoice}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
  const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));const opts=visibleOpponentOptions().map(([v,t])=>{const [short,desc]=t.split(" — ");return [v,short.replace(" (revelado no fim)",""),desc||(v==="random"?"revelado no fim da partida":"")]});
@@ -32,9 +34,14 @@ export function initHome(){
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
   $("homeModeDesc").textContent=choice.mode==="fast"?"Os retornos chegam antes: tudo acontece em menos eras.":"Os investimentos rendem no tempo normal.";
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
-  let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
+  // Duração: 15 / 30 / Sem limite (teto de segurança de 100 eras, decidido por pontos) / Outra (10–150).
+  let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=b.dataset.eras==="unlimited"?!!choice.unlimited:!choice.unlimited&&Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
   for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("homeVictoryDesc").textContent=choice.conquest?"Só domínio (70% das regiões) ou eliminação. No limite de eras, vencem os pontos.":"Domínio, eliminação ou supremacia (na fase final). No limite de eras, vencem os pontos.";
+  $("homeErasDesc").textContent=choice.unlimited?(choice.conquest?"Termina por domínio ou eliminação.":"Termina por domínio, eliminação ou supremacia."):`A partida acaba na era ${choice.eras}, ou antes se alguém vencer.`;
+  // Vitória: ao chegar a 70% você escolhe vencer na hora ou continuar até o limite (Sem limite: vence na hora).
+  $("homeVictoryDesc").textContent=choice.unlimited
+   ?(choice.conquest?"Só domínio (70% das regiões) ou eliminação. Ao dominar o mapa, você vence na hora.":`Domínio (70% das regiões), eliminação ou supremacia (a partir da era ${UNLIMITED.supremacyFromEra}). Ao dominar o mapa, você vence na hora.`)
+   :(choice.conquest?"Só domínio (70% das regiões) ou eliminação. Ao dominar o mapa, vença na hora ou continue. No limite de eras, vencem os pontos.":"Domínio (70% das regiões), eliminação ou supremacia (na fase final). Ao dominar o mapa, vença na hora ou continue. No limite de eras, vencem os pontos.");
   for(const [id,on] of [["mapFixed",choice.map!=="sorteado"],["mapRandom",choice.map==="sorteado"]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
   for(const [id,on] of [["terrVisual",!choice.effects],["terrEffects",!!choice.effects]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
@@ -44,8 +51,9 @@ export function initHome(){
   document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>{const on=b.dataset.diff===choice.difficulty;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeDiffDesc").textContent=DIFFICULTIES[choice.difficulty]?.desc||"";
   const styleName=v=>v==="random"?"aleatório":v==="config"?"das Configurações":playerProfileName(v).toLowerCase();
   const styles=Array.from({length:choice.ai},(_,i)=>styleName(opponentChoices[i]||"random"));const uniq=[...new Set(styles)];
-  $("customizeSummary").textContent=`${choice.eras} eras · ritmo ${choice.mode==="fast"?"rápido":"normal"} · vitória ${choice.conquest?"por conquista":"clássica"}${choice.randomStart?" · posição aleatória":""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""}`;
-  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${choice.eras} eras${choice.conquest?" · Conquista":""}${choice.randomStart?" · posição aleatória":""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
+  const erasTxt=choice.unlimited?"sem limite":`${choice.eras} eras`;
+  $("customizeSummary").textContent=`${choice.unlimited?"Sem limite":erasTxt} · ritmo ${choice.mode==="fast"?"rápido":"normal"} · vitória ${choice.conquest?"por conquista":"clássica"}${choice.randomStart?" · posição aleatória":""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""}`;
+  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${erasTxt}${choice.conquest?" · Conquista":""}${choice.randomStart?" · posição aleatória":""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
   // Com partida salva: "Continuar · Era N" é o botão principal e "Nova partida" fica como secundário.
   const saved=inProgress(),cont=$("homeContinue"),start=$("homeStart");
   cont.classList.toggle("hidden",!saved);
@@ -54,19 +62,19 @@ export function initHome(){
   if(saved){
    const tut=state.tutorial&&!state.tutorial.done,diff=DIFFICULTIES[state.difficulty]&&(DEV_MODE||state.difficulty!=="config")?DIFFICULTIES[state.difficulty].name:"";
    $("homeContinueLabel").textContent=`Continuar · Era ${state.era}`;
-   $("homeContinueMeta").textContent=[`de ${state.maxEras}`,tut?"tutorial":diff,rivalsTxt(Math.max(1,(state.civs?.length||2)-1))].filter(Boolean).join(" · ");
-   cont.setAttribute("aria-label",`Continuar a partida: era ${state.era} de ${state.maxEras}`);
+   $("homeContinueMeta").textContent=[state.unlimited?"sem limite":`de ${state.maxEras}`,tut?"tutorial":diff,rivalsTxt(Math.max(1,(state.civs?.length||2)-1))].filter(Boolean).join(" · ");
+   cont.setAttribute("aria-label",`Continuar a partida: era ${state.era}${state.unlimited?", sem limite de eras":` de ${state.maxEras}`}`);
   }
  };
  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>b.onclick=()=>{choice.difficulty=b.dataset.diff;sync()});
  $("modeSlow").onclick=()=>{choice.mode="slow";sync()};$("modeFast").onclick=()=>{choice.mode="fast";sync()};
  document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>b.onclick=()=>{choice.ai=Number(b.dataset.ai);sync()});
- document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{choice.eras=Number(b.dataset.eras);sync()});
+ document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{if(b.dataset.eras==="unlimited")choice.unlimited=true;else{choice.unlimited=false;choice.eras=Number(b.dataset.eras)}sync()});
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("mapFixed").onclick=()=>{choice.map="padrao";sync()};$("mapRandom").onclick=()=>{choice.map="sorteado";sync()};
  $("terrVisual").onclick=()=>{choice.effects=false;sync()};$("terrEffects").onclick=()=>{choice.effects=true;sync()};
- $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;sync()};
- const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
+ $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;choice.unlimited=false;sync()};
+ const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.unlimited?UNLIMITED.maxEras:choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setUnlimitedChoice(!!choice.unlimited);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
  $("homeStart").onclick=()=>{$("setupCustomize").open=false;openSetup(false)};
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false;$("homeStart").focus()};
  // Como jogar (tela própria, a mesma que o "?" abre por cima da partida): funciona como uma folha (sheets.js), por isso

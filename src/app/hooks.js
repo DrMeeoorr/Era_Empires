@@ -4,6 +4,6 @@
    beforeConclude(): antes de concluir a era (devolver false impede) · continueGame / returnHome: tela inicial ·
    configChanged(): a configuração aplicada mudou (os laboratórios atualizam o editor) · viewShown(view): aba mostrada ·
    saveStatus(err): a gravação falhou (err) ou voltou a funcionar depois de uma falha (null). */
-export const hooks={afterEra:[],afterRender:[],beforeConclude:[],continueGame:[],returnHome:[],configChanged:[],viewShown:[],saveStatus:[]};
+export const hooks={afterEra:[],afterRender:[],beforeConclude:[],continueGame:[],returnHome:[],configChanged:[],viewShown:[],saveStatus:[],dominionChosen:[]};
 export const onHook=(name,fn)=>{hooks[name].push(fn)};
 export const runHook=(name,...args)=>{for(const fn of hooks[name])fn(...args)};

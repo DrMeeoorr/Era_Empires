@@ -34,6 +34,8 @@ const total=()=>MEDALS.length;
 const countTxt=()=>`${earnedCount()} de ${total()}`;
 
 /* ── Na partida ── */
+// Fim da partida fora do botão Concluir era ("Vencer agora" na pergunta do domínio): dá as medalhas de fim de partida.
+export function noteEndMedals(){if(!state||!state.result||!medalsAllowed(state))return [];const got=awardMedals(state,"end");refreshMedalCounts();return got.filter(g=>g.first)}
 // Depois de concluir a era pelo botão (game.js): conta as defesas, dá as medalhas e devolve as NOVAS no aparelho
 // (só essas aparecem no resumo da era; as repetidas aparecem na tela de resultado).
 export function noteEraMedals(before){

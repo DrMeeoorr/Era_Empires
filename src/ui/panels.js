@@ -2,7 +2,7 @@
 import {state,configApplied} from "../app/session.js";
 import {DIFFICULTIES} from "../core/config.js";
 import {infraReturn,techReturn} from "../core/economy.js";
-import {territorialMinimum,territoryBase,finalScores,describeResult} from "../core/endgame.js";
+import {territorialMinimum,territoryBase,finalScores,describeResult,supremacyMinEra,UNLIMITED} from "../core/endgame.js";
 import {countTerritories} from "../core/map.js";
 import {civName} from "../core/names.js";
 import {P,getCiv,aiCivs} from "../core/state.js";
@@ -40,16 +40,19 @@ export function renderNotifications(){const events=state.log.filter(x=>/ataque|c
 export function renderVictory(){
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
- $("victoryPill").textContent=s.result?"Partida encerrada":`${left===1?"Última era":`Faltam ${left} eras`}`;
+ $("victoryPill").textContent=s.result?"Partida encerrada":s.unlimited?"Sem limite":`${left===1?"Última era":`Faltam ${left} eras`}`;
  const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
  const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
  const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
- const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${Math.ceil(g.supremacyMinEraShare*s.maxEras)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
+ const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${supremacyMinEra(s,cfg)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
  const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">· líder</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
- $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3>${terr}
+ // Domínio com escolha: o que acontece ao chegar a 70% (e, se o jogador decidiu continuar, o que falta para vencer no fim).
+ const mineT=countTerritories(s,"player"),holding=!s.result&&!s.unlimited&&s.dominion?.declined&&mineT>=min;
+ const domTxt=s.unlimited?"Quem chegar lá vence na hora.":!s.dominion?"Quem chegar lá vence na hora.":holding?`<strong class="gold">Você domina o mapa.</strong> Mantenha ${min} regiões até a era ${s.maxEras} para vencer por domínio.`:"Ao chegar lá, você escolhe: vencer na hora ou continuar até a última era. Um rival que chegar lá vence na hora.";
+ $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}
  <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
  <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
- <h3>Última era (${s.maxEras}): pontuação</h3><div class="small muted">Sem outra vitória, ganha a maior pontuação. Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
+ <h3>${s.unlimited?`Sem limite (teto de ${UNLIMITED.maxEras} eras): pontuação`:`Última era (${s.maxEras}): pontuação`}</h3><div class="small muted">${s.unlimited?`Se ninguém vencer até a era ${UNLIMITED.maxEras}, ganha a maior pontuação.`:"Sem outra vitória, ganha a maior pontuação."} Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }
 // Pontuação de cada civilização ao longo da partida (mesma fórmula da pontuação final).
@@ -71,7 +74,7 @@ export function resultSummary(s=state){
  const other=pos===1?rows[1]:rows[0],gap=me!=null&&other?me-PTS(other.score):null;
  const winner=r.type==="victory"?getCiv(s,r.winners[0]):null;
  let title,sub;
- if(won){title=END_TITLE[why("player")]||"Vitória!";sub=pos?`Você terminou em ${pos}.º de ${rows.length}.`:""}
+ if(won){title=END_TITLE[why("player")]||"Vitória!";sub=(r.dominionKept?`Você manteve ${countTerritories(s,"player")} de ${territoryBase(s)} regiões até a última era. `:"")+(pos?`Você terminou em ${pos}.º de ${rows.length}.`:"")}
  else if(drawn||(r.type==="draw")){title="Empate!";sub=r.allEliminated?"Todas as civilizações foram eliminadas.":`Empate entre ${r.winners.map(id=>id==="player"?"você":escapeHtml(civName(getCiv(s,id)))).join(" e ")}.`}
  else{title=!P(s).active?"Derrota: você foi eliminado":"Derrota";sub=winner?`${civLabel(winner)} venceu ${END_WHY[why(winner.id)]||""}.${pos?` Você ficou em ${pos}.º.`:""}`:""}
  const terr=countTerritories(s,"player"),wins=s.history.at(-1)?.attacksTotal?.playerWins??0;

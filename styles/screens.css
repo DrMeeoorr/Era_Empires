@@ -171,6 +171,8 @@ button.btn-main,.btn-main{display:flex;align-items:center;justify-content:center
 .modal-atlas .actions .btn-line{border:1.5px solid #e9d9ad66;background:#0a1322b3;color:var(--scr-parch);font-weight:700;border-radius:14px}
 button.btn-danger{display:flex;align-items:center;justify-content:center;border-radius:14px;border:0;background:linear-gradient(180deg,#d8505f,#b23446);color:#fff;font-weight:800;box-shadow:0 1px 0 #fff4 inset,0 -2px 0 #0003 inset}
 .modal-atlas button:focus-visible{outline:3px solid #ffe2a0;outline-offset:2px}
+/* Domínio com escolha: linha de ajuda sob o texto ("Continuando, você ainda vence por domínio no fim…"). */
+.modal-atlas .dlg-help{max-width:340px;margin:8px auto 0;padding:8px 12px;border-radius:12px;background:#0a1322b3;border:1px solid #e9d9ad33;color:#e9d9ad;font-size:14px;line-height:1.4}
 .dlg-check{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin:10px auto 0;color:#d7deea;font-size:14.5px;cursor:pointer}
 .dlg-check input{width:22px;height:22px;margin:0;accent-color:var(--scr-gold)}
 @media(prefers-reduced-motion:no-preference){.modal-atlas .modal{animation:invUp .22s ease-out both}}

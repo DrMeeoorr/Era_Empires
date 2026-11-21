@@ -177,7 +177,8 @@ for (const [name, opts] of MOBILE_SCREENS) {
       await startGame(page);
       await page.evaluate((won) => {
         state.ui.skipReport = true;
-        while (!state.result) { if (won) { P(state).military += 50; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); } playEra({ military: 0, infrastructure: won ? P(state).treasury : 0, technology: 0 }); }
+        // Domínio com escolha (21/11/2026): ao chegar a 70% o jogador escolhe "Vencer agora" (o fim de antes).
+        while (!state.result) { if (won) { P(state).military += 50; for (const t of eligibleTargets(state, "player")) attackTerritory(state, t.i, "player", configApplied, true); } playEra({ military: 0, infrastructure: won ? P(state).treasury : 0, technology: 0 }); if (dominionAsking(state)) chooseDominion(true); }
         renderAll();
       }, won);
       const scr = page.locator("#resultScreen");
