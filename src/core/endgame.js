@@ -17,6 +17,19 @@ export const END_REASON_NAMES={territorial:"maioria territorial",elimination:"el
 export const SCORE_DIMS=[["military","scoreWMilitary","scoreCapMilitary"],["infrastructure","scoreWInfrastructure","scoreCapInfrastructure"],["technology","scoreWTechnology","scoreCapTechnology"],["treasury","scoreWTreasury","scoreCapTreasury"],["territories","scoreWTerritory","scoreCapTerritory"]];
 export const refsFor=(cfg,set)=>cfg.references?.[set]||DEFAULT_REFERENCES[set];
 // 3.1 — mínimo de territórios: ⌈p × T⌉ (tolerância numérica para p×T inteiro, ex.: 0,8×25).
+/* Duração "Sem limite" (21/11/2026, Nova partida → Personalizar → Duração): a partida termina por domínio, eliminação ou
+   supremacia; o teto de segurança (100 eras) decide por pontos. A supremacia começa a contar na era 15 (a mesma era de
+   uma partida padrão de 30 eras), em vez de metade do limite (50). Gravado na partida (state.unlimited). */
+export const UNLIMITED={maxEras:100,supremacyFromEra:15};
+// Primeira era em que a supremacia pode contar.
+export function supremacyMinEra(s,cfg){return s?.unlimited?UNLIMITED.supremacyFromEra:Math.ceil((cfg.endgame.supremacyMinEraShare||0)*s.maxEras)}
+/* Domínio com escolha (21/11/2026): só nas partidas do jogador humano (state.dominion, criado por app/session.js;
+   laboratórios, IAs e saves antigos não o têm e encerram na hora, como antes). Quando o JOGADOR chega a 70% antes da
+   última era e nada mais decide a era, a partida pára (sem abrir a era seguinte) com state.dominion.ask = era, à espera
+   de "Vencer agora" ou "Continuar até a era N" (resolveDominion). Continuando, a pergunta só volta se o jogador cair
+   abaixo de 70% e voltar a subir; no limite de eras, quem tiver 70% vence por domínio (regra de sempre).
+   Rival a 70%: vence na hora. Sem limite: o jogador também vence na hora (não há fim para onde continuar). */
+export function dominionAsking(s){return !!(s&&!s.result&&s.dominion&&typeof s.dominion==="object"&&Number.isInteger(s.dominion.ask))}
 export function territorialMinimum(total,pct){return Math.max(1,Math.ceil(pct*total-1e-9))}
 // Base de cálculo: todos os territórios existentes (próprios, de rivais e neutros).
 // Ainda não existem territórios destruídos/disputados no MVP; quando existirem, o
@@ -88,17 +101,24 @@ export function evaluateEndOfEra(s,cfg,era,entry,apply=true){
   // 2b) Eliminação de todos os adversários.
   if(s.civs.length>1&&active.length===1)add(active[0].id,"elimination");
   // 2c) Maioria territorial.
-  out.territorial=territorialCheck(s,cfg,active);out.territorial.winners.forEach(id=>add(id,"territorial"));
+  out.territorial=territorialCheck(s,cfg,active);
+  const dom=apply&&s.dominion&&typeof s.dominion==="object"&&getCiv(s,"player")?.controller!=="ai"?s.dominion:null,playerDom=out.territorial.winners.includes("player");
+  if(dom&&!playerDom)dom.declined=false;   // caiu abaixo de 70%: se voltar a subir, pergunta de novo
+  const choose=!!dom&&playerDom&&!s.unlimited&&era<s.maxEras;   // o domínio do jogador espera pela escolha
+  out.territorial.winners.forEach(id=>{if(!(choose&&id==="player"))add(id,"territorial")});
   // 2d) Supremacia (só faz sentido com 2+ ativas; com 1 a vitória por eliminação é imediata).
   // Supremacia só na fase final: a sequência só conta a partir de uma fração do limite de eras e
   // quando restam poucos territórios livres (neutros). Fora disso: "notYet", sequência a zero.
-  const neutralShare=countTerritories(s,"neutral")/territoryBase(s),minEra=Math.ceil((g.supremacyMinEraShare||0)*s.maxEras);
+  const neutralShare=countTerritories(s,"neutral")/territoryBase(s),minEra=supremacyMinEra(s,cfg);
   // Modo Conquista: supremacia desligada; só a maioria territorial, a eliminação ou a pontuação na última era decidem.
   out.supremacy=g.supremacyEnabled===false?{leader:null,streak:0,status:"off",achieved:false}:(era<minEra||neutralShare>(g.supremacyMaxNeutralShare??1)+1e-12)?{leader:null,streak:0,status:"notYet",achieved:false,minEra,neutralShare}:evaluateSupremacy(s.supremacy,ices,era,cfg);
   if(out.supremacy.achieved)add(out.supremacy.leader,"supremacy");
   if(apply){
    s.supremacy={leader:out.supremacy.leader,streak:out.supremacy.streak,status:out.supremacy.status};
-   if(Object.keys(reasons).length)out.result=buildResult(era,reasons);
+   // Domínio do jogador antes da última era: se outra condição decide a era, conta junto (como antes); senão pergunta
+   // (uma vez por subida a 70%) ou, se ele já decidiu continuar, a partida segue.
+   if(choose){if(Object.keys(reasons).length)add("player","territorial");else if(!dom.declined){dom.ask=era;out.dominionAsk=true}}
+   if(Object.keys(reasons).length)out.result=buildResult(era,reasons,dom?.continued&&reasons.player?.includes("territorial")?{dominionKept:true}:{});
    // 3) Limite de eras: só decide se nenhuma condição de vitória ocorreu (decisão 8).
    else if(era>=s.maxEras){
     const extending=g.extendForSupremacy&&s.supremacy.streak>0&&era<s.maxEras+g.supremacyEras;
@@ -112,13 +132,23 @@ export function evaluateEndOfEra(s,cfg,era,entry,apply=true){
  if(out.result){s.result=out.result;addLog(s,"🏁 "+describeResult(s,out.result))}
  entry.end={eliminated:out.eliminated,wouldEliminate:out.wouldEliminate,territorialMin:out.territorial?.min??null,territorialWinners:out.territorial?.winners||[],
   supremacy:out.supremacy?{leader:out.supremacy.leader,streak:out.supremacy.streak,status:out.supremacy.status,ratio:out.supremacy.ratio??null}:null,
-  result:out.result?clone(out.result):null,extended:!!out.extended};
+  result:out.result?clone(out.result):null,extended:!!out.extended,...(out.dominionAsk?{dominionAsk:true}:{})};
  return out;
+}
+// Resposta do jogador à pergunta do domínio. win=true: vitória por domínio na era da pergunta (como era antes);
+// win=false: a partida segue até ao limite (quem abre a era seguinte é a sessão). Devolve false se não havia pergunta.
+export function resolveDominion(s,win){
+ if(!dominionAsking(s))return false;const d=s.dominion,era=d.ask;d.ask=null;
+ if(win){
+  const r=buildResult(era,{player:["territorial"]});s.result=r;addLog(s,"🏁 "+describeResult(s,r));
+  for(const e of [s.timeline.at(-1),s.history.at(-1)])if(e&&e.era===era&&e.end){e.end.result=clone(r);delete e.end.dominionAsk}
+ }else{d.declined=true;d.continued=true;addLog(s,`👑 Domínio do mapa: Jogador decidiu continuar até a era ${s.maxEras}.`)}
+ return true;
 }
 export function describeResult(s,r){
  if(!r)return "";const nm=id=>getCiv(s,id)?.id==="player"?"Jogador":getCiv(s,id)?.name||id;
  if(r.allEliminated)return `Era ${r.era}: empate geral — todas as civilizações foram eliminadas.`;
  const why=id=>(r.reasons[id]||[]).map(x=>END_REASON_NAMES[x]).join(" + ");
- if(r.type==="victory")return `Era ${r.era}: vitória de ${nm(r.winners[0])} por ${why(r.winners[0])}.`;
+ if(r.type==="victory")return `Era ${r.era}: vitória de ${nm(r.winners[0])} por ${why(r.winners[0])}${r.dominionKept?" (mantida até a última era)":""}.`;
  return `Era ${r.era}: empate entre ${r.winners.map(id=>`${nm(id)} (${why(id)})`).join(", ")}.`;
 }

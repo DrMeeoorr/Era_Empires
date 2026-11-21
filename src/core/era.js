@@ -1,7 +1,7 @@
 // Uma era: início (receita, liberação militar), fim (investimentos, IAs, ordens, fim de partida) e simulação.
 import {aiDecide} from "../ai/decide.js";
 import {releaseMilitaryInvestments,invest,collectRevenue,allocateStrategy,activeTechBenefit} from "./economy.js";
-import {describeResult,evaluateEndOfEra} from "./endgame.js";
+import {describeResult,evaluateEndOfEra,dominionAsking} from "./endgame.js";
 import {countTerritories,eligibleTargets} from "./map.js";
 import {resolveOrders,orderAttack,attackTerritory} from "./military.js";
 import {P,A,aiCivs,newState} from "./state.js";
@@ -18,6 +18,7 @@ export function beginEra(s,cfg,opts={}){
  if(s.stopped)throw Error("Simulação interrompida por limite numérico.");
  if(s.result)throw Error("A partida já terminou: "+describeResult(s,s.result));
  if(s.pending)throw Error("A era "+s.pending.era+" já está aberta.");
+ if(dominionAsking(s))throw Error("Falta escolher: vencer agora por domínio ou continuar.");
  const era=s.era+1;if(!Number.isSafeInteger(era))throw Error("Limite seguro de eras do JavaScript atingido.");
  const aiOn=cfg.military.aiEnabled&&opts.ai!==false;
  const eraInvested=Object.fromEntries(s.civs.map(c=>[c.id,{military:0,infrastructure:0,technology:0}]));

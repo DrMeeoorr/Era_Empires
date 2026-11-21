@@ -10,7 +10,7 @@ const { pathToFileURL } = require("node:url");
 const SRC = path.resolve(__dirname, "..", "src");
 const load = (rel) => import(pathToFileURL(path.join(SRC, rel)).href);
 // Mesmo mínimo do teste no navegador (tests/internal.test.js): se diminuir, alguém apagou testes.
-const MIN_INTERNAL_TESTS = 155;
+const MIN_INTERNAL_TESTS = 159;
 
 test("Node: todos os testes internos passam, sem navegador", async () => {
   const session = await load("app/session.js");

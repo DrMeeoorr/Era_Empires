@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const { launch, openGame } = require("./helpers");
 
 // Número mínimo de testes internos: se diminuir, alguém apagou testes.
-const MIN_INTERNAL_TESTS = 155;
+const MIN_INTERNAL_TESTS = 159;
 
 let browser, ctx;
 before(async () => {
