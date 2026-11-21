@@ -7,7 +7,7 @@ import {setGameMode,gameMode,setConfigApplied,configApplied,state,setState,apply
 import {newTutorialGame,TUTORIAL_POS} from "../app/setup.js";
 import {DEFAULTS,normalizeConfig,MAX_AI,SCORE_WEIGHT_KEYS} from "../core/config.js";
 import {invest,makeInvestment,infraReturn,techReturn,collectRevenue} from "../core/economy.js";
-import {evaluateEndOfEra,evaluateSupremacy,territorialMinimum,computeICE,finalScores,scoreWinners} from "../core/endgame.js";
+import {evaluateEndOfEra,evaluateSupremacy,territorialMinimum,computeICE,finalScores,scoreWinners,dominionAsking,resolveDominion,supremacyMinEra,UNLIMITED} from "../core/endgame.js";
 import {processEra,simulate,beginEra,finishEra} from "../core/era.js";
 import {eligibleTargets,countTerritories,adjacentOwned,neighbors,startPositions,gridDist} from "../core/map.js";
 import {runFixedGame,seatProfiles,fixedGameSeed,runMatch} from "../core/match.js";
@@ -198,6 +198,25 @@ export function defineTests(){
  test("[G6] Partida encerrada não aceita novas eras",()=>{const c=EG(),s=ST(c,OW(24,[["player",24]]));END(s,c);let failed=false;try{processEra(s,c,{})}catch(e){failed=true}if(!failed)throw Error("processEra aceitou era depois do fim")});
  test("[G7] Configuração de fim de partida é validada",()=>{for(const bad of [{maxEras:9},{maxEras:151},{iceWMilitary:.5},{scoreWTreasury:0},{scoreNormalization:"x"}]){const c=clone(DEFAULTS);Object.assign(c.endgame,bad);let failed=false;try{normalizeConfig(c)}catch(e){failed=true}if(!failed)throw Error("Aceitou "+JSON.stringify(bad))}});
  test("[G8] Extensão experimental espera pela sequência de supremacia",()=>{const c=EG({maxEras:10,extendForSupremacy:true}),s=ST(c,OW(24,[["player",3],["ai",3]]));s.maxEras=10;s.supremacy={leader:"player",streak:2,status:"counting"};const o=END(s,c,10,{player:D(10),ai:D(0)});if(o.result||!o.extended)throw Error("Não prolongou com sequência ativa")});
+ // Domínio com escolha e duração "Sem limite" (21/11/2026). DOM: partida do jogador humano (state.dominion).
+ const DOM=s=>{s.dominion={ask:null,declined:false,continued:false};return s};
+ test("[G9] Domínio do jogador humano pergunta; rival e partidas sem escolha encerram na hora",()=>{const c=EG({territoryPct:.7,maxEras:10});
+  const s=DOM(ST(c,OW(24,[["player",17],["ai",1]])));s.maxEras=10;const o=END(s,c,3);if(o.result||s.dominion.ask!==3||!dominionAsking(s)||!o.dominionAsk)throw Error("Não perguntou ao jogador");
+  const old=ST(c,OW(24,[["player",17],["ai",1]]));old.maxEras=10;const r=END(old,c,3).result;if(r?.reasons.player?.[0]!=="territorial")throw Error("Sem escolha devia encerrar na hora");
+  const riv=DOM(ST(c,OW(24,[["ai",17],["player",1]])));riv.maxEras=10;const rr=END(riv,c,3).result;if(rr?.winners[0]!=="ai"||riv.dominion.ask!=null)throw Error("Rival a 70% devia vencer na hora")},"END");
+ test("[G10] Vencer agora = vitória de antes; Continuar só volta a perguntar depois de cair abaixo de 70%",()=>{const c=EG({territoryPct:.7,maxEras:10}),mk=()=>{const s=DOM(ST(c,OW(24,[["player",17],["ai",1]])));s.maxEras=10;END(s,c,3);return s};
+  const a=mk(),old=ST(c,OW(24,[["player",17],["ai",1]]));old.maxEras=10;const r=END(old,c,3).result;resolveDominion(a,true);if(JSON.stringify(a.result)!==JSON.stringify(r)||dominionAsking(a))throw Error("Vencer agora diferente do fim de antes");
+  const b=mk();resolveDominion(b,false);if(!b.dominion.declined||dominionAsking(b))throw Error("Continuar não registado");if(END(b,c,4).result||b.dominion.ask!=null)throw Error("Perguntou de novo sem cair");
+  b.owners[16]="ai";END(b,c,5);if(b.dominion.declined)throw Error("Cair abaixo de 70% não rearmou a pergunta");b.owners[16]="player";END(b,c,6);if(b.dominion.ask!==6)throw Error("Não perguntou depois de voltar a 70%");
+  if(resolveDominion(ST(c),true))throw Error("Resposta aceite sem pergunta")},"END");
+ test("[G11] Continuando: no limite vence por domínio com 70%, senão decidem os pontos",()=>{const c=EG({territoryPct:.7,maxEras:10});
+  for(const keep of [true,false]){const s=DOM(ST(c,OW(24,[["player",17],["ai",1]])));s.maxEras=10;END(s,c,8);resolveDominion(s,false);if(!keep)s.owners[16]="ai";const r=END(s,c,10).result;
+   if(keep&&(r?.reasons.player?.[0]!=="territorial"||!r.dominionKept||r.era!==10))throw Error("Não venceu por domínio no limite");
+   if(!keep&&!(r?.scores&&Object.values(r.reasons).every(x=>x[0]==="score")))throw Error("Sem 70% no limite deviam decidir os pontos")}},"END");
+ test("[G12] Sem limite: domínio do jogador vence na hora, supremacia a partir da era 15, teto de 100 eras por pontos",()=>{const c=EG({territoryPct:.7,maxEras:UNLIMITED.maxEras,supremacyMinEraShare:.5});
+  const s=DOM(ST(c,OW(24,[["player",17],["ai",1]])));s.unlimited=true;s.maxEras=UNLIMITED.maxEras;const r=END(s,c,5).result;if(r?.reasons.player?.[0]!=="territorial"||s.dominion.ask!=null)throw Error("Sem limite devia vencer na hora");
+  if(supremacyMinEra(s,c)!==15||supremacyMinEra({maxEras:100},c)!==50)throw Error("Início da supremacia errado");
+  const t=DOM(ST(c,OW(24,[["player",3],["ai",3]])));t.unlimited=true;t.maxEras=100;if(END(t,c,99).result)throw Error("Terminou antes do teto");const rt=END(t,c,100).result;if(!rt?.scores)throw Error("Teto de 100 eras não decidiu por pontos")},"END");
  test("[E6] Jogador eliminado: a partida continua entre as restantes",()=>{const c=EG({},24,3),s=ST(c,OW(24,[["ai",2],["ai2",2]]));END(s,c,1);if(P(s).active)throw Error("Jogador sem territórios não foi eliminado");s.era=1;processEra(s,c,{playerAllocation:{military:0,infrastructure:0,technology:0}});if(s.result)throw Error("Partida terminou com 2 IAs ativas");if(s.history.at(-1).total!==0)throw Error("Jogador eliminado recebeu receita")});
  // ── Ajustes pós-etapa 3 ──
  test("[A1] Padrões ajustados: maioria 70%, supremacia 0,70 e ICE mínimo 0,5",()=>{if(DEFAULTS.endgame.territoryPct!==.7||DEFAULTS.endgame.supremacyRelative!==.7||DEFAULTS.endgame.iceMinAbsolute!==.5)throw Error("Padrões não atualizados");if(territorialMinimum(24,DEFAULTS.endgame.territoryPct)!==17)throw Error("Mínimo com 70% de 24 deveria ser 17")});

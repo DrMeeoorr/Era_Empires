@@ -4,7 +4,9 @@
 // mudança de posição no placar, eliminação). Nas eras tranquilas, um aviso curto no topo some sozinho, sem pedir toque.
 // Não aparece no avanço rápido dos laboratórios nem quando as eras são jogadas por código (playEra): só pelo botão.
 import {saveGame} from "../app/save.js";
-import {state} from "../app/session.js";
+import {state,configApplied} from "../app/session.js";
+import {territorialMinimum,territoryBase} from "../core/endgame.js";
+import {countTerritories} from "../core/map.js";
 import {regionName,civName} from "../core/names.js";
 import {getCiv} from "../core/state.js";
 import {$} from "./dom.js";
@@ -42,9 +44,12 @@ export function eraChanges(b){
  for(const c of state.civs){if(b.active[c.id]&&!c.active)ev.push({kind:"elim",ok:c.id!=="player",civ:c.id,title:c.id==="player"?"Você foi eliminado":`${nameOf(c.id)} foi eliminado`,sub:c.id==="player"?"a partida continua entre os rivais":"um rival a menos"})}
  // Rivais que cresceram sem ser à sua custa (regiões livres ou de outros rivais): uma linha por rival.
  const grow=[];for(const c of state.civs){if(c.id==="player")continue;const n=state.owners.filter((o,i)=>o===c.id&&b.owners[i]!==c.id&&b.owners[i]!=="player").length;if(n>0)grow.push({kind:"grow",ok:null,civ:c.id,title:`${nameOf(c.id)} +${n} ${n>1?"regiões":"região"}`,sub:"cresceu longe de você"})}
+ // Domínio com escolha: o jogador decidiu continuar e mantém 70% (lembrete; não obriga o resumo em tela cheia).
+ const min=territorialMinimum(territoryBase(state),configApplied.endgame.territoryPct),dom=[];
+ if(state.dominion?.declined&&!state.unlimited&&countTerritories(state,"player")>=min)dom.push({kind:"dom",ok:true,title:"Você domina o mapa",sub:`mantenha ${min} regiões até a era ${state.maxEras} para vencer por domínio`});
  const lv=liveScores(),rank=rankOf(lv),r=state.pending?.revenue?.player||{total:0,normal:0,infra:0,tech:0};
  const mine=ev.length>0,moved=!!(b.rank&&rank&&b.rank.pos!==rank.pos);
- return {era:b.era,next:state.era,gold:r.total||0,rev:r,events:[...ev,...grow],mine,moved,rank,before:b.rank,lv,prevPts:b.pts,full:mine||moved};
+ return {era:b.era,next:state.era,gold:r.total||0,rev:r,events:[...dom,...ev,...grow],mine,moved,rank,before:b.rank,lv,prevPts:b.pts,full:mine||moved};
 }
 function titleFor(c){const k=new Set(c.events.map(e=>e.kind));
  if(k.has("elim")&&c.events.some(e=>e.kind==="elim"&&e.civ==="player"))return "Você foi eliminado";
@@ -54,7 +59,7 @@ function titleFor(c){const k=new Set(c.events.map(e=>e.kind));
  if(k.has("failed"))return "Ataque repelido";
  if(c.moved)return c.rank.pos<c.before.pos?"Subiu no placar!":"Caiu no placar";
  return "Era tranquila";}
-const ICON={won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
+const ICON={dom:["♛","ok"],won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
 function eventHtml(e,k){const [ic,tone]=ICON[e.kind]||["•","info"],civ=e.civ&&e.civ!=="player"?getCiv(state,e.civ):null;
  const tag=e.ok===true?`<span class="ev-tag ok" aria-label="deu certo">✓</span>`:e.ok===false?`<span class="ev-tag bad" aria-label="deu errado">✗</span>`:"";
  const title=escapeHtml(e.title).replace(escapeHtml(civ?civName(civ):"\u0000"),civ?civLabel(civ):"");

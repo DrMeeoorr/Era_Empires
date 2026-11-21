@@ -4,6 +4,7 @@ import {LAB_PROFILES} from "../ai/profiles.js";
 import {runHook} from "./hooks.js";
 import {saveGame} from "./save.js";
 import {DEFAULTS,pickAiDifficulty,DIFFICULTIES,AI_DIFF_FIELDS} from "../core/config.js";
+import {UNLIMITED,dominionAsking,resolveDominion} from "../core/endgame.js";
 import {beginEra,finishEra} from "../core/era.js";
 import {RIVAL_NAMES} from "../core/names.js";
 import {newState} from "../core/state.js";
@@ -44,6 +45,9 @@ export let mapType="padrao";
 // Terrenos da PRÓXIMA partida: false = Só visual (padrão para jogador novo e sempre no tutorial), true = Com efeitos.
 // Cada partida guarda a sua escolha (state.terrainEffects); o motor só lê a do estado.
 export let terrainEffectsChoice=false;
+// Duração da PRÓXIMA partida: true = "Sem limite" (teto de segurança de 100 eras; Personalizar → Duração). Cada partida
+// guarda a sua (state.unlimited); saves antigos não a têm e continuam com o limite com que começaram.
+export let unlimitedChoice=false;
 // Opções mostradas ao jogador: sem "Definido nas Configurações" fora do dev.html.
 export const visibleOpponentOptions=()=>DEV_MODE?OPPONENT_OPTIONS:OPPONENT_OPTIONS.filter(([v])=>v!=="config");
 // Resolve as escolhas no início de cada partida: "Aleatório" sorteia um perfil novo a cada partida e fica oculto até ao fim.
@@ -56,6 +60,9 @@ export function newBattleSeed(){return Math.floor(Math.random()*4294967296)}
 // {fixedSeed:true}: usa a semente da configuração (o tutorial, que precisa de ser sempre igual).
 export function newGame({fixedSeed=false}={}){const n=configApplied.map.aiCount||1,opp=resolveOpponents(n);const s=newState(configApplied,{mode:gameMode,endRules:!!configApplied.endgame.enabled,profiles:[null,...opp.map(o=>o.profile)],startSeed:configApplied.map.randomStart?Math.floor(Math.random()*4294967296):0});opp.forEach((o,i)=>{if(s.civs[i+1]){s.civs[i+1].hiddenProfile=o.hidden;s.civs[i+1].name=RIVAL_NAMES[i]||s.civs[i+1].name}});s.difficulty=currentDifficulty;
  if(!fixedSeed)s.rngSeed=newBattleSeed();
+ // Domínio com escolha (21/11/2026): só nas partidas do jogador (laboratórios e partidas só de IAs não passam por aqui).
+ s.dominion={ask:null,declined:false,continued:false};
+ if(unlimitedChoice){s.unlimited=true;s.maxEras=UNLIMITED.maxEras}
  // Terrenos: semente própria (Math.random, como a posição aleatória), nunca o sorteio das batalhas.
  s.terrain=makeMapTerrain(mapType,mapType==="sorteado"?Math.floor(Math.random()*4294967296):null,s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0),s.owners.length);
  // Com efeitos: liga as regras do terreno e guarda as regiões iniciais (contam como Campina). Só visual: nada muda.
@@ -66,7 +73,10 @@ export function newGame({fixedSeed=false}={}){const n=configApplied.map.aiCount|
  beginEra(s,configApplied);s.ui={skipIdleWarning:false};return s}
 export function profileOf(c){return c.profile||configApplied.military.aiStyle||"adaptive"}
 // Conclui a era aberta e, se a partida continuar, abre a seguinte.
-export function playEra(allocation){const era=state.era,row=finishEra(state,configApplied,{playerAllocation:allocation});if(!state.result)beginEra(state,configApplied);saveGame();runHook("afterEra",era,row);return row}
+// Se o jogador chegou a 70% e falta escolher (dominionAsking), a era seguinte só abre depois de chooseDominion.
+export function playEra(allocation){if(dominionAsking(state))throw Error("Falta escolher: vencer agora por domínio ou continuar.");const era=state.era,row=finishEra(state,configApplied,{playerAllocation:allocation});if(!state.result&&!dominionAsking(state))beginEra(state,configApplied);saveGame();runHook("afterEra",era,row);return row}
+// Resposta à pergunta "Você domina o mapa!": true = vencer agora; false = continuar (abre a era seguinte). Grava.
+export function chooseDominion(win){if(!resolveDominion(state,!!win))return false;if(!state.result)beginEra(state,configApplied);saveGame();runHook("dominionChosen",!!win);return true}
 // Únicas formas de outros módulos substituírem estas variáveis (um módulo não pode reatribuir o que importa).
 export function setConfigDefault(v){configDefault=v;return v}
 export function setConfigApplied(v){configApplied=v;return v}
@@ -80,3 +90,4 @@ export function setAiConfigBase(v){aiConfigBase=v;return v}
 export function setOpponentChoices(v){opponentChoices=v;return v}
 export function setMapType(v){mapType=v==="sorteado"?"sorteado":"padrao";return mapType}
 export function setTerrainEffectsChoice(v){terrainEffectsChoice=v===true;return terrainEffectsChoice}
+export function setUnlimitedChoice(v){unlimitedChoice=v===true;return unlimitedChoice}

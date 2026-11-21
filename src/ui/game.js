@@ -1,21 +1,23 @@
 // Tela da era: arranque do jogo (save ou partida nova), desenho completo, concluir a era, nova partida, vistas.
 import {runHook,hooks,onHook} from "../app/hooks.js";
 import {quarantineSave,saveGame,readSavedGame} from "../app/save.js";
-import {setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,currentDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,state,playEra,DEV_MODE,setMapType,setTerrainEffectsChoice} from "../app/session.js";
+import {setConfigApplied,configDefault,setGameMode,setCurrentDifficulty,DEFAULT_DIFFICULTY,setAiConfigBase,applyDifficulty,currentDifficulty,setOpponentChoices,DEFAULT_OPPONENT,setSelectedTerritory,setState,newGame,state,playEra,DEV_MODE,setMapType,setTerrainEffectsChoice,setUnlimitedChoice,chooseDominion,configApplied} from "../app/session.js";
 import {restoreSetupAfterTutorial} from "../app/setup.js";
 import {pickAiDifficulty} from "../core/config.js";
+import {dominionAsking,territorialMinimum,territoryBase} from "../core/endgame.js";
+import {countTerritories} from "../core/map.js";
 import {P} from "../core/state.js";
 import {mapTypeOf,terrainEffectsOn} from "../core/terrain.js";
 import {clone} from "../core/util.js";
 import {readAlloc,renderAllocation,AREAS,placePlans,round2,stepArea,restArea,setAlloc,applyPlan} from "./allocation.js";
 import {$} from "./dom.js";
-import {money,fmtInput,parseAmount} from "./format.js";
+import {money,fmtInput,parseAmount,escapeHtml} from "./format.js";
 import {renderMetrics} from "./hud.js";
 import {renderMap,fitRegionNames,attackSelected,markLegend} from "./map.js";
 import {showDialog} from "./modal.js";
 import {renderForecast,renderHistory,renderNotifications,renderVictory,renderCharts,renderResult} from "./panels.js";
 import {eraSnapshot,showEraSummary,toggleEraSummary,renderSummaryToggle} from "./report.js";
-import {noteEraMedals} from "./medals.js";
+import {noteEraMedals,noteEndMedals} from "./medals.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
 
 export function showSaveWarning(err){
@@ -43,10 +45,11 @@ export function renderSavedSafely(render){
 // Concluir a era (com o aviso de orçamento parado).
 export function concludeEra(){
  if(hooks.beforeConclude.some(fn=>fn()===false))return;
+ if(dominionAsking(state)){showDominionChoice();return}
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
  if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
- const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);const medals=noteEraMedals(before);saveGame();AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});showEraSummary(before,medals)};
+ const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);const medals=noteEraMedals(before);saveGame();AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});if(dominionAsking(state))showDominionChoice({before,medals});else showEraSummary(before,medals)};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
   showDialog({icon:"coins",title:`Você ainda tem ${money(left)} para investir`,text:"O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.",
    body:`<label class="dlg-check"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
@@ -54,6 +57,23 @@ export function concludeEra(){
   return;
  }
  go();
+}
+/* Domínio com escolha (21/11/2026): o jogador chegou a 70% antes da última era. Janela "Atlas" (role="dialog", foco no
+   primeiro botão, Tab preso, botões de 48 px). Esc (e o Voltar do Android) = "Vencer agora": é a opção segura — garante a
+   vitória que o jogador já tem; continuar é a escolha que arrisca e por isso pede um toque de propósito.
+   ctx: {before,medals} da era concluída, para mostrar o resumo da era depois de "Continuar". Sem ctx (save recarregado
+   a meio da pergunta), a pergunta volta ao abrir a partida e "Continuar" só abre a era seguinte. */
+let domCtx=null;
+export function showDominionChoice(ctx){
+ if(!dominionAsking(state))return false;if(ctx)domCtx=ctx;
+ if(document.getElementById("dominionChoice"))return true;
+ const s=state,mine=countTerritories(s,"player"),total=territoryBase(s),min=territorialMinimum(total,configApplied.endgame.territoryPct);
+ const after=win=>{const c=domCtx;domCtx=null;chooseDominion(win);if(win)noteEndMedals();saveGame();setSelectedTerritory(null);renderAll();if(!state.result&&c)showEraSummary(c.before,c.medals)};
+ showDialog({icon:"crown",title:"Você domina o mapa!",text:`Você controla ${mine} de ${total} regiões (70% ou mais).`,
+  body:`<p class="dlg-help">Continuando, você ainda vence por domínio no fim se mantiver 70% (${min} regiões).</p>`,
+  buttons:[{label:"Vencer agora",kind:"primary",onClick:()=>after(true)},{label:`Continuar até a era ${escapeHtml(s.maxEras)}`,onClick:()=>after(false)}],esc:0});
+ const m=$("modalRoot").querySelector(".modal");if(m)m.id="dominionChoice";
+ return true;
 }
 export function startNewGame(){restoreSetupAfterTutorial();setState(newGame());setSelectedTerritory(null);saveGame();renderAll();window.scrollTo({top:0})}
 export function renderAll(){if(!state.ui)state.ui={skipIdleWarning:false};updateFit();renderMetrics();renderMap();renderAllocation();renderForecast();renderHistory();renderNotifications();renderVictory();renderCharts();renderSummaryToggle();runHook("afterRender")}
@@ -68,13 +88,15 @@ export function showView(view){
 // Jogo: carrega o save (ou começa uma partida), desenha e liga os controles da tela da era.
 export async function initGame(){
  onHook("saveStatus",showSaveWarning);
+ // Save recarregado a meio da pergunta do domínio: ela volta quando o jogador abre a partida (Continuar).
+ onHook("continueGame",()=>showDominionChoice());
  const read=await readSavedGame(),saved=read.status==="ok"?read.game:null;
  if(read.status==="invalid"){quarantineSave(read.raw);saveProblem=read.reason;noticeBrokenSave()}
- if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
+ if(saved&&!saved.state.result){setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));setUnlimitedChoice(saved.state.unlimited===true);setState(saved.state);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);savedGameLoaded=true;savedRaw=read.raw}
  else if(saved){
   // Partida terminada: não é retomada, mas as escolhas do jogador (rivais, eras, dificuldade, modo, estilos)
   // continuam. Se a partida terminada era a do tutorial, voltam as escolhas de antes do tutorial.
-  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
+  try{setConfigApplied(saved.config);setGameMode(saved.gameMode);setMapType(mapTypeOf(saved.state));setTerrainEffectsChoice(terrainEffectsOn(saved.state));setUnlimitedChoice(saved.state.unlimited===true);if(saved.opponentChoices)setOpponentChoices(saved.opponentChoices);if(saved.difficulty)setCurrentDifficulty(saved.difficulty);setAiConfigBase(saved.aiBase);setState(saved.state);restoreSetupAfterTutorial();setState(newGame())}
   catch(e){setConfigApplied(clone(configDefault));setGameMode("slow");setCurrentDifficulty(DEFAULT_DIFFICULTY);setAiConfigBase(pickAiDifficulty(configDefault));applyDifficulty(currentDifficulty);setOpponentChoices([DEFAULT_OPPONENT,DEFAULT_OPPONENT,DEFAULT_OPPONENT]);setState(newGame())}
  }
  else{applyDifficulty(currentDifficulty);setState(newGame())}

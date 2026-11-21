@@ -88,17 +88,19 @@ for (const [name, opts] of MOBILE_SCREENS) {
       ], "Nova partida");
       assert.deepEqual((await page.locator("#homeDifficulty [data-diff]").allInnerTexts()).map((t) => t.trim()), ["Muito fácil", "Fácil", "Médio", "Difícil", "Lendário"]);
       assert.equal((await page.locator("#setupStart").innerText()).trim(), "Jogar");
-      // Personalizar: todas as opções de antes continuam lá (duração 15/30/50/outra, ritmo, vitória, estilo de cada rival, posição).
+      // Personalizar: todas as opções de antes continuam lá (duração 15/30/Sem limite/outra, ritmo, vitória, estilo de cada rival,
+      // posição). "Sem limite" substituiu "50 · longa" (21/11/2026); 50 eras continua possível em "Outra".
       await page.locator('#homeOpponents [data-ai="3"]').click();
       await openCustomize(page);
       await assertTargets(page, [
-        ...[15, 30, 50].map((e) => [`#homeEraPresets [data-eras="${e}"]`, `${e} eras`]), ["#homeEraPresets .pg-other", "Outra duração"],
+        ...[15, 30].map((e) => [`#homeEraPresets [data-eras="${e}"]`, `${e} eras`]), ['#homeEraPresets [data-eras="unlimited"]', "Sem limite"], ["#homeEraPresets .pg-other", "Outra duração"],
         ["#modeSlow", "Ritmo Normal"], ["#modeFast", "Ritmo Rápido"], ["#homeClassic", "Clássica"], ["#homeConquest", "Conquista"],
         ["#mapFixed", "Mapa Padrão"], ["#mapRandom", "Mapa Sorteado"],
         ...[0, 1, 2].map((i) => [`#homeProfiles [data-prof="${i}"]`, `estilo do rival ${i + 1}`]), ["#allRandom", "Todos aleatórios"],
         ["label.pg-switch", "Posição inicial aleatória"],
       ], "Personalizar");
       assert.ok(await page.locator("#homeMaxEras").isVisible(), "campo de duração livre");
+      assert.deepEqual((await page.locator("#homeEraPresets button").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), ["15 curta", "30 média", "Sem limite até vencer"]);
       assert.deepEqual((await page.locator("#modeSlow, #modeFast").allInnerTexts()).map((t) => t.trim()), ["Normal", "Rápido"]);
       assert.deepEqual((await page.locator("#homeClassic, #homeConquest").allInnerTexts()).map((t) => t.trim()), ["Clássica", "Conquista"]);
       // Os controles funcionam e o resumo acompanha.

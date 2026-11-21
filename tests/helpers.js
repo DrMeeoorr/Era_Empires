@@ -114,7 +114,9 @@ async function concludeEraUI(page) {
   // Aviso de saldo parado: "Concluir mesmo assim".
   const idle = page.locator('#modalRoot button:has-text("Concluir mesmo assim")');
   if (await idle.count()) await idle.click();
-  await page.waitForFunction((e) => state.result || state.era > e, eraBefore);
+  // Ou a pergunta do domínio (o jogador chegou a 70%: "Vencer agora" / "Continuar"), que fica aberta para o teste.
+  await page.waitForFunction((e) => state.result || state.era > e || dominionAsking(state), eraBefore);
+  if (await page.evaluate(() => dominionAsking(state))) return;
   // O relatório da era abre 60 ms depois; espera um pouco e fecha-o.
   await page.waitForTimeout(120);
   await dismissModals(page);

@@ -396,3 +396,4 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .own-def .od-n{white-space:nowrap}.own-def .od-n .ic{width:16px;height:16px;vertical-align:-3px;margin-right:3px;color:var(--muted)}
 .own-def strong{font-size:16px;color:var(--text)}.own-def strong.gold{color:var(--gold)}
 .own-def .od-why{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
+.hud-prog.unlimited{background:repeating-linear-gradient(90deg,#25344b 0 6px,transparent 6px 10px)}
