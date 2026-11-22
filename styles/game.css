@@ -431,3 +431,23 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .map-edge .me-sym{position:relative;z-index:1}
 .map-edge .me-arrow{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a,0rad)) translate(18px,-50%);transform-origin:0 0;margin:0;border-left:10px solid #fff3cf;border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1px #000)}
 .map-edge:focus-visible{outline:2px solid #ffd479;outline-offset:3px}
+/* Grande Descoberta (mapas 2×–4×): faixa do seu progresso no topo e barras no Placar. */
+.hud-gd{grid-column:1/-1;display:flex;align-items:center;gap:7px;min-width:0;min-height:26px;padding:2px 9px;border:1px solid #3b3463;border-radius:10px;background:#141a33;font-size:12px;line-height:1.2;color:#cfc6f5;white-space:nowrap}
+.hud-gd[hidden]{display:none}
+.hud-gd .gd-ic{flex:none;width:15px;height:15px;color:#b49aff}
+.hud-gd .gd-k{flex:none;font-weight:700;color:#d9ceff}
+.hud-gd .gd-bar{position:relative;flex:1 1 40px;min-width:30px;height:7px;border-radius:99px;background:#272b4d;overflow:hidden}
+.hud-gd .gd-bar i{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:#b49aff}
+.hud-gd .gd-bar b{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#0b1220aa}
+.hud-gd .gd-v{flex:none;font-variant-numeric:tabular-nums;color:#a99fd6}.hud-gd .gd-v b{color:#fff;font-weight:800}
+.hud-gd .gd-r{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.hud-gd .gd-r.ok{color:#6fe0b0}.hud-gd .gd-r.lack{color:#ffcf7a}
+.hud-gd.half{border-color:#6b5cb8}.hud-gd.done{border-color:#f4bd50}.hud-gd.done .gd-bar i{background:#f4bd50}
+@media(max-width:380px){.hud-gd{gap:5px;padding:2px 7px;font-size:11.5px}}
+@media(max-width:340px){.hud-gd .gd-k{display:none}}
+.gd-row{margin-bottom:8px}.gd-row.me strong{color:#fff}
+.gd-pbar{position:relative}.gd-pbar .gd-half{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#efe6cc99}
+.gd-reg.ok{color:#6fe0b0}.gd-reg.lack{color:#ffcf7a}
+.ev.warn .ev-ic{background:#2c2350;color:#d2c2ff}
+/* Mapa grande: a caixa pode ficar mais baixa que a do Original (o mapa rola), para caber a faixa da Descoberta em telas baixas. */
+html.game-fit .map-box.map-big{min-height:150px}

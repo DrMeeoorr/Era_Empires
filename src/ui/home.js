@@ -11,6 +11,7 @@ import {startNewGame,showView,renderAll} from "./game.js";
 import {civSymHtml,playerProfileName} from "./labels.js";
 import {showDialog} from "./modal.js";
 import {recommendedRivalsFor} from "./mapshape.js";
+import {gdForSize,gdRuleText} from "./discovery.js";
 import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
@@ -50,6 +51,8 @@ export function initHome(){
   $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
   document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>{const on=Number(b.dataset.mapSize)===choice.mapSize;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
   {const [grid,n]=MAP_SIZE_INFO[choice.mapSize];$("mapSizeDesc").textContent=choice.mapSize===1?`${grid} = ${n} regiões. O mapa cabe inteiro na tela.`:`${grid} = ${n} regiões, do mesmo tamanho. Arraste o mapa para ver o resto; aproxime com dois dedos ou + e −.`}
+  // Grande Descoberta (vitória por Ciência): só nos mapas 2×–4×, com a meta e o mínimo de regiões do tamanho.
+  {const gd=gdForSize(choice.mapSize),el=$("mapSizeGd");if(el){el.hidden=!gd;el.textContent=gd?gdRuleText(gd.goal,gd.minRegions):""}}
   // Mapa grande com poucos rivais: aviso curto e atalho para usar o número recomendado (pelo motor, quando houver).
   {const most=Math.max(1,...[...document.querySelectorAll("#homeOpponents [data-ai]")].map(b=>Number(b.dataset.ai)||1)),rec=Math.min(MAX_AI,most,recommendedRivalsFor(choice.mapSize)),tip=$("mapSizeTip");
    if(tip){const show=choice.mapSize>1&&choice.ai<rec;tip.hidden=!show;

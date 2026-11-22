@@ -16,6 +16,7 @@ import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml} from "./labels.js";
 import {resultMedalsHtml} from "./medals.js";
 import {unlimitedCapFor} from "./mapshape.js";
+import {fillGdRules,discoveryPanelHtml,gdPlayerPoints,gdActive} from "./discovery.js";
 
 export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
 export function renderCharts(){
@@ -40,6 +41,7 @@ export function renderNotifications(){const events=state.log.filter(x=>/ataque|c
 /* ── Condições de vitória e fim de partida ── */
 export function renderVictory(){
  // Regras completas (Como jogar): o teto do Sem limite desta partida (depende do tamanho do mapa).
+ fillGdRules();
  document.querySelectorAll("[data-unl-cap]").forEach(el=>{el.textContent=String(state?.unlimited?state.maxEras:unlimitedCapFor(mapSizeOf(state)))});
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
@@ -52,7 +54,7 @@ export function renderVictory(){
  // Domínio com escolha: o que acontece ao chegar a 70% (e, se o jogador decidiu continuar, o que falta para vencer no fim).
  const mineT=countTerritories(s,"player"),holding=!s.result&&!s.unlimited&&s.dominion?.declined&&mineT>=min;
  const domTxt=s.unlimited?"Quem chegar lá vence na hora.":!s.dominion?"Quem chegar lá vence na hora.":holding?`<strong class="gold">Você domina o mapa.</strong> Mantenha ${min} regiões até a era ${s.maxEras} para vencer por domínio.`:"Ao chegar lá, você escolhe: vencer na hora ou continuar até a última era. Um rival que chegar lá vence na hora.";
- $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}
+ $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}${discoveryPanelHtml()}
  <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
  <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
  <h3>${s.unlimited?`Sem limite (teto de ${s.maxEras} eras): pontuação`:`Última era (${s.maxEras}): pontuação`}</h3><div class="small muted">${s.unlimited?`Se ninguém vencer até a era ${s.maxEras}, ganha a maior pontuação.`:"Sem outra vitória, ganha a maior pontuação."} Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
@@ -63,8 +65,8 @@ export function scoreSeries(){return state.timeline.map(e=>{const rows=e.civs.ma
 export function advantageEra(winnerIdx,series){let lastNotLead=0;series.forEach((row,i)=>{const max=Math.max(...row);if(row[winnerIdx]<max-1e-9)lastNotLead=i+1});return lastNotLead+1}
 // Tela de resultado (Fase 3): vitória/derrota em destaque, sua posição, 3 números e "Jogar de novo" / "Ver detalhes".
 // Os gráficos, a tabela de pontos e os estilos dos rivais ficam na folha "Detalhes do resultado" (#resultSheet).
-const END_TITLE={score:"Vitória por pontos!",territorial:"Vitória por domínio do mapa!",supremacy:"Vitória por supremacia!",elimination:"Vitória: rivais eliminados!"};
-const END_WHY={score:"por pontos",territorial:"por domínio do mapa",supremacy:"por supremacia",elimination:"eliminando os rivais"};
+const END_TITLE={score:"Vitória por pontos!",territorial:"Vitória por domínio do mapa!",supremacy:"Vitória por supremacia!",elimination:"Vitória: rivais eliminados!",discovery:"Vitória pela Grande Descoberta!"};
+const END_WHY={score:"por pontos",territorial:"por domínio do mapa",supremacy:"por supremacia",elimination:"eliminando os rivais",discovery:"pela Grande Descoberta"};
 const EMBLEM={won:`<svg viewBox="0 0 84 96" aria-hidden="true"><defs><linearGradient id="resG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08f"/><stop offset="1" stop-color="#d9962a"/></linearGradient></defs><path d="M42 4 78 16v30c0 24-16 38-36 46C22 84 6 70 6 46V16Z" fill="#14213a" stroke="url(#resG)" stroke-width="4"/><path d="M20 58h44l-4-22-10 9-8-15-8 15-10-9Z" fill="url(#resG)"/><rect x="20" y="62" width="44" height="6" rx="2" fill="url(#resG)"/></svg>`,
  lost:`<svg viewBox="0 0 84 96" aria-hidden="true"><path d="M42 4 78 16v30c0 24-16 38-36 46C22 84 6 70 6 46V16Z" fill="#1a1d2b" stroke="#7d8aa3" stroke-width="4"/><path d="M44 14 36 40l12 6-10 24 4 12" fill="none" stroke="#ff9aa1" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
  draw:`<svg viewBox="0 0 84 96" aria-hidden="true"><path d="M42 4 78 16v30c0 24-16 38-36 46C22 84 6 70 6 46V16Z" fill="#14213a" stroke="#9fb0c7" stroke-width="4"/><path d="M24 44h36M24 56h36" stroke="#ffd479" stroke-width="6" stroke-linecap="round"/></svg>`};
@@ -72,16 +74,18 @@ const EMBLEM={won:`<svg viewBox="0 0 84 96" aria-hidden="true"><defs><linearGrad
 function finalRows(r){const rows=r.scores?r.scores.map(x=>({id:x.id,score:x.score,civ:getCiv(state,x.id)})):(liveScores()||[]);return rows.slice().sort((a,b)=>b.score-a.score)}
 export function resultSummary(s=state){
  const r=s.result;if(!r)return null;
- const won=r.type==="victory"&&r.winners[0]==="player",drawn=r.type==="draw"&&r.winners.includes("player"),why=id=>(r.reasons?.[id]||[])[0];
+ const won=r.type==="victory"&&r.winners[0]==="player",drawn=r.type==="draw"&&r.winners.includes("player"),why=id=>{const l=r.reasons?.[id]||[];return l.includes("discovery")?"discovery":l[0]};
  const rows=finalRows(r),k=rows.findIndex(x=>x.id==="player"),pos=k>=0?k+1:null,me=k>=0?PTS(rows[k].score):null;
  const other=pos===1?rows[1]:rows[0],gap=me!=null&&other?me-PTS(other.score):null;
  const winner=r.type==="victory"?getCiv(s,r.winners[0]):null;
  let title,sub;
  if(won){title=END_TITLE[why("player")]||"Vitória!";sub=(r.dominionKept?`Você manteve ${countTerritories(s,"player")} de ${territoryBase(s)} regiões até a última era. `:"")+(pos?`Você terminou em ${pos}.º de ${rows.length}.`:"")}
  else if(drawn||(r.type==="draw")){title="Empate!";sub=r.allEliminated?"Todas as civilizações foram eliminadas.":`Empate entre ${r.winners.map(id=>id==="player"?"você":escapeHtml(civName(getCiv(s,id)))).join(" e ")}.`}
- else{title=!P(s).active?"Derrota: você foi eliminado":"Derrota";sub=winner?`${civLabel(winner)} venceu ${END_WHY[why(winner.id)]||""}.${pos?` Você ficou em ${pos}.º.`:""}`:""}
+ else{title=!P(s).active?"Derrota: você foi eliminado":winner&&why(winner.id)==="discovery"?`Derrota: ${escapeHtml(civName(winner))} fez a Grande Descoberta`:"Derrota";sub=winner?`${civLabel(winner)} venceu ${END_WHY[why(winner.id)]||""}.${pos?` Você ficou em ${pos}.º.`:""}`:""}
  const terr=countTerritories(s,"player"),wins=s.history.at(-1)?.attacksTotal?.playerWins??0;
  const tiles=[{v:`${terr}<small>/${territoryBase(s)}</small>`,k:"territórios"},gap==null?{v:me==null?"—":fmt(me,0),k:"pontos"}:{v:(gap>=0?"+":"−")+fmt(Math.abs(gap),0),k:gap>=0?(pos===1?"pontos à frente do 2.º":"pontos"):"pontos para o 1.º"},{v:fmt(wins,0),k:wins===1?"conquista":"conquistas"}];
+ // Partida decidida pela Grande Descoberta: o 3.º número vira os seus pontos de Ciência.
+ if(gdActive(s)&&Object.values(r.reasons||{}).some(l=>l.includes("discovery")))tiles[2]={v:fmt(Math.floor(gdPlayerPoints()),0),k:"pontos de Ciência"};
  return {won,drawn,tone:won?"won":(drawn||r.type==="draw")?"draw":"lost",title,sub,rows,pos,tiles,era:r.era};
 }
 export function renderResult(){

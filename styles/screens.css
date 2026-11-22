@@ -206,3 +206,6 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .pg-tip[hidden]{display:none}
 .pg-tip>span{flex:1 1 170px;min-width:0}
 .pg-tipbtn{flex:none;min-height:48px;padding:6px 14px;border-radius:10px;border:1px solid #f4bd50;background:#3a2e12;color:#ffd98a;font-weight:700;font-size:14px}
+.pg-win>div.wide{grid-column:1/-1}
+.pg-desc.pg-gd{color:#d2c2ff}
+.pg-desc.pg-gd[hidden]{display:none}

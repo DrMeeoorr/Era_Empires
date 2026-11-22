@@ -9,6 +9,7 @@ import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {fmt,escapeHtml,money,cssColor} from "./format.js";
 import {civLabel,profileLabel} from "./labels.js";
+import {renderDiscoveryHud} from "./discovery.js";
 
 /* ── Barra de recursos (topo) ── */
 // Números curtos para a barra: sem casas decimais a partir de 100.
@@ -23,6 +24,7 @@ export function renderMetrics(){
  $("statGold").title=`Ouro para investir agora (já com o ouro desta era). Esta era rendeu ${money(r.total)}: territórios ${fmt(r.normal,1)} · Obras ${fmt(r.infra,1)} · Ciência ${fmt(r.tech,1)}.`;
  $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">Força</span></span>`;
  $("statForce").title="Força para atacar; a que você não usa defende suas regiões (perde 20% por era).";
+ renderDiscoveryHud();
  $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">terras</span></span>`;
  $("statTerr").setAttribute("aria-label",`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`);
  const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");
