@@ -7,7 +7,7 @@
     "start": "node tools/serve.js",
     "build:jogador": "node tools/build-player-html.js",
     "test": "node --test --test-timeout=180000 tests/*.test.js",
-    "test:rapido": "node --test --test-timeout=60000 tests/structure.test.js tests/internal-node.test.js tests/map-size.test.js tests/internal.test.js tests/rules.test.js tests/regression.test.js tests/fingerprint.test.js",
+    "test:rapido": "node --test --test-timeout=60000 tests/structure.test.js tests/internal-node.test.js tests/map-size.test.js tests/great-discovery.test.js tests/internal.test.js tests/rules.test.js tests/regression.test.js tests/fingerprint.test.js",
     "test:update-snapshots": "UPDATE_SNAPSHOTS=1 node --test tests/regression.test.js",
     "fingerprint": "node tests/fingerprint.js",
     "test:node": "node --test tests/structure.test.js tests/internal-node.test.js"

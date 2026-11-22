@@ -1,5 +1,5 @@
 // Economia: investimentos (Militar, Obras, Ciência), retornos por era, receita e estratégias automáticas.
-import {effectiveDelay,normMode,mapAreaFactor} from "./config.js";
+import {effectiveDelay,normMode,mapAreaFactor,mapSizeOf} from "./config.js";
 import {countTerritories} from "./map.js";
 import {getCiv} from "./state.js";
 import {terrainEffectsOn,terrainIncomeFactor,terrainAreaBonus} from "./terrain.js";
@@ -91,7 +91,9 @@ export function collectRevenue(s,civ,era,cfg){
  // a toda a receita da era. Fica contabilizado como receita de tecnologia.
  let activeProgress=0;for(const inv of s.investments)if(inv.owner===civ.id&&inv.type==="technology"&&era>=inv.origin+effectiveDelay("technology",inv.params.delay,inv.mode))activeProgress+=inv.progress;
  // Teto do bônus: sem limite, receita → investimento → progresso → receita cresce de forma explosiva.
- const bonusRate=Math.min(cfg.technology.revenueBonusCap??1,(cfg.technology.revenueBonusPerProgress||0)*activeProgress);
+ // Mapas maiores (2–4): o teto sobe revenueBonusCapPerSize por tamanho acima do Original (padrão 0: desligado; medido com 0,25 e o Científico ficava forte demais com 3 rivais).
+ const capSize=mapSizeOf(s)>1?(cfg.technology.revenueBonusCapPerSize||0)*(mapSizeOf(s)-1):0;
+ const bonusRate=Math.min((cfg.technology.revenueBonusCap??1)+capSize,(cfg.technology.revenueBonusPerProgress||0)*activeProgress);
  const techBonus=bonusRate*(normal+infra+tech);tech+=techBonus;
  // Dificuldade: multiplicador de receita das IAs. Só em partidas com jogador humano, para não
  // distorcer os laboratórios (onde todas as civilizações são IA e o lugar 0 também).

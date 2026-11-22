@@ -259,3 +259,42 @@ antigos = Original; o tutorial usa sempre o Original. O número de rivais contin
   38/51/26%, 46 eras, ~26 min. Nenhuma partida travou nem chegou ao teto.
 - **Pendências**: o Construtor fica fraco com 3–5 rivais nos mapas maiores (5–18%) e o Científico no 4× com 5 rivais
   (0–2%); partidas 4× passam de 20 minutos.
+
+## 22/11/2026 — Ciência no fim de jogo: saque reduzido + Grande Descoberta (game-designer) — opções 1 e 2 aprovadas; números para revisão
+Problema medido: nos mapas maiores o Científico vencia 0–14% com 3–5 rivais. Por volta da era 40 a Ciência já é a
+maior receita de **todos** os estilos (o bônus de receita bate no teto por volta da era 25 e o desconto de ataque
+por volta da era 15); o fim decide-se por Força, e cada região tomada levava 20% de toda a Ciência.
+Só nos mapas 2×–4× (o Original não muda: impressões **39190b06** / **5c97e2c2**):
+1. **Saque de Ciência ÷ k^0,25** (`military.techPillageMapExponent` 0,25; ÷1,19 no 2×, ÷1,41 no 4×). Medidos e
+   recusados: ÷k e ÷√k (Científico 40–55% com 3 rivais); teto do bônus de receita +0,25 por tamanho
+   (`technology.revenueBonusCapPerSize`, deixado em 0: com ele o Científico ia a 51% no 4× com 3 rivais).
+2. **Grande Descoberta**: vence quem tiver **pontos de Ciência ≥ 6000 × k** e **≥ ⌈5 × k⌉ regiões** (2×: 12.000 / 10;
+   3×: 17.500 / 15; 4×: 24.000 / 20). Pontos = ouro investido em Ciência pelo próprio império × 0,2: o progresso
+   saqueado **não conta** (contando, quem conquistava ganhava a corrida — Agressivo/Militar venciam 55–80% das
+   Grandes Descobertas). **Reação das IAs**: rival acima de 50% da meta com mais pontos → +20 Militar e ataque a ele
+   primeiro; IA perto da meta com poucas regiões → +20 Militar. **No Original fica desligada** (opção nos
+   laboratórios): ligada com os mesmos números, o Científico ia a 38/43/42% (1/3/5 rivais) e a faixa entre estilos
+   piorava com 3–5 rivais (26 → 34, 23 → 39); precisaria de calibração própria.
+
+Partidas só de IAs, Médio, Sem limite (Científico % · faixa entre estilos · duração média / mais longa · finais por
+Grande Descoberta):
+
+| Mapa, rivais (justo) | Antes | Depois |
+| --- | --- | --- |
+| 2×, 1 (50) | 44 · 54 · 33 / 53 | 60 · 48 · 33 / 52 · 8% |
+| 3×, 1 (50) | 38 · 44 · 34 / 52 | 56 · 40 · 34 / 49 · 9% |
+| 4×, 1 (50) | 48 · 32 · 36 / 57 | 64 · 46 · 35 / 48 · 13% |
+| 2×, 3 (25) | 14 · 25 · 41 / 71 | 31 · 26 · 37 / 52 · 41% |
+| 3×, 3 (25) | 28 · 25 · 42 / 79 | 40 · 30 · 39 / 51 · 51% |
+| 4×, 3 (25) | 14 · 30 · 45 / 67 | 40 · 38 · 41 / 60 · 61% |
+| 2×, 5 (17) | 10 · 18 · 41 / 69 | 24 · 15 · 37 / 50 · 44% |
+| 3×, 5 (17) | 5 · 23 · 44 / 85 | 15 · 7 · 39 / 51 · 48% |
+| 4×, 5 (17) | 0 · 33 · 46 / 83 | 17 · 11 · 41 / 56 · 47% |
+
+Jogador × IAs (melhor divisão fixa · melhor plano fixo com Ciência ≥ 40% · ganho de quem reage): 2× 2 rivais
+31 · 28 · +33 → 29 · 24 · +22; 3× 2 rivais 38 · 25 · +27 → 39 · 18 · +19; 3× 3 rivais 25 · 9 · +35 → 25 · 15 · +25;
+4× 3 rivais 38 · 27 · +14 → 36 · 24 · +6. Um plano de Ciência **que reforça a Força quando faltam regiões** chega a
+46–59% nesses cenários (o melhor plano; a receita a vigiar).
+- **Fora da meta (para o usuário decidir)**: Científico um pouco acima no 1×1 do 4× (64%, meta 35–60) e com 3 rivais no 3×/4× (40%,
+  meta 15–35); faixa pior no 4× com 1 e 3 rivais (32 → 46, 30 → 38); a Grande Descoberta decide cerca de metade das
+  partidas com 3–5 rivais; o Construtor continua fraco (6–22%).

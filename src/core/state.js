@@ -29,7 +29,18 @@ export function newState(cfg,opts={}){
   endRules:!!opts.endRules,maxEras:c.endgame?.maxEras??30,supremacy:{leader:null,streak:0,status:"none"},result:null};
  // Mapas maiores (config.map.mapSize 2–4): o estado guarda o tamanho; no mapa de sempre o campo nem existe.
  const size=normMapSize(c.map.mapSize);if(size>1)st.mapSize=size;
+ // Grande Descoberta (vitória por Ciência): sempre nos mapas maiores; no Original só se ligada (endgame.greatDiscovery).
+ const gd=makeGreatDiscovery(c,size,n);if(gd)st.greatDiscovery=gd;
  return st;
+}
+/* Grande Descoberta (22/11/2026): vence quem junta discoveryGoal × k pontos de Ciência tendo pelo menos
+   ⌈discoveryMinRegions × k⌉ regiões (k = regiões/24). Pontos de Ciência = progresso gerado pelos SEUS investimentos em
+   Ciência (ouro investido × progressPerInvestment); o que se saqueia não conta (senão quem conquista ganhava a corrida).
+   A meta, o mínimo e o fator ficam gravados na partida (state.greatDiscovery = {goal, minRegions, perGold}); sem o campo
+   a regra não existe (Original e saves antigos). */
+export function makeGreatDiscovery(c,size,n){
+ const g=c.endgame||{};if(!(size>1||g.greatDiscovery===true))return null;
+ const k=size>1?n/24:1;return {goal:Math.round((g.discoveryGoal??6000)*k),minRegions:Math.ceil((g.discoveryMinRegions??5)*k-1e-9),perGold:c.technology?.progressPerInvestment??0.2};
 }
 export const getCiv=(s,id)=>s.civs.find(c=>c.id===id);
 export const P=s=>s.civs[0];            // jogador

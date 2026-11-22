@@ -54,6 +54,10 @@ export function fullAttackCost(s,idx,cfg){const c=cfg.military.conquestCost+terr
 export function pillage(s,victimId,owner,cfg){
  const m=cfg.military,victim=getCiv(s,victimId),civ=getCiv(s,owner),T=countTerritories(s,victimId);
  if(!victim||!civ||T<1)return null;const f=Math.min(m.pillageMaxShare??0.2,(m.pillageInvestShare||0)/T);let infra=0,tech=0;
+ // Mapas maiores (2–4): a Ciência saqueada divide-se por k^techPillageMapExponent (k = regiões/24; padrão 0,25: ÷1,19 no
+ // 2×, ÷1,41 no 4×).
+ // Um império com muitas regiões perdia 20% de toda a Ciência por região tomada; as Obras continuam como antes.
+ const k=mapAreaFactor(s),fTech=k>1?f/Math.pow(k,m.techPillageMapExponent??1):f;
  if(f>0){const mine=new Map(),add=[];
   for(const inv of s.investments)if(inv.owner===owner)mine.set(inv.type+"|"+inv.origin+"|"+inv.mode,inv);
   for(const inv of s.investments){
@@ -63,8 +67,8 @@ export function pillage(s,victimId,owner,cfg){
    // Junta o saque a um investimento do vencedor com a mesma origem para não multiplicar registos.
    const key=inv.type+"|"+inv.origin+"|"+inv.mode;let n=mine.get(key);
    if(!n){n={...inv,params:{...inv.params},owner,amount:0,cumReturn:0,id:s.nextInvestmentId++};if(n.progress!=null)n.progress=0;mine.set(key,n);add.push(n)}
-   const moved=inv.amount*f;n.amount+=moved;inv.amount-=moved;if(inv.type==="infrastructure")infra+=moved;
-   if(inv.progress!=null){const mp=inv.progress*f;n.progress+=mp;inv.progress-=mp;tech+=mp}
+   const fi=inv.type==="technology"?fTech:f,moved=inv.amount*fi;n.amount+=moved;inv.amount-=moved;if(inv.type==="infrastructure")infra+=moved;
+   if(inv.progress!=null){const mp=inv.progress*fi;n.progress+=mp;inv.progress-=mp;tech+=mp}
   }
   for(const n of add)s.investments.push(n);
  }
