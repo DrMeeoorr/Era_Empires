@@ -397,3 +397,19 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .own-def strong{font-size:16px;color:var(--text)}.own-def strong.gold{color:var(--gold)}
 .own-def .od-why{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
 .hud-prog.unlimited{background:repeating-linear-gradient(90deg,#25344b 0 6px,transparent 6px 10px)}
+/* Mapas maiores que o Original (2×, 3×, 4×): regiões do tamanho do Original numa camada que rola e aproxima
+   (src/ui/mapview.js). A caixa do mapa vira a janela; a página nunca rola para o lado. */
+.map-box.map-big{overflow:clip;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+.map-stage{position:absolute;left:0;top:0;transform-origin:0 0}
+.map-stage.anim{transition:transform .22s ease-out}
+.map-box.panning .map-stage{will-change:transform}
+.map-box.panning .territory{cursor:grabbing}
+.map-box.far .territory .rname,.map-box.far .territory .who,.map-box.far .territory .def,.map-box.far .territory .order-tag{visibility:hidden}
+.map-zoom{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:4px}
+.map-zoom[hidden]{display:none}
+.map-zoom button{width:44px;height:44px;min-height:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #3a5070;background:#0b1220e6;color:#efe6cc;box-shadow:0 2px 6px #0008;touch-action:manipulation}
+.map-zoom button .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.map-zoom button:active{background:#1f3352}
+.map-zoom button:disabled{opacity:.4}
+.map-zoom button:focus-visible{outline:2px solid #ffd479;outline-offset:1px}
+@media (prefers-reduced-motion:reduce){.map-stage.anim{transition:none}}
