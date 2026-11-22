@@ -48,14 +48,16 @@ test("4×: Personalizar explica a regra, faixa no topo, Placar, aviso de rival e
     for (let i = 0; i < state.owners.length && state.owners.filter((o) => o === "player").length < 18; i++) if (state.owners[i] === "neutral") state.owners[i] = "player";
     renderAll();
   });
-  assert.match(await hud.innerText(), /23\.100\s*\/24\.000/);
-  assert.match(await hud.innerText(), /18\/20/);
-  assert.match(await hud.getAttribute("aria-label"), /96%.*faltam 2/);
+  // Nos mapas 2×–4× a faixa mostra as duas corridas lado a lado (% e regiões); os números exatos ficam no leitor de tela.
+  const gdPart = page.locator('#statDiscovery [data-race="discovery"]');
+  assert.match(await gdPart.innerText(), /96%/);
+  assert.match(await gdPart.innerText(), /18\/20/);
+  assert.match(await hud.getAttribute("aria-label"), /Grande Descoberta: 23\.100 de 24\.000 pontos de Ciência \(96%\).*faltam 2/);
   assert.deepEqual(await horizontalOverflow(page), []);
   const panel = await page.locator("#victoryPanel").innerText();
   assert.match(panel, /Grande Descoberta: 24\.000 pontos de Ciência \+ 20 regiões/);
   assert.match(panel, /18 de 20 regiões · faltam 2/);
-  assert.equal(await page.locator("#victoryPanel .gd-row").count(), 4, "uma barra por império");
+  assert.equal(await page.locator("#victoryPanel [data-gd]").count(), 4, "uma barra por império");
 
   // Aviso: Ocre passa da metade nesta era → resumo da era em tela cheia.
   await page.evaluate(() => { const b = eraSnapshot(); state.civs[2].invested.technology = 12500 / 0.2; showEraSummary(b); });
@@ -63,7 +65,7 @@ test("4×: Personalizar explica a regra, faixa no topo, Placar, aviso de rival e
   assert.match(await page.locator("#eraSummary").innerText(), /Ocre está a caminho da Grande Descoberta/);
   await dismissModals(page);
   // O jogador passando da metade: aviso de que os rivais vão reagir.
-  await page.evaluate(() => { const b = eraSnapshot(); b.gd.player = 0.4; showEraSummary(b); });
+  await page.evaluate(() => { const b = eraSnapshot(); b.gd.discovery.player = 0.4; showEraSummary(b); });
   assert.match(await page.locator("#eraSummary").innerText(), /Você passou da metade da Grande Descoberta[\s\S]*rivais vão reagir/);
   await dismissModals(page);
 

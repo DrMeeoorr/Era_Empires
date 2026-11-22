@@ -6,6 +6,7 @@ import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {parseAmount,fmtInput,escapeHtml,fmt,money} from "./format.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
+import {wonderCountsNow,WONDER_HINT_OFF,WONDER_HINT_ON} from "./discovery.js";
 
 /* ── Investimentos: botões, planos e valores ── */
 export const AREAS=[["mil","military"],["infra","infrastructure"],["tech","technology"]];
@@ -32,6 +33,11 @@ export function renderAllocation(statusMessage=null){
  $("techForecast").textContent=`Rende ${money(techGain)} por era, para sempre, a partir da era ${techEra}.`;
  $("milPrev").innerHTML=vals[0]>0?`<span class="gold">+${fmt(milGain,1)}</span> de Força`:"curto prazo";
  $("infraPrev").innerHTML=vals[1]>0?`<span class="green">+${fmt(infraGain,2)}</span>/era`:"médio prazo";
+ // Maravilha da Humanidade (mapas 2×–4×): as Obras só contam nas eras em que são a maior fatia. Aviso curto na linha
+ // das Obras e a frase inteira na folha de ajuste fino; muda a cada toque nos controles.
+ const wc=wonderCountsNow(vals),ip=$("infraPrev");
+ if(wc===false){ip.innerHTML=`<span class="wd-warn">fora da Maravilha</span>`;ip.title=WONDER_HINT_OFF}else ip.removeAttribute("title");
+ const wh=$("wonderHint");if(wh){wh.hidden=wc===null;wh.textContent=wc===null?"":wc?WONDER_HINT_ON:WONDER_HINT_OFF;wh.classList.toggle("off",wc===false)}
  $("techPrev").innerHTML=vals[2]>0?`<span class="purple">+${fmt(techGain,2)}</span>/era<span class="wide"> · era ${techEra}</span>`:"longo prazo";
  $("advTitle").textContent=ended?"Jogar de novo →":`Concluir era ${state.era}`;
  $("advance").setAttribute("aria-label",ended?"Jogar de novo":`Concluir era ${state.era}: ${$("actionLeft").textContent.trim()}`);

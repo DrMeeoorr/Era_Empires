@@ -50,7 +50,7 @@ export function eraChanges(b){
  if(state.dominion?.declined&&!state.unlimited&&countTerritories(state,"player")>=min)dom.push({kind:"dom",ok:true,title:"Você domina o mapa",sub:`mantenha ${min} regiões até a era ${state.maxEras} para vencer por domínio`});
  const lv=liveScores(),rank=rankOf(lv),r=state.pending?.revenue?.player||{total:0,normal:0,infra:0,tech:0};
  const mine=ev.length>0,moved=!!(b.rank&&rank&&b.rank.pos!==rank.pos);
- // Grande Descoberta (mapas 2×–4×): quem passou da metade da meta nesta era. Mostra o resumo em tela cheia.
+ // Grande Descoberta e Maravilha (mapas 2×–4×): quem passou da metade de uma meta nesta era. Mostra o resumo em tela cheia.
  const disc=gdEvents(b.gd);
  return {era:b.era,next:state.era,gold:r.total||0,rev:r,events:[...disc,...dom,...ev,...grow],disc,mine,moved,rank,before:b.rank,lv,prevPts:b.pts,full:mine||moved||disc.length>0};
 }
@@ -61,9 +61,9 @@ function titleFor(c){const k=new Set(c.events.map(e=>e.kind));
  if(k.has("held"))return "Defesa firme!";
  if(k.has("failed"))return "Ataque repelido";
  if(c.moved)return c.rank.pos<c.before.pos?"Subiu no placar!":"Caiu no placar";
- if(c.disc?.length)return c.disc.some(e=>e.civ)?"Corrida pela Descoberta":"Rumo à Grande Descoberta";
+ if(c.disc?.length){const w=c.disc.every(e=>e.kind==="wonder"),d=c.disc.every(e=>e.kind==="disc");return c.disc.some(e=>e.civ)?(w?"Corrida pela Maravilha":d?"Corrida pela Descoberta":"Corrida pelo fim do jogo"):(w?"Rumo à Maravilha":d?"Rumo à Grande Descoberta":"Rumo à vitória")}
  return "Era tranquila";}
-const ICON={disc:["✦","warn"],dom:["♛","ok"],won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
+const ICON={disc:["✦","warn"],wonder:["▰","warn"],dom:["♛","ok"],won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
 function eventHtml(e,k){const [ic,tone]=ICON[e.kind]||["•","info"],civ=e.civ&&e.civ!=="player"?getCiv(state,e.civ):null;
  const tag=e.ok===true?`<span class="ev-tag ok" aria-label="deu certo">✓</span>`:e.ok===false?`<span class="ev-tag bad" aria-label="deu errado">✗</span>`:"";
  const title=escapeHtml(e.title).replace(escapeHtml(civ?civName(civ):"\u0000"),civ?civLabel(civ):"");
