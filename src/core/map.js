@@ -18,7 +18,7 @@ export function gridDist(a,b,cols=6){const ra=Math.floor(a/cols),ca=a%cols,rb=Ma
 export const START_ORDER_24=Object.freeze([0,23,4,18,11,13]);
 /* Mapas maiores (2×/3×/4×) com 4–6 impérios: posições escolhidas, perto da borda e espalhadas, medidas em partidas só de
    IAs com as posições rodadas entre os lugares (22/11/2026). Com a regra "o mais afastado possível" um império ficava no
-   centro e vencia 2–6% (justo: 17–25%); diferença entre a melhor e a pior posição 26–45 pontos → 7–24.
+   centro e vencia 2–6% (justo: 17–25%); diferença entre a melhor e a pior posição 26–45 pontos → 10–23.
    Com 1–3 impérios (e no mapa de 24) a regra é a de sempre. */
 export const START_ORDERS_BIG=Object.freeze({
  48:Object.freeze({4:[3,23,44,24],5:[11,22,37,34,17],6:[10,12,22,37,35,25]}),

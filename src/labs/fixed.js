@@ -1,7 +1,7 @@
 // Duração fixa (Modo A) e calibração das referências por era (aba Balanceamento).
 import {LAB_PROFILE_NAME,LAB_PROFILES} from "../ai/profiles.js";
 import {configApplied,busy,setBusy,setConfigApplied} from "../app/session.js";
-import {MAX_AI,normalizeConfig,VERSION} from "../core/config.js";
+import {MAX_AI,normalizeConfig,VERSION,mapTerritories} from "../core/config.js";
 import {runFixedGame,fixedGameSeed} from "../core/match.js";
 import {REF_DIMS,calibrateReferences,REF_SETS,validateReferences} from "../core/references.js";
 import {safeNum,clone} from "../core/util.js";
@@ -32,7 +32,7 @@ export function readFixedOpts(){
  const games=safeNum($("fixedGames").value,1,2000),eras=safeNum($("fixedEras").value,1,300),civCount=safeNum($("fixedCivs").value,2,1+MAX_AI),baseSeed=safeNum($("fixedSeed").value,0,4294967295);
  if(![games,eras,civCount,baseSeed].every(Number.isInteger))throw Error("Partidas, eras, civilizações e semente devem ser inteiros.");
  const profiles=[...document.querySelectorAll("#fixedProfiles input:checked")].map(x=>x.value);if(!profiles.length)throw Error("Selecione pelo menos um perfil.");
- if(civCount>configApplied.map.territories)throw Error("Mais civilizações do que territórios.");
+ if(civCount>mapTerritories(configApplied))throw Error("Mais civilizações do que territórios.");
  return {games,eras,civCount,baseSeed,profiles,mode:$("fixedMode").value==="fast"?"fast":"slow"};
 }
 export async function runFixedLab(){

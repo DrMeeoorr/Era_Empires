@@ -133,6 +133,33 @@ Atacar todas as eras ganhava demais com 2 ou 3 rivais. Mudou, nos dois modos de 
 - Medalhas: nada muda. Relâmpago vale a era em que a vitória acontece (vencer agora na era 12: sim; continuar e
   vencer por domínio na era 30: não; numa partida de 15 eras, vencer no fim: sim).
 
+## Tamanho do mapa (22/11/2026)
+
+Nova partida → Personalizar → **Mapa: Original, 2×, 3×, 4×** (área do mapa original). Campo de configuração
+**`config.map.mapSize`** (1–4, padrão 1); a partida grava `state.mapSize` (só quando é maior que 1). **Original =
+o jogo de sempre, byte a byte** (impressões digitais **39190b06** / **5c97e2c2**); saves antigos abrem como Original.
+
+| Tamanho | Grade | Regiões | Fator k (regiões/24) | Domínio (70%) | Teto do Sem limite | Rivais recomendados |
+| --- | --- | --- | --- | --- | --- | --- |
+| Original | 6×4 | 24 | 1 | 17 | 100 | 1+ |
+| 2× | 8×6 | 48 | 2 | 34 | 125 | 2+ |
+| 3× | 10×7 | 70 | 2,92 | 49 | 150 | 2+ |
+| 4× | 12×8 | 96 | 4 | 68 | 175 | 3+ |
+
+- Mesma vizinhança (até 4 vizinhas, sem diagonais). Nomes: os 24 de sempre + 72 novos, sem repetir
+  (`REGION_NAMES_ALL`). Terrenos: o mapa padrão repete o 6×4 em mosaico; o sorteado escala as quantidades.
+- **Regras escaladas** (só nos tamanhos 2–4): custo administrativo ÷ k; territórios ÷ k na pontuação e no ICE
+  (`dims.territories`; a contagem real não muda); passo das **ordens extra na mesma era ÷ k no 1×1 e ÷ √k com 2+
+  rivais** (`orderStep`, `orderCostMultiplier(cfg, n, state)`); teto do Sem limite **100 + 25 por tamanho acima**
+  (`unlimitedMaxEras(mapSize)`); **posições iniciais escolhidas com 4–6 impérios** (`START_ORDERS_BIG`, perto da
+  borda). A meta de domínio (70%) e a trava da supremacia (≤ 25% de regiões livres) já são proporções.
+- **Rivais recomendados** (`recommendedRivals(mapSize)`): só um aviso na tela; o jogador escolhe.
+- Laboratórios: o parâmetro "Tamanho do mapa" (Mapa e simulação) vale para o jogo e os laboratórios; "Número de
+  territórios" só vale no tamanho 1. O tutorial usa sempre o Original e devolve o tamanho escolhido.
+- Medido (Médio, Sem limite, partidas só de IAs; detalhes em `docs/decisoes.md`): no 1×1 dos mapas maiores o
+  Equilibrado vencia 86–90% (faixa entre estilos 64–74 pontos; Original 46); agora 46–66% (faixa 32–54). Com 4–6
+  impérios, a diferença entre a melhor e a pior posição inicial caiu de 26–45 para 10–23 pontos.
+
 ## Desafios e medalhas
 
 12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
@@ -239,6 +266,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/player-version.test.js` | No `index.html` não aparece (nem é baixado) nada de laboratórios/Exportar/"Versão completa"; no `dev.html` aparece tudo; `index.html?dev=1` abre o `dev.html`; a partida da chave antiga passa para a do jogador e as duas versões não mexem no save uma da outra. |
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Cinco delas já substituem os internos fracos em `src/labs/tests-def.js`; ver `tests/README.md`. |
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
+| `tests/map-size.test.js` | Tamanho do mapa (Node, sem navegador): grades 6×4/8×6/10×7/12×8, Original idêntico, vizinhança simétrica e ligada, posições (escolhidas com 4–6 impérios, perto da borda), terrenos padrão em mosaico e sorteado válido, 96 nomes sem repetir, regras escaladas (custo administrativo, territórios na pontuação, passo das ordens extra), teto do Sem limite por tamanho, rivais recomendados, save/load (e dados inválidos), tutorial no Original, laboratórios e partidas sem limite até o fim nos 4 tamanhos. |
 | `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
 | `tests/terrain-effects.test.js` | Terrenos com efeitos: tabela final, desligado idêntico (também com terrenos variados), um teste por efeito (ouro, defesa, custo de ataque, % de Obras/Força/Ciência), proteção só para quem ocupa, região inicial como Campina, IA prefere o terreno do seu estilo, laboratórios com `terrain`, opção "Terrenos" em Personalizar e resumos, save (ligado sobrevive a recarregar; save antigo = Só visual), tutorial sempre Só visual, folha da região (etiquetas + / + / − e custo com o terreno), folha ⓘ Terrenos e Como jogar ligados e desligados. |
 | `tests/acabamento.test.js` | Acabamento visual (21/11/2026), nos 3 celulares e com a fonte larga: etiquetas + / − dos terrenos com efeito sem quebrar nem cortar (ⓘ Terrenos, folha da região, Como jogar; contraste AA, sinal no texto), lista só visual em 2 colunas; o "?" da partida abre o Como jogar novo, que fecha com ✕, Esc, Voltar do Android e Entendi e devolve o foco; janelas no estilo novo (Reiniciar, Nova partida, tutorial, ouro parado, save danificado, aviso de falha ao salvar, menu ☰) com role="dialog", nome, descrição, foco preso, alvos ≥ 48 px e Esc que cancela. |

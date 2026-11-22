@@ -178,3 +178,87 @@ test("partidas sem limite até o fim em todos os tamanhos (1 e 3 rivais, terreno
     for (const e of s.timeline) for (const r of e.civs) assert.ok(Object.values(r.dims).every(Number.isFinite), "dimensões inválidas");
   }
 });
+
+test("Sem limite: teto de 100 eras no Original e +25 por tamanho acima; a partida nova usa o do tamanho", async () => {
+  const E = await load("core/endgame.js"), session = await load("app/session.js");
+  assert.deepEqual([1, 2, 3, 4].map((k) => E.unlimitedMaxEras(k)), [100, 125, 150, 175]);
+  assert.equal(E.unlimitedMaxEras(), 100); assert.equal(E.unlimitedMaxEras(9), 100);
+  assert.equal(E.UNLIMITED.maxEras, 100, "a constante do Original não muda");
+  session.applyDifficulty(session.currentDifficulty);
+  session.setUnlimitedChoice(true);
+  for (const k of [1, 2, 3, 4]) {
+    session.configApplied.map.mapSize = k;
+    const s = session.newGame();
+    assert.equal(s.maxEras, E.unlimitedMaxEras(k)); assert.equal(E.unlimitedMaxErasOf(s), E.unlimitedMaxEras(k));
+  }
+  session.setUnlimitedChoice(false); session.configApplied.map.mapSize = 1;
+});
+
+test("rivais recomendados por tamanho (só recomendação): 1, 2, 2, 3", async () => {
+  const E = await load("core/endgame.js");
+  assert.deepEqual([1, 2, 3, 4].map((k) => E.recommendedRivals(k)), [1, 2, 2, 3]);
+  assert.equal(E.recommendedRivals(undefined), 1);
+  // O jogador continua livre: 1 rival num mapa 4× é uma configuração válida.
+  const C = await core();
+  assert.equal(C.newState(cfgOf(C, 4, 1)).civs.length, 2);
+});
+
+test("ordens extra na mesma era: passo ÷k no 1×1 e ÷√k com 2+ rivais nos mapas maiores; Original igual", async () => {
+  const C = await core();
+  const step = C.DEFAULTS.military.extraOrderCostStep;
+  for (const [k, [cols, rows]] of Object.entries(GRIDS)) {
+    const K = (cols * rows) / 24;
+    for (const ai of [1, 3]) {
+      const c = cfgOf(C, Number(k), ai), s = C.newState(c);
+      const exp = k === "1" ? step : step / (ai === 1 ? K : Math.sqrt(K));
+      assert.ok(Math.abs(C.orderStep(c, s) - exp) < 1e-12, `tamanho ${k}, ${ai} rivais`);
+      assert.ok(Math.abs(C.orderCostMultiplier(c, 2, s) - (1 + 2 * exp)) < 1e-12);
+    }
+  }
+  assert.equal(C.orderCostMultiplier(C.DEFAULTS, 2), 1 + 2 * step, "sem estado: o passo da configuração");
+  // A 2.ª ordem cobra o multiplicador escalado e cancelar a 1.ª recalcula com o mesmo passo.
+  const c = cfgOf(C, 4, 1), s = C.newState(c), n = s.owners.length;
+  const t = C.neighbors(0, n).filter((i) => s.owners[i] === "neutral");
+  s.civs[0].military = 1000;
+  const a = C.orderAttack(s, t[0], "player", c), b = C.orderAttack(s, t[1], "player", c);
+  assert.ok(a.ok && b.ok);
+  assert.ok(Math.abs(b.mult - (1 + C.orderStep(c, s))) < 1e-12, "multiplicador da 2.ª ordem");
+  const before = s.civs[0].military; C.cancelOrder(s, "player", t[0]);
+  const left = s.orders.filter((o) => o.owner === "player");
+  assert.equal(left.length, 1); assert.equal(left[0].mult, 1);
+  assert.ok(s.civs[0].military > before);
+});
+
+test("posições escolhidas com 4–6 impérios nos mapas maiores: perto da borda, distintas e afastadas", async () => {
+  const C = await core();
+  for (const [k, [cols, rows]] of Object.entries(GRIDS)) {
+    if (k === "1") continue;
+    const n = cols * rows;
+    for (const civs of [4, 5, 6]) {
+      const pos = C.startPositions(n, civs);
+      assert.deepEqual(pos, C.START_ORDERS_BIG[n][civs]);
+      assert.equal(new Set(pos).size, civs);
+      for (const p of pos) {
+        assert.ok(p >= 0 && p < n);
+        const r = Math.floor(p / cols), c = p % cols, edge = Math.min(r, c, rows - 1 - r, cols - 1 - c);
+        assert.ok(edge <= 1, `tamanho ${k}, ${civs} impérios: região ${p} longe da borda`);
+      }
+      const s = C.newState(cfgOf(C, Number(k), civs - 1));
+      assert.deepEqual(s.civs.map((cv) => s.owners.indexOf(cv.id)), pos);
+    }
+    // 1–3 impérios: a regra de sempre (o mais afastado possível).
+    assert.deepEqual(C.startPositions(n, 2), [0, n - 1]);
+  }
+  // Original: a ordem de sempre.
+  assert.deepEqual(C.startPositions(24, 6), [...C.START_ORDER_24]);
+});
+
+test("laboratórios: tamanho do mapa no catálogo de parâmetros e sondas das IAs no mapa de 24", async () => {
+  const S = await load("labs/settings.js"), session = await load("app/session.js"), A = await load("labs/ai-checks.js");
+  const map = S.PARAM_GROUPS.find((g) => g[1] === "map")[2].map((p) => p[0]);
+  assert.ok(map.includes("mapSize") && map.includes("territories"));
+  session.configApplied.map.mapSize = 4;
+  const r = A.aiProbe("military", true, 7);
+  assert.ok(r.investment > 0 && Number.isFinite(r.military));
+  session.configApplied.map.mapSize = 1;
+});

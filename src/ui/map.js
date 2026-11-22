@@ -147,7 +147,7 @@ export const setAttackBtn=(btn,text,enabled,{cancel=false,invest=false}={})=>{bt
 export const simOrders=()=>!!configApplied.military.simultaneousOrders,myOrders=()=>(state.orders||[]).filter(o=>o.owner==="player"),myOrder=t=>myOrders().find(o=>o.idx===t);
 // Painel do alvo com ordens simultâneas (configuração padrão): a ordem é resolvida no fim da era.
 export function renderOrderAttack(){
- const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
+ const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length,state),maxO=m.maxOrdersPerEra||Infinity;
  setAttackBtn(btn,"Escolha um alvo",false);
  if(t===null&&isSheetOpen("attackSheet"))closeSheet();
  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}

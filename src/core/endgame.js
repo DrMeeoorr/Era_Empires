@@ -25,8 +25,9 @@ export const UNLIMITED={maxEras:100,supremacyFromEra:15};
 // (125, 150, 175). Nos mapas maiores as partidas duram mais; com 100 algumas (4×, 3–5 rivais) chegavam ao teto.
 export function unlimitedMaxEras(mapSize=1){const k=[1,2,3,4].includes(Number(mapSize))?Number(mapSize):1;return UNLIMITED.maxEras+25*(k-1)}
 // Rivais recomendados (mínimo) por tamanho do mapa. Só uma recomendação para a interface mostrar: o jogador escolhe.
-// Com 1 rival nos mapas 3× e 4× a partida é quase sempre ganha e repetitiva (ver docs/decisoes.md).
-export const RECOMMENDED_RIVALS=Object.freeze({1:1,2:1,3:3,4:3});
+// Com 2+ rivais nos mapas maiores reagir à situação rende muito mais (+17 a +35 pontos) e o 4× com 1–2 rivais passa
+// de 95–100 ordens de ataque por partida (ver docs/decisoes.md).
+export const RECOMMENDED_RIVALS=Object.freeze({1:1,2:2,3:2,4:3});
 export function recommendedRivals(mapSize=1){return RECOMMENDED_RIVALS[Number(mapSize)]??1}
 // Primeira era em que a supremacia pode contar.
 export const unlimitedMaxErasOf=s=>unlimitedMaxEras(s?.mapSize);
