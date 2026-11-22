@@ -1,8 +1,8 @@
 // Painéis: gráficos, histórico, previsão, eventos, condições de vitória e tela de resultado.
 import {state,configApplied} from "../app/session.js";
-import {DIFFICULTIES} from "../core/config.js";
+import {DIFFICULTIES,mapSizeOf} from "../core/config.js";
 import {infraReturn,techReturn} from "../core/economy.js";
-import {territorialMinimum,territoryBase,finalScores,describeResult,supremacyMinEra,UNLIMITED} from "../core/endgame.js";
+import {territorialMinimum,territoryBase,finalScores,describeResult,supremacyMinEra} from "../core/endgame.js";
 import {countTerritories} from "../core/map.js";
 import {civName} from "../core/names.js";
 import {P,getCiv,aiCivs} from "../core/state.js";
@@ -15,6 +15,7 @@ import {liveScores,PTS} from "./hud.js";
 import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml} from "./labels.js";
 import {resultMedalsHtml} from "./medals.js";
+import {unlimitedCapFor} from "./mapshape.js";
 
 export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
 export function renderCharts(){
@@ -38,6 +39,8 @@ export function renderForecast(){
 export function renderNotifications(){const events=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad/i.test(x.text)).slice(0,30);$("notificationCount").textContent=events.length;$("notifications").innerHTML=events.length?events.map(e=>`<div class="log-item"><strong>Era ${escapeHtml(e.era)}</strong> · ${escapeHtml(uiText(e.text))}</div>`).join(""):'<div class="small muted">Ainda não houve ataques.</div>'}
 /* ── Condições de vitória e fim de partida ── */
 export function renderVictory(){
+ // Regras completas (Como jogar): o teto do Sem limite desta partida (depende do tamanho do mapa).
+ document.querySelectorAll("[data-unl-cap]").forEach(el=>{el.textContent=String(state?.unlimited?state.maxEras:unlimitedCapFor(mapSizeOf(state)))});
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
  $("victoryPill").textContent=s.result?"Partida encerrada":s.unlimited?"Sem limite":`${left===1?"Última era":`Faltam ${left} eras`}`;
@@ -52,7 +55,7 @@ export function renderVictory(){
  $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}
  <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
  <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
- <h3>${s.unlimited?`Sem limite (teto de ${UNLIMITED.maxEras} eras): pontuação`:`Última era (${s.maxEras}): pontuação`}</h3><div class="small muted">${s.unlimited?`Se ninguém vencer até a era ${UNLIMITED.maxEras}, ganha a maior pontuação.`:"Sem outra vitória, ganha a maior pontuação."} Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
+ <h3>${s.unlimited?`Sem limite (teto de ${s.maxEras} eras): pontuação`:`Última era (${s.maxEras}): pontuação`}</h3><div class="small muted">${s.unlimited?`Se ninguém vencer até a era ${s.maxEras}, ganha a maior pontuação.`:"Sem outra vitória, ganha a maior pontuação."} Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }
 // Pontuação de cada civilização ao longo da partida (mesma fórmula da pontuação final).

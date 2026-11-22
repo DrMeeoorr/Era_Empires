@@ -16,7 +16,7 @@ export const hudNum=v=>fmt(v,Math.abs(v)>=100?0:1);
 export function renderMetrics(){
  const s=state,me=P(s),r=s.pending?.revenue?.player||s.history.at(-1)||{normal:0,infra:0,tech:0,total:0},g=configApplied.endgame,min=territorialMinimum(territoryBase(s),g.territoryPct),mine=countTerritories(s,"player");
  const pct=clamp(100*s.era/Math.max(1,s.maxEras),0,100);
- // Sem limite: "Era N/∞", sem barra de progresso (o teto de segurança de 100 eras fica nas regras completas e no Placar).
+ // Sem limite: "Era N/∞", sem barra de progresso (o teto de segurança, 100 eras no Original, fica nas regras completas e no Placar).
  $("statEra").innerHTML=s.unlimited?`<div class="hud-era-t"><span>Era</span><span class="of" aria-label="era ${escapeHtml(s.era)}, sem limite de eras"><b>${escapeHtml(s.era)}</b>/∞</span></div><div class="hud-prog unlimited" aria-hidden="true"><span style="width:0%"></span></div>`
   :`<div class="hud-era-t"><span>Era</span><span class="of"><b>${escapeHtml(s.era)}</b>/${escapeHtml(s.maxEras)}</span></div><div class="hud-prog" role="progressbar" aria-label="Eras jogadas" aria-valuemin="0" aria-valuemax="${escapeHtml(s.maxEras)}" aria-valuenow="${escapeHtml(s.era)}"><span style="width:${pct}%"></span></div>`;
  $("statGold").innerHTML=`<span class="hud-ico gold-ico" aria-hidden="true">$</span><span class="hud-v"><b>${hudNum(me.treasury)} <small>ouro</small></b><span class="k"><span class="green">+${hudNum(r.total)}</span>/era</span></span>`;

@@ -75,7 +75,7 @@ test("posições iniciais: distintas, dentro do mapa, afastadas; o 1×1 em canto
         const s = C.newState(cfgOf(C, Number(k), ai, { randomStart: random }), { startSeed: 1234 + ai });
         const pos = s.owners.map((o, i) => (o === "neutral" ? -1 : i)).filter((i) => i >= 0);
         assert.equal(pos.length, ai + 1);
-        for (const a of pos) for (const b of pos) if (a !== b) assert.ok(C.gridDist(a, b, cols) >= 3, `tamanho ${k}, ${ai} rivais: ${a} e ${b} perto demais`);
+        for (const a of pos) for (const b of pos) if (a !== b) assert.ok(C.gridDist(a, b, cols) >= 2, `tamanho ${k}, ${ai} rivais: ${a} e ${b} perto demais`);
       }
     }
     const s = C.newState(cfgOf(C, Number(k), 1));

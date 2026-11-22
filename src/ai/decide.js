@@ -121,7 +121,7 @@ export function aiDecide(s,civ,cfg,era){
   else action=`${civ.name} acumulando poder militar (precisa ${fmtCore(required)} para alvo ${t.i+1})`;
   // Ataques adicionais na mesma era (cada um mais caro), enquanto o poder chegar.
   if(cfg.military.simultaneousOrders&&cfg.military.maxOrdersPerEra!==1){let n=(s.orders||[]).filter(o=>o.owner===civ.id).length;const max=cfg.military.maxOrdersPerEra||Infinity;
-   if(n>0)for(const t2 of targets.slice(1)){if(n>=max)break;const req=attackNeed(s,t2.i,civ.id,cfg)*orderCostMultiplier(cfg,n);if(civ.military+1e-9<req)continue;if(orderAttack(s,t2.i,civ.id,cfg).ok){n++;action+=` + território ${t2.i+1}`}}}
+   if(n>0)for(const t2 of targets.slice(1)){if(n>=max)break;const req=attackNeed(s,t2.i,civ.id,cfg)*orderCostMultiplier(cfg,n,s);if(civ.military+1e-9<req)continue;if(orderAttack(s,t2.i,civ.id,cfg).ok){n++;action+=` + território ${t2.i+1}`}}}
  }else if(targets.length)action=`${civ.name} decidiu não atacar nesta era`;
  else action=`${civ.name} sem alvos adjacentes`;
  return {style,action,investment,budgetInvested:investment.military+investment.infrastructure+investment.technology};

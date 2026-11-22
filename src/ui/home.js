@@ -10,6 +10,7 @@ import {$} from "./dom.js";
 import {startNewGame,showView,renderAll} from "./game.js";
 import {civSymHtml,playerProfileName} from "./labels.js";
 import {showDialog} from "./modal.js";
+import {recommendedRivalsFor} from "./mapshape.js";
 import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
@@ -24,7 +25,7 @@ export function initHome(){
  // Na versão do jogador, "Configurações" (de um save antigo) aparece como "Médio" na próxima partida.
  const shownDiff=d=>DIFFICULTIES[d]&&(DEV_MODE||d!=="config")?d:"medio";
  const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:p.unlimited===true?30:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY),randomStart:!!p.randomStart,map:p.mapType==="sorteado"?"sorteado":"padrao",mapSize:mapSizeChoice(p.mapSize),effects:p.terrainEffects===true,unlimited:p.unlimited===true};
-  // Sem limite: o campo "Outra" mostra 30 (o teto de 100 eras não é uma duração escolhida).
+  // Sem limite: o campo "Outra" mostra 30 (o teto de segurança, 100 eras no Original, não é uma duração escolhida).
   return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:unlimitedChoice?30:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,mapSize:mapSizeChoice(configApplied.map.mapSize),effects:terrainEffectsChoice,unlimited:unlimitedChoice}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
@@ -37,7 +38,7 @@ export function initHome(){
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
   $("homeModeDesc").textContent=choice.mode==="fast"?"Os retornos chegam antes: tudo acontece em menos eras.":"Os investimentos rendem no tempo normal.";
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
-  // Duração: 15 / 30 / Sem limite (teto de segurança de 100 eras, decidido por pontos) / Outra (10–150).
+  // Duração: 15 / 30 / Sem limite (teto de segurança por tamanho do mapa, decidido por pontos) / Outra (10–150).
   let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=b.dataset.eras==="unlimited"?!!choice.unlimited:!choice.unlimited&&Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
   for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("homeErasDesc").textContent=choice.unlimited?(choice.conquest?"Termina por domínio ou eliminação.":"Termina por domínio, eliminação ou supremacia."):`A partida acaba na era ${choice.eras}, ou antes se alguém vencer.`;
@@ -49,6 +50,10 @@ export function initHome(){
   $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
   document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>{const on=Number(b.dataset.mapSize)===choice.mapSize;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
   {const [grid,n]=MAP_SIZE_INFO[choice.mapSize];$("mapSizeDesc").textContent=choice.mapSize===1?`${grid} = ${n} regiões. O mapa cabe inteiro na tela.`:`${grid} = ${n} regiões, do mesmo tamanho. Arraste o mapa para ver o resto; aproxime com dois dedos ou + e −.`}
+  // Mapa grande com poucos rivais: aviso curto e atalho para usar o número recomendado (pelo motor, quando houver).
+  {const most=Math.max(1,...[...document.querySelectorAll("#homeOpponents [data-ai]")].map(b=>Number(b.dataset.ai)||1)),rec=Math.min(MAX_AI,most,recommendedRivalsFor(choice.mapSize)),tip=$("mapSizeTip");
+   if(tip){const show=choice.mapSize>1&&choice.ai<rec;tip.hidden=!show;
+    if(show){$("mapSizeTipTxt").textContent=`Mapas ${choice.mapSize}× ficam melhores com ${rec}${rec<most?" ou mais":""} ${rec===1?"rival":"rivais"}.`;$("mapSizeUseRivals").textContent=`Usar ${rec} rivais`;$("mapSizeUseRivals").dataset.ai=rec}}}
   for(const [id,on] of [["terrVisual",!choice.effects],["terrEffects",!!choice.effects]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("terrFxDesc").textContent=choice.effects?"Cada terreno dá 2 vantagens e 1 desvantagem (ouro, defesa, Obras, Força ou Ciência). Veja em ⓘ Terrenos.":"O terreno só enfeita o mapa: as regras são as de sempre. Bom para começar.";
   $("homeRandomStart").checked=!!choice.randomStart;
@@ -78,6 +83,7 @@ export function initHome(){
  $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
  $("mapFixed").onclick=()=>{choice.map="padrao";sync()};$("mapRandom").onclick=()=>{choice.map="sorteado";sync()};
  document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>b.onclick=()=>{choice.mapSize=mapSizeChoice(b.dataset.mapSize);sync()});
+ if($("mapSizeUseRivals"))$("mapSizeUseRivals").onclick=()=>{choice.ai=clamp(Number($("mapSizeUseRivals").dataset.ai)|0,1,MAX_AI);sync();$("homeMapSize").querySelector(".selected")?.focus()};
  $("terrVisual").onclick=()=>{choice.effects=false;sync()};$("terrEffects").onclick=()=>{choice.effects=true;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;choice.unlimited=false;sync()};
  const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.unlimited?UNLIMITED.maxEras:choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;configApplied.map.mapSize=choice.mapSize;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setUnlimitedChoice(!!choice.unlimited);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};

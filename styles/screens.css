@@ -201,3 +201,8 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .md-row.on .md-st{color:#6fe0b0}
 .md-tag{margin-left:4px;padding:1px 7px;border-radius:99px;background:#3a2c0e;color:#ffd58a;font-family:system-ui,sans-serif;font-size:11.5px;font-weight:800;vertical-align:2px}
 .md-match{border-color:#f4bd5066}
+/* Aviso curto em Personalizar (ex.: mapa grande com poucos rivais) com atalho de um toque. */
+.pg-tip{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:8px 0 0;padding:8px 10px;border-radius:10px;border:1px solid #6b5420;background:#2a2210;color:#f3dca0;font-size:13.5px;line-height:1.35}
+.pg-tip[hidden]{display:none}
+.pg-tip>span{flex:1 1 170px;min-width:0}
+.pg-tipbtn{flex:none;min-height:48px;padding:6px 14px;border-radius:10px;border:1px solid #f4bd50;background:#3a2e12;color:#ffd98a;font-weight:700;font-size:14px}

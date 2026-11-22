@@ -413,3 +413,21 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .map-zoom button:disabled{opacity:.4}
 .map-zoom button:focus-visible{outline:2px solid #ffd479;outline-offset:1px}
 @media (prefers-reduced-motion:reduce){.map-stage.anim{transition:none}}
+/* Telas baixas: botões do mapa grande na linha da legenda (não cobrem o mapa); alvo de toque de 44 px ou mais. */
+.map-card.zoom-row .legend-row{gap:6px}
+.map-card.zoom-row .map-zoom{position:static;flex:none;flex-direction:row;gap:4px;margin-top:3px}
+.map-card.zoom-row .map-zoom button{position:relative;width:44px;height:38px;border-radius:10px;box-shadow:none}
+.map-card.zoom-row .map-zoom button::before{content:"";position:absolute;inset:-5px -1px}
+.map-card.zoom-row .map-zoom button .ic{width:20px;height:20px}
+/* Na linha da legenda ficam só + e −: o selo "Você" na borda leva de volta ao seu império; "ⓘ Terrenos" vira só "ⓘ". */
+.map-card.zoom-row #mapCenter{display:none}
+.map-card.zoom-row .lg-ter{font-size:0;padding:1px 0;width:30px;text-align:center}
+.map-card.zoom-row .lg-ter>span{font-size:15px}
+/* Selos de impérios fora da tela (mapas grandes): cor + símbolo do império e seta para o lado em que ele está. */
+.map-edges{position:absolute;inset:0;z-index:2;pointer-events:none}
+.map-edge{position:absolute;width:34px;height:34px;min-height:0;padding:0;margin:0;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #0b1220;background:var(--c);color:#fff;font-size:15px;font-weight:800;line-height:1;display:grid;place-items:center;box-shadow:0 0 0 2px #efe6cc,0 2px 6px #000a;pointer-events:auto;touch-action:manipulation;text-shadow:0 1px 2px #000}
+.map-edge::before{content:"";position:absolute;inset:-6px;border-radius:50%}
+.map-edge.me{box-shadow:0 0 0 2px #3fd0b2,0 2px 6px #000a}
+.map-edge .me-sym{position:relative;z-index:1}
+.map-edge .me-arrow{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a,0rad)) translate(18px,-50%);transform-origin:0 0;margin:0;border-left:10px solid #fff3cf;border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1px #000)}
+.map-edge:focus-visible{outline:2px solid #ffd479;outline-offset:3px}

@@ -6,6 +6,8 @@
 // Sem DOM e sem aleatoriedade do jogo (semente fixa): o mapa é sempre o mesmo e não mexe na impressão digital.
 
 import {MAP_SIZES,mapColsFor} from "../core/config.js";
+import * as CORE_CONFIG from "../core/config.js";
+import * as CORE_ENDGAME from "../core/endgame.js";
 
 export const SHAPE_COLS=6,SHAPE_ROWS=4,CELL=100,SHAPE_W=SHAPE_COLS*CELL,SHAPE_H=SHAPE_ROWS*CELL;
 const SEED=20261120;
@@ -66,4 +68,19 @@ export function mapGrid(s){
  const n=s?.owners?.length||SHAPE_COLS*SHAPE_ROWS,g=MAP_SIZES[s?.mapSize];
  if(g&&g.cols*g.rows===n)return {cols:g.cols,rows:g.rows};
  const cols=mapColsFor(n);return {cols,rows:Math.max(1,Math.ceil(n/cols))};
+}
+
+// Regras do motor que dependem do tamanho do mapa, lidas de forma defensiva: se o motor ainda não expõe a função,
+// vale o comportamento de antes (teto de 100 eras; recomendação de 3 rivais só nos mapas 3× e 4×).
+// A função pode receber o tamanho (1–4) ou uma configuração ({map:{mapSize}}).
+const coreFn=names=>{for(const m of [CORE_CONFIG,CORE_ENDGAME])for(const n of names)if(typeof m[n]==="function")return m[n];return null};
+const askCore=(names,size)=>{const f=coreFn(names);if(!f)return NaN;
+ for(const arg of [size,{map:{mapSize:size}}]){try{const v=Number(f(arg));if(Number.isFinite(v)&&v>0)return v}catch(_){}}return NaN};
+export function unlimitedCapFor(size=1){
+ const v=askCore(["unlimitedMaxEras","unlimitedMaxErasFor","unlimitedCapFor","unlimitedEraCap"],size);
+ return Number.isFinite(v)?Math.round(v):CORE_ENDGAME.UNLIMITED?.maxEras||100;
+}
+export function recommendedRivalsFor(size=1){
+ const v=askCore(["recommendedRivals","recommendedRivalsFor","recommendedAiCount","minRivalsFor"],size);
+ return Number.isFinite(v)?Math.round(v):size>=3?3:1;
 }
