@@ -397,3 +397,37 @@ html.game-fit .legend-row .lg-ter{margin-top:3px}
 .own-def strong{font-size:16px;color:var(--text)}.own-def strong.gold{color:var(--gold)}
 .own-def .od-why{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
 .hud-prog.unlimited{background:repeating-linear-gradient(90deg,#25344b 0 6px,transparent 6px 10px)}
+/* Mapas maiores que o Original (2×, 3×, 4×): regiões do tamanho do Original numa camada que rola e aproxima
+   (src/ui/mapview.js). A caixa do mapa vira a janela; a página nunca rola para o lado. */
+.map-box.map-big{overflow:clip;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+.map-stage{position:absolute;left:0;top:0;transform-origin:0 0}
+.map-stage.anim{transition:transform .22s ease-out}
+.map-box.panning .map-stage{will-change:transform}
+.map-box.panning .territory{cursor:grabbing}
+.map-box.far .territory .rname,.map-box.far .territory .who,.map-box.far .territory .def,.map-box.far .territory .order-tag{visibility:hidden}
+.map-zoom{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:4px}
+.map-zoom[hidden]{display:none}
+.map-zoom button{width:44px;height:44px;min-height:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #3a5070;background:#0b1220e6;color:#efe6cc;box-shadow:0 2px 6px #0008;touch-action:manipulation}
+.map-zoom button .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.map-zoom button:active{background:#1f3352}
+.map-zoom button:disabled{opacity:.4}
+.map-zoom button:focus-visible{outline:2px solid #ffd479;outline-offset:1px}
+@media (prefers-reduced-motion:reduce){.map-stage.anim{transition:none}}
+/* Telas baixas: botões do mapa grande na linha da legenda (não cobrem o mapa); alvo de toque de 44 px ou mais. */
+.map-card.zoom-row .legend-row{gap:6px}
+.map-card.zoom-row .map-zoom{position:static;flex:none;flex-direction:row;gap:4px;margin-top:3px}
+.map-card.zoom-row .map-zoom button{position:relative;width:44px;height:38px;border-radius:10px;box-shadow:none}
+.map-card.zoom-row .map-zoom button::before{content:"";position:absolute;inset:-5px -1px}
+.map-card.zoom-row .map-zoom button .ic{width:20px;height:20px}
+/* Na linha da legenda ficam só + e −: o selo "Você" na borda leva de volta ao seu império; "ⓘ Terrenos" vira só "ⓘ". */
+.map-card.zoom-row #mapCenter{display:none}
+.map-card.zoom-row .lg-ter{font-size:0;padding:1px 0;width:30px;text-align:center}
+.map-card.zoom-row .lg-ter>span{font-size:15px}
+/* Selos de impérios fora da tela (mapas grandes): cor + símbolo do império e seta para o lado em que ele está. */
+.map-edges{position:absolute;inset:0;z-index:2;pointer-events:none}
+.map-edge{position:absolute;width:34px;height:34px;min-height:0;padding:0;margin:0;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #0b1220;background:var(--c);color:#fff;font-size:15px;font-weight:800;line-height:1;display:grid;place-items:center;box-shadow:0 0 0 2px #efe6cc,0 2px 6px #000a;pointer-events:auto;touch-action:manipulation;text-shadow:0 1px 2px #000}
+.map-edge::before{content:"";position:absolute;inset:-6px;border-radius:50%}
+.map-edge.me{box-shadow:0 0 0 2px #3fd0b2,0 2px 6px #000a}
+.map-edge .me-sym{position:relative;z-index:1}
+.map-edge .me-arrow{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a,0rad)) translate(18px,-50%);transform-origin:0 0;margin:0;border-left:10px solid #fff3cf;border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1px #000)}
+.map-edge:focus-visible{outline:2px solid #ffd479;outline-offset:3px}

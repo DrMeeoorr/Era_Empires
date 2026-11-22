@@ -11,7 +11,8 @@ import {renderAll} from "./game.js";
 import {civLabel,profileLabel} from "./labels.js";
 import {openSheet,isSheetOpen,closeSheet} from "./sheets.js";
 import {showToast} from "./toast.js";
-import {regionShapes} from "./mapshape.js";
+import {regionShapes,mapGrid} from "./mapshape.js";
+import {setupMapView,mapViewAfterRender,isBigGrid} from "./mapview.js";
 import {TERRAINS,TERRAIN_NAMES,TERRAIN_HINTS,terrainOf,mapTypeOf,terrainEffectsOn,ruleTerrain,terrainStartsOf,terrainDefenseBonus,terrainAttackFactor} from "../core/terrain.js";
 import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectChips} from "./terrain-art.js";
 
@@ -35,7 +36,9 @@ export function fitRegionNames(){
 export function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
 // Mapa ilustrado (Fase 3): um desenho em SVG (mar, costa, regiões com o seu terreno, fronteiras dos impérios) e, por cima,
 // um botão por região recortado na forma dela (clip-path), com o nome, o número e o símbolo do dono.
-// O toque só acerta a região desenhada; a vizinhança é a da grade 6×4 (src/ui/mapshape.js).
+// O toque só acerta a região desenhada; a vizinhança é a da grade (src/ui/mapshape.js). Mapas maiores que o Original
+// ficam numa camada que rola e aproxima (src/ui/mapview.js), com as regiões do mesmo tamanho do Original.
+const gridShapes=()=>{const g=mapGrid(state);return regionShapes(g.cols,g.rows)};
 const pc=(v,t)=>(100*v/t).toFixed(3)+"%";
 const SEA_PAD=10;
 function shapeStyle(s,W,H){
@@ -49,7 +52,7 @@ const SWORDS=(x,y,ord)=>`<g class="${ord?"swd ord":"swd"}" transform="translate(
 export const swordsIcon=(px=16)=>`<svg class="swd-ico" width="${px}" height="${px}" viewBox="-13 -13 26 26" aria-hidden="true" focusable="false">${SWORDS(0,0,false)}</svg>`;
 export const flagIcon=c=>`<svg class="flag-ico" width="17" height="15" viewBox="0 0 17 15" aria-hidden="true" focusable="false"><path d="M2 15V1" stroke="#efe6cc" stroke-width="1.8"/><path d="M2 1h14l-3.5 4 3.5 4h-14z" fill="${cssColor(c.color)}" stroke="#0b1220"/></svg>`;
 function mapArt(targets){
- const {shapes,width:W,height:H}=regionShapes(),pad=SEA_PAD,ter=terrainOf(state);
+ const {shapes,width:W,height:H}=gridShapes(),pad=SEA_PAD,ter=terrainOf(state);
  const ords=simOrders()?myOrders().map(o=>o.idx):[],sel=selectedTerritory;
  const paths=(list,attrs)=>list.map(s=>`<path d="${s.d}"${typeof attrs==="function"?attrs(s):attrs}/>`).join("");
  const owners=[...new Set(state.owners.filter(o=>o!=="neutral"))],civOf=o=>getCiv(state,o);
@@ -91,15 +94,17 @@ function bindMapFocus(){const m=$("map");if(!m||m.dataset.fb)return;m.dataset.fb
 }
 export function renderMap(){
  const targets=eligibleTargets(state,"player"),live=P(state).active&&!state.result,tset=new Set(live?targets.map(t=>t.i):[]);
- const {shapes,width:W,height:H}=regionShapes(),ter=terrainOf(state);
+ const {shapes,width:W,height:H}=gridShapes(),ter=terrainOf(state);
  $("map").classList.toggle("has-sel",selectedTerritory!==null);
- $("map").innerHTML=mapArt(tset)+state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"free",target=tset.has(i),sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" style="${shapeStyle(shapes[i],W,H)}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}, ${TERRAIN_NAMES[ter[i]]}"><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("");
+ const g=mapGrid(state),big=isBigGrid(g);
+ $("map").innerHTML=(big?`<div class="map-stage" id="mapStage" style="width:${pc(g.cols,6)};height:${pc(g.rows,4)}">`:"")+mapArt(tset)+state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"free",target=tset.has(i),sel=selectedTerritory===i;
+  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" style="${shapeStyle(shapes[i],W,H)}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}, ${TERRAIN_NAMES[ter[i]]}"><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("")+(big?"</div>":"");
  $("mapLegend").innerHTML=`<span>${flagIcon(P(state))}${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${flagIcon(c)}${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq lg-free"></i>Livre</span><span>${swordsIcon(15)}Pode atacar</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);setSelectedTerritory(i);renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
- bindMapFocus();fitRegionNames();markLegend();
+ bindMapFocus();setupMapView(big);fitRegionNames();markLegend();
  renderAttack();renderEvents();
  if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
+ mapViewAfterRender(big);
 }
 // Folha "ⓘ Terrenos": os 7 terrenos e o tipo de mapa desta partida.
 // Com terrenos com efeitos mostra as 2 vantagens e 1 desvantagem de cada um (etiquetas + / −) e, num bloco que abre
@@ -142,7 +147,7 @@ export const setAttackBtn=(btn,text,enabled,{cancel=false,invest=false}={})=>{bt
 export const simOrders=()=>!!configApplied.military.simultaneousOrders,myOrders=()=>(state.orders||[]).filter(o=>o.owner==="player"),myOrder=t=>myOrders().find(o=>o.idx===t);
 // Painel do alvo com ordens simultâneas (configuração padrão): a ordem é resolvida no fim da era.
 export function renderOrderAttack(){
- const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length),maxO=m.maxOrdersPerEra||Infinity;
+ const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length,state),maxO=m.maxOrdersPerEra||Infinity;
  setAttackBtn(btn,"Escolha um alvo",false);
  if(t===null&&isSheetOpen("attackSheet"))closeSheet();
  if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}

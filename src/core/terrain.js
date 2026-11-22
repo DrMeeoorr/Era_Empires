@@ -4,7 +4,7 @@
 // Dois tipos de mapa: "padrao" (tabela fixa, cada região tem sempre o mesmo terreno) e "sorteado" (novo a cada
 // partida). O sorteio usa um gerador próprio com a sua semente (guardada no save); nunca usa o sorteio das
 // batalhas (rng.js), por isso não muda nenhum resultado do jogo nem a impressão digital.
-import {MAP_COLS} from "./config.js";
+import {mapColsFor} from "./config.js";
 
 export const TERRAINS=["campina","floresta","colinas","montanha","deserto","pantano","tundra"];
 export const TERRAIN_NAMES={campina:"Campina",floresta:"Floresta",colinas:"Colinas",montanha:"Montanha",deserto:"Deserto",pantano:"Pântano",tundra:"Tundra"};
@@ -26,13 +26,19 @@ function mixSeed(x){x=(x>>>0)^(x>>>16);x=Math.imul(x,0x7feb352d);x^=x>>>15;x=Mat
 function terrainRng(seed){let s=mixSeed(seed)||1;return()=>(s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296}
 function gridNeighbors(i,n,cols){const r=Math.floor(i/cols),c=i%cols,a=[];if(c>0)a.push(i-1);if(c<cols-1&&i+1<n)a.push(i+1);if(r>0)a.push(i-cols);if(i+cols<n)a.push(i+cols);return a}
 const rowsOf=(n,cols)=>Math.ceil(n/cols);
+// Mapas maiores (tamanhos 2–4): as quantidades do sorteio crescem com o número de regiões (×n/24, arredondado).
+// No mapa de 24 o fator é 1 e tudo fica como antes.
+const areaOf=n=>n/DEFAULT_TERRAIN.length;
+function limitsFor(n){const k=areaOf(n);if(k===1)return TERRAIN_LIMITS;return Object.fromEntries(TERRAINS.map(t=>{const [lo,hi]=TERRAIN_LIMITS[t];return [t,[Math.round(lo*k),Math.round(hi*k)]]}))}
+function baseCountFor(n){const k=areaOf(n);if(k===1)return {...BASE_COUNT};const c=Object.fromEntries(TERRAINS.map(t=>[t,Math.round(BASE_COUNT[t]*k)]));
+ c.campina+=n-Object.values(c).reduce((a,b)=>a+b,0);return c}
 
 // Problemas de um mapa sorteado (lista vazia = cumpre todas as regras). Usado pelo sorteio e pelos testes.
-export function terrainProblems(list,starts=[],cols=MAP_COLS){
- const n=list.length,rows=rowsOf(n,cols),out=[],count={};
+export function terrainProblems(list,starts=[],cols=mapColsFor(list.length)){
+ const n=list.length,rows=rowsOf(n,cols),out=[],count={},LIM=limitsFor(n);
  for(const t of TERRAINS)count[t]=0;
  for(const t of list){if(!(t in count)){out.push("terreno desconhecido: "+t);continue}count[t]++}
- for(const t of TERRAINS){const [lo,hi]=TERRAIN_LIMITS[t],min=t==="campina"?Math.max(lo,starts.length):lo;if(count[t]<min||count[t]>hi)out.push(`${t}: ${count[t]} (devia ser ${min}–${hi})`)}
+ for(const t of TERRAINS){const [lo,hi]=LIM[t],min=t==="campina"?Math.max(lo,starts.length):lo;if(count[t]<min||count[t]>hi)out.push(`${t}: ${count[t]} (devia ser ${min}–${hi})`)}
  list.forEach((t,i)=>{const r=Math.floor(i/cols);
   if(t==="tundra"&&r>=rows/2)out.push(`tundra fora do norte (região ${i+1})`);
   if(t==="deserto"&&r<rows/2)out.push(`deserto fora do sul (região ${i+1})`)});
@@ -46,8 +52,8 @@ export function terrainProblems(list,starts=[],cols=MAP_COLS){
 }
 // Uma tentativa de sorteio com uma semente: quantidades variam um pouco, terrenos nascem em manchas.
 function rollOnce(seed,starts,n,cols){
- const rnd=terrainRng(seed),pick=a=>a[Math.floor(rnd()*a.length)],rows=rowsOf(n,cols),N={...BASE_COUNT},minOf=t=>t==="campina"?Math.max(TERRAIN_LIMITS[t][0],starts.length):TERRAIN_LIMITS[t][0];
- for(let k=0;k<2;k++){const a=pick(TERRAINS.filter(t=>N[t]>minOf(t))),b=pick(TERRAINS.filter(t=>t!==a&&N[t]<TERRAIN_LIMITS[t][1]));N[a]--;N[b]++}
+ const rnd=terrainRng(seed),pick=a=>a[Math.floor(rnd()*a.length)],rows=rowsOf(n,cols),LIM=limitsFor(n),N=baseCountFor(n),minOf=t=>t==="campina"?Math.max(LIM[t][0],starts.length):LIM[t][0];
+ for(let k=0;k<2*areaOf(n);k++){const a=pick(TERRAINS.filter(t=>N[t]>minOf(t))),b=pick(TERRAINS.filter(t=>t!==a&&N[t]<LIM[t][1]));N[a]--;N[b]++}
  const t=Array(n).fill(null);for(const s of starts)t[s]="campina";
  const okRow=(i,k)=>{const r=Math.floor(i/cols);return k==="tundra"?r<rows/2:k==="deserto"?r>=rows/2:true};
  // Vizinhança justa já na colocação: perto de uma região inicial só entra terreno difícil se ela ainda ficar
@@ -62,11 +68,15 @@ function rollOnce(seed,starts,n,cols){
 }
 // Sorteia os terrenos: tenta a semente, depois a seguinte (seed+1, seed+2…) até cumprir todas as regras.
 // Devolve {list, tries}. Se nada servir (não acontece no mapa 6×4), usa o mapa padrão.
-export function rollTerrain(seed,starts=[],n=DEFAULT_TERRAIN.length,cols=MAP_COLS){
+export function rollTerrain(seed,starts=[],n=DEFAULT_TERRAIN.length,cols=mapColsFor(n)){
  for(let k=0;k<TERRAIN_MAX_TRIES;k++){const list=rollOnce(((seed>>>0)+k)>>>0,starts,n,cols);if(!terrainProblems(list,starts,cols).length)return {list,tries:k+1}}
  return {list:defaultTerrain(n),tries:0};
 }
-export function defaultTerrain(n=DEFAULT_TERRAIN.length){return Array.from({length:n},(_,i)=>DEFAULT_TERRAIN[i%DEFAULT_TERRAIN.length])}
+// Mapa padrão: a tabela de 24 (6×4). Nos mapas maiores repete-se em mosaico (linha % 4, coluna % 6), como ladrilhos
+// do mapa original; com 24 regiões (ou outro número dos laboratórios) é a lista de sempre, por índice.
+export function defaultTerrain(n=DEFAULT_TERRAIN.length){const cols=mapColsFor(n);
+ if(cols===6)return Array.from({length:n},(_,i)=>DEFAULT_TERRAIN[i%DEFAULT_TERRAIN.length]);
+ return Array.from({length:n},(_,i)=>DEFAULT_TERRAIN[(Math.floor(i/cols)%4)*6+(i%cols)%6])}
 // Terrenos de uma partida nova: {type, seed, list}. starts = regiões iniciais dos impérios.
 export function makeMapTerrain(type,seed,starts,n=DEFAULT_TERRAIN.length){
  if(type!=="sorteado")return {type:"padrao",seed:null,list:defaultTerrain(n)};

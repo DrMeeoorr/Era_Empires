@@ -1,6 +1,6 @@
 // Laboratório 2 (balanceamento): tela das experiências — cenários, execução, resultados e gráficos.
 import {configApplied,busy,setBusy,setConfigApplied,rememberAiBase} from "../app/session.js";
-import {normalizeConfig} from "../core/config.js";
+import {normalizeConfig,mapTerritories} from "../core/config.js";
 import {END_REASON_NAMES} from "../core/endgame.js";
 import {clone} from "../core/util.js";
 import {readSimOpts,profileChecks} from "./common-ui.js";
@@ -41,7 +41,7 @@ export async function runExperiment(){
  expState.scenarios.forEach(s=>{let cfg;try{cfg=scenarioConfig(configApplied,s.values)}catch(e){throw Error(`Cenário "${s.name}": ${e.message}`)}
   for(const m of modes)scen.push({name:modes.length>1?`${s.name} · ${m==="fast"?"rápido":"lento"}`:s.name,values:clone(s.values),cfg,mode:m,color:SCENARIO_COLORS[scen.length%SCENARIO_COLORS.length]})});
  const est=estimateRows(opts,scen.length,scen.map(s=>s.cfg));if(est>ROW_WARN&&!confirm(`Esta experiência vai guardar cerca de ${fmt(est/1e6,1)} milhões de registos (civilização × era) em memória. Continuar?`))return;
- if(opts.civCount>configApplied.map.territories)throw Error("Mais civilizações do que territórios.");
+ if(opts.civCount>mapTerritories(configApplied))throw Error("Mais civilizações do que territórios.");
  setBusy(true);setExpCancel(false);$("runExp").disabled=true;$("cancelExp").disabled=false;$("expProgress").style.width="0%";$("expResults").innerHTML="";$("expCharts").classList.add("hidden");
  // Mesmas sementes, perfis e condições em todos os cenários: a partida g de cada cenário usa a
  // semente g e a mesma rotação de perfis. As partidas são intercaladas por rodada para que um

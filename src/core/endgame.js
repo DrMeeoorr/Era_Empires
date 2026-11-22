@@ -21,7 +21,16 @@ export const refsFor=(cfg,set)=>cfg.references?.[set]||DEFAULT_REFERENCES[set];
    supremacia; o teto de segurança (100 eras) decide por pontos. A supremacia começa a contar na era 15 (a mesma era de
    uma partida padrão de 30 eras), em vez de metade do limite (50). Gravado na partida (state.unlimited). */
 export const UNLIMITED={maxEras:100,supremacyFromEra:15};
+// Teto de segurança do Sem limite por tamanho do mapa (config.map.mapSize): 100 no Original, +25 por tamanho acima
+// (125, 150, 175). Nos mapas maiores as partidas duram mais; com 100 algumas (4×, 3–5 rivais) chegavam ao teto.
+export function unlimitedMaxEras(mapSize=1){const k=[1,2,3,4].includes(Number(mapSize))?Number(mapSize):1;return UNLIMITED.maxEras+25*(k-1)}
+// Rivais recomendados (mínimo) por tamanho do mapa. Só uma recomendação para a interface mostrar: o jogador escolhe.
+// Com 2+ rivais nos mapas maiores reagir à situação rende muito mais (+17 a +35 pontos) e o 4× com 1–2 rivais passa
+// de 95–100 ordens de ataque por partida (ver docs/decisoes.md).
+export const RECOMMENDED_RIVALS=Object.freeze({1:1,2:2,3:2,4:3});
+export function recommendedRivals(mapSize=1){return RECOMMENDED_RIVALS[Number(mapSize)]??1}
 // Primeira era em que a supremacia pode contar.
+export const unlimitedMaxErasOf=s=>unlimitedMaxEras(s?.mapSize);
 export function supremacyMinEra(s,cfg){return s?.unlimited?UNLIMITED.supremacyFromEra:Math.ceil((cfg.endgame.supremacyMinEraShare||0)*s.maxEras)}
 /* Domínio com escolha (21/11/2026): só nas partidas do jogador humano (state.dominion, criado por app/session.js;
    laboratórios, IAs e saves antigos não o têm e encerram na hora, como antes). Quando o JOGADOR chega a 70% antes da

@@ -4,7 +4,7 @@ import {LAB_PROFILES} from "../ai/profiles.js";
 import {runHook} from "./hooks.js";
 import {saveGame} from "./save.js";
 import {DEFAULTS,pickAiDifficulty,DIFFICULTIES,AI_DIFF_FIELDS} from "../core/config.js";
-import {UNLIMITED,dominionAsking,resolveDominion} from "../core/endgame.js";
+import {unlimitedMaxEras,dominionAsking,resolveDominion} from "../core/endgame.js";
 import {beginEra,finishEra} from "../core/era.js";
 import {RIVAL_NAMES} from "../core/names.js";
 import {newState} from "../core/state.js";
@@ -62,7 +62,8 @@ export function newGame({fixedSeed=false}={}){const n=configApplied.map.aiCount|
  if(!fixedSeed)s.rngSeed=newBattleSeed();
  // Domínio com escolha (21/11/2026): só nas partidas do jogador (laboratórios e partidas só de IAs não passam por aqui).
  s.dominion={ask:null,declined:false,continued:false};
- if(unlimitedChoice){s.unlimited=true;s.maxEras=UNLIMITED.maxEras}
+ // Teto do Sem limite: 100 no Original, +25 por tamanho de mapa acima (unlimitedMaxEras).
+ if(unlimitedChoice){s.unlimited=true;s.maxEras=unlimitedMaxEras(configApplied.map.mapSize)}
  // Terrenos: semente própria (Math.random, como a posição aleatória), nunca o sorteio das batalhas.
  s.terrain=makeMapTerrain(mapType,mapType==="sorteado"?Math.floor(Math.random()*4294967296):null,s.owners.map((o,i)=>o==="neutral"?-1:i).filter(i=>i>=0),s.owners.length);
  // Com efeitos: liga as regras do terreno e guarda as regiões iniciais (contam como Campina). Só visual: nada muda.

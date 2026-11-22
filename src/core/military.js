@@ -1,5 +1,5 @@
 // Militar: defesa dos territórios, saque, ataques imediatos e ordens simultâneas (resolvidas no fim da era).
-import {effectiveDelay} from "./config.js";
+import {effectiveDelay,mapAreaFactor} from "./config.js";
 import {fmtCore} from "./format.js";
 import {countTerritories,adjacentOwned} from "./map.js";
 import {rand} from "./rng.js";
@@ -100,7 +100,13 @@ export function attackTerritory(s,idx,owner,cfg,automatic=false){
    • se o alvo mudou de dono entretanto, o ataque segue contra o novo dono quando o poder chega;
    • se já não é possível atacar (perdeu o vizinho, poder insuficiente), a ordem cai e o poder volta. */
 // Custo de cada ordem adicional na mesma era: k-ésima ordem extra custa ×(1 + passo × k) (passo 1: 2.ª ×2, 3.ª ×3).
-export function orderCostMultiplier(cfg,k){return 1+(cfg.military.extraOrderCostStep||0)*k}
+// Mapas maiores (state.mapSize 2–4): o passo divide-se pelo fator de área k = regiões/24 no 1×1 (2.ª ordem ×1,5 no 2×,
+// ×1,25 no 4×) e por √k com 2+ rivais (×1,71 no 2×, ×1,5 no 4×). Sem isto, a expansão pelas regiões livres ficava lenta
+// para o tamanho do mapa, o contacto só vinha por volta da era 30 e as economias que se acumulam (Equilibrado/Científico)
+// ganhavam quase sempre no 1×1 (86–90%). Com 2+ rivais o √k basta (÷k deixava o Agressivo forte demais).
+// s é opcional: sem estado (ou no mapa de sempre) o passo é o da configuração.
+export function orderStep(cfg,s){const k=mapAreaFactor(s),step=cfg.military.extraOrderCostStep||0;if(k===1)return step;return step/(s.civs?.length>2?Math.sqrt(k):k)}
+export function orderCostMultiplier(cfg,k,s){return 1+orderStep(cfg,s)*k}
 export function orderAttack(s,idx,owner,cfg){
  const civ=getCiv(s,owner);if(!civ||!civ.active)return {ok:false,reason:"Civilização inexistente ou inativa."};
  s.orders??=[];
@@ -110,10 +116,10 @@ export function orderAttack(s,idx,owner,cfg){
  let replaced=null;if(mine.length>=max){if(max!==1)return {ok:false,reason:`Máximo de ${max} ordens por era.`};replaced=mine[0];civ.military+=replaced.need;s.orders=s.orders.filter(o=>o!==replaced);mine=[]}
  const undo=()=>{if(replaced){civ.military-=replaced.need;s.orders.push(replaced)}};
  if(idx<0||idx>=s.owners.length||s.owners[idx]===owner||!adjacentOwned(s,idx,owner)){undo();return {ok:false,reason:"Alvo não é adjacente ou já pertence ao atacante."}}
- const base=attackNeed(s,idx,owner,cfg),mult=orderCostMultiplier(cfg,mine.length),need=base*mult;
+ const base=attackNeed(s,idx,owner,cfg),mult=orderCostMultiplier(cfg,mine.length,s),need=base*mult;
  if(civ.military+1e-9<need){undo();return {ok:false,reason:`Poder insuficiente: precisa de ${fmtCore(need)} pontos${mult>1?` (${mine.length+1}.º ataque da era, custo ×${fmtCore(mult,1)})`:""}.`}}
  const power=civ.military+(cfg.military.battleTechWeight||0)*(civ.techProgress||0);
- civ.military-=need;s.orders.push({idx,owner,need,base,mult,step:cfg.military.extraOrderCostStep||0,power,era:s.era,target:s.owners[idx]});
+ civ.military-=need;s.orders.push({idx,owner,need,base,mult,step:orderStep(cfg,s),power,era:s.era,target:s.owners[idx]});
  return {ok:true,queued:true,need,mult};
 }
 // Cancela a ordem (do território idx, ou a última) e recalcula o custo das restantes, que podem ficar mais baratas.

@@ -1,6 +1,7 @@
 // Laboratório 3 (validação estratégica das IAs): execução, resultados, gráfico e exportação.
 import {busy,configApplied,setBusy} from "../app/session.js";
 import {clone} from "../core/util.js";
+import {mapTerritories} from "../core/config.js";
 import {readSimOpts,profileChecks} from "./common-ui.js";
 import {estimateRows,ROW_WARN,buildJobs,runGameJobs,profileStats,consolidateProfiles,mean,RC,profileName} from "./engine.js";
 import {SCENARIO_COLORS,expState} from "./experiment.js";
@@ -11,7 +12,7 @@ import {$,setStatus} from "../ui/dom.js";
 import {fmt,escapeHtml} from "../ui/format.js";
 
 export async function runValidation(){
- if(busy)return;const opts=readSimOpts("val");if(opts.civCount>configApplied.map.territories)throw Error("Mais civilizações do que territórios.");
+ if(busy)return;const opts=readSimOpts("val");if(opts.civCount>mapTerritories(configApplied))throw Error("Mais civilizações do que territórios.");
  setBusy(true);setValCancel(false);$("runVal").disabled=true;$("cancelVal").disabled=false;$("valProgress").style.width="0%";$("valResults").innerHTML="";$("valChartBox").classList.add("hidden");
  const src=valConfigSource(),cfg=clone(src.cfg);
  // Um cenário do balanceamento é validado na velocidade em que foi testado.

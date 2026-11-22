@@ -215,3 +215,47 @@ já terminava, em média, por volta da era 26; não havia modo sem limite.
    - Saves antigos de 50 eras continuam de 50; a opção "Outra" (10–150) continua. Gravado em `state.unlimited`.
 3. **Medalhas: nada muda.** Relâmpago (domínio ou eliminação até a era 18) vale a era em que a vitória acontece:
    vencer agora na era 12 conta; continuar e vencer por domínio na era 30 não; numa partida de 15 eras, conta.
+
+## 22/11/2026 — Tamanhos de mapa (game-designer + mobile-ux) — aprovado
+Opção **Mapa: Original, 2×, 3×, 4×** (área do original) em Nova partida → Personalizar; campo `config.map.mapSize`
+(1–4, padrão 1), gravado em `state.mapSize`. **Original idêntico** (impressões **39190b06** / **5c97e2c2**); saves
+antigos = Original; o tutorial usa sempre o Original. O número de rivais continua à escolha do jogador.
+- **Grades**: 6×4 (24), 8×6 (48), 10×7 (70, o retângulo mais próximo de 72 com a forma do original), 12×8 (96); mesma
+  vizinhança. 72 nomes novos sem repetir (os 24 de sempre ficam nos mesmos índices). Mapa padrão de terrenos em
+  mosaico do 6×4; o sorteado escala as quantidades pelo número de regiões.
+- **Regras escaladas** (só nos tamanhos 2–4; k = regiões/24 = 2 / 2,92 / 4):
+  - custo administrativo ÷ k (sem isto a terra deixava de render a partir de ~23 regiões);
+  - territórios ÷ k na pontuação e no ICE (mesmas referências do mapa de 24);
+  - passo das ordens extra na mesma era ÷ k no 1×1 e ÷ √k com 2+ rivais (ver abaixo);
+  - teto do Sem limite **100 + 25 por tamanho acima** (100 / 125 / 150 / 175): com 100, algumas partidas 4× chegavam
+    ao teto (a mais longa medida agora: 98 eras no 4× com 5 rivais);
+  - meta de domínio (70%) e trava da supremacia (≤ 25% livres) mantidas: já são proporções.
+- **Rivais recomendados** (aviso na tela, nunca obrigatório): Original 1+, 2× 2+, 3× 2+, 4× 3+. Com 2+ rivais, reagir
+  à situação rende +17 a +35 pontos sobre a melhor divisão fixa e há 2–4 melhores respostas por estilo; com 1 rival
+  no 3×/4× há uma só receita e 72–95 ordens de ataque por partida (repetitivo).
+- **Equilibrado dominava o 1×1 nos mapas maiores** (causa: a expansão pelas regiões livres demorava, o contacto só
+  vinha por volta da era 30 e as economias que se acumulam — Ciência e Obras — disparavam: receita 10× maior que a do
+  Militar na era 40). Correção: ordens extra mais baratas (a 2.ª ordem da era custa ×1,5 no 2× e ×1,25 no 4× no 1×1).
+  Partidas só de IAs, Médio, Sem limite (vitórias % por estilo; Original 1×1: faixa 46, Equilibrado 36):
+
+  | Mapa, rivais | Antes: Equil. / Militar / Agress. / Científico / Construtor / Adapt. (faixa) | Depois (faixa) |
+  | --- | --- | --- |
+  | 2×, 1 | 64 / 38 / 30 / 68 / 34 / 66 (38) | 46 / 62 / 58 / 44 / 18 / 72 (54) |
+  | 3×, 1 | 86 / 28 / 22 / 72 / 42 / 50 (64) | 66 / 52 / 58 / 38 / 22 / 64 (44) |
+  | 4×, 1 | 90 / 18 / 16 / 62 / 60 / 54 (74) | 50 / 54 / 60 / 48 / 28 / 60 (32) |
+  | 2×, 3 | 31 / 18 / 33 / 24 / 8 / 38 (30) | 25 / 39 / 34 / 14 / 18 / 21 (25) |
+  | 3×, 3 | 41 / 5 / 31 / 31 / 13 / 29 (36) | 25 / 29 / 38 / 28 / 13 / 19 (25) |
+  | 4×, 3 | 40 / 11 / 26 / 29 / 15 / 29 (29) | 33 / 28 / 38 / 14 / 8 / 31 (30) |
+  | 4×, 5 | 22 / 16 / 16 / 14 / 13 / 19 (9) | 8 / 18 / 33 / 0 / 13 / 29 (33) |
+
+  Com 2+ rivais, ÷ k deixava o Agressivo forte demais (faixa 36–43); ÷ √k fica perto do Original (3 rivais: 26).
+- **Posições iniciais com 4–6 impérios** nos mapas maiores: a regra "o mais afastado possível" punha um império no
+  centro (2–6% de vitória). Agora há posições escolhidas, perto da borda (`START_ORDERS_BIG`). Diferença entre a
+  melhor e a pior posição (partidas só de IAs, posições rodadas entre os lugares, 240 partidas): 2× 45/44/41 →
+  17/10/17; 3× 37/35/35 → 16/10/23; 4× 37/26/33 → 22/15/22 (4/5/6 impérios; medido já com a regra final das ordens). Original, para comparar: 28/35/36.
+- **Jogador × IAs (Médio, Sem limite)**, melhor divisão fixa / quem reage / divisão ingênua 34/33/33, duração média e
+  tempo estimado (25 s por era + 5 s por ordem): Original 1 rival 85/95/58%, 27 eras, ~12 min; 2× 1 rival 75/94/56%,
+  31 eras, ~16 min; 2× 2 rivais 31/65/11%, 36 eras, ~18 min; 3× 2 rivais 38/65/23%, 40 eras, ~22 min; 4× 3 rivais
+  38/51/26%, 46 eras, ~26 min. Nenhuma partida travou nem chegou ao teto.
+- **Pendências**: o Construtor fica fraco com 3–5 rivais nos mapas maiores (5–18%) e o Científico no 4× com 5 rivais
+  (0–2%); partidas 4× passam de 20 minutos.

@@ -6,6 +6,7 @@ import {countTerritories,eligibleTargets} from "./map.js";
 import {resolveOrders,orderAttack,attackTerritory} from "./military.js";
 import {P,A,aiCivs,newState} from "./state.js";
 import {clone} from "./util.js";
+import {mapAreaFactor} from "./config.js";
 
 /* Uma era tem duas fases, com o mesmo motor para todas as civilizações:
    beginEra  → avança a era, liberta pontos militares e recebe as receitas de TODAS as
@@ -74,15 +75,17 @@ export function finishEra(s,cfg,opts={}){
  // dims = valores das dimensões decididos: militar = pontos disponíveis; infraestrutura =
  // receita de infraestrutura na era; tecnologia = progresso acumulado; tesouraria = saldo;
  // receita = média da receita total nas últimas 3 eras (ou nas disponíveis), usada no ICE financeiro.
+ // territórios (dims) = regiões ÷ fator de área nos mapas maiores (k = regiões/24), para a pontuação e o ICE usarem as
+ // mesmas referências do mapa de 24; a contagem real fica em territories.
  const playerDriver=opts.autoStrategy?"strategy:"+opts.autoStrategy:player.controller==="ai"?"ai:"+(decisions.player?.style||player.profile||cfg.military.aiStyle):"human";
- const prevEras=s.timeline.slice(-2);
+ const prevEras=s.timeline.slice(-2),areaK=mapAreaFactor(s);
  const entry={era,civs:s.civs.map((c,k)=>{const rev=revenue[c.id]||{normal:0,infra:0,tech:0,total:0},terr=countTerritories(s,c.id),revWindow=[...prevEras.map(e=>e.civs[k]?.revenue.total||0),rev.total];return {
   id:c.id,name:c.name,active:c.active,driver:c.index===0?playerDriver:"ai:"+(decisions[c.id]?.style||c.profile||cfg.military.aiStyle),
   territories:terr,territoryShare:terr/s.owners.length,treasury:c.treasury,military:c.military,
   revenue:{normal:rev.normal,infrastructure:rev.infra,technology:rev.tech,total:rev.total},
   invested:{...eraInvested[c.id]},investedTotal:{...c.invested},techProgress:c.techProgress,techActive:c.techActive,
   attacks:{...c.attacks},action:c.index===0?playerAction:decisions[c.id]?.action||"",
-  dims:{military:c.military,infrastructure:rev.infra,technology:c.techProgress,treasury:c.treasury,revenue:revWindow.reduce((a,b)=>a+b,0)/revWindow.length,territories:terr}}})};
+  dims:{military:c.military,infrastructure:rev.infra,technology:c.techProgress,treasury:c.treasury,revenue:revWindow.reduce((a,b)=>a+b,0)/revWindow.length,territories:areaK>1?terr/areaK:terr}}})};
  s.pending=null;
  // Fim da era: avaliação central das condições de encerramento (usa o estado definitivo da era).
  evaluateEndOfEra(s,cfg,era,entry,s.endRules);

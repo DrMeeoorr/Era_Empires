@@ -1,8 +1,13 @@
-// Formas do mapa ilustrado (Fase 3): as 24 regiões da grade 6×4 com bordas irregulares e mar em volta.
+// Formas do mapa ilustrado (Fase 3): as regiões da grade (6×4 no mapa Original; 8×6, 10×7 ou 12×8 nos maiores)
+// com bordas irregulares e mar em volta.
 // Só desenho: a vizinhança das regras (src/core/map.js) continua a da grade. Cada borda entre duas regiões é
 // gerada uma vez e usada pelas duas, ponto a ponto; por isso duas regiões só partilham uma borda quando são
 // vizinhas na grade (cima, baixo, esquerda, direita) e as diagonais só se tocam num canto.
 // Sem DOM e sem aleatoriedade do jogo (semente fixa): o mapa é sempre o mesmo e não mexe na impressão digital.
+
+import {MAP_SIZES,mapColsFor} from "../core/config.js";
+import * as CORE_CONFIG from "../core/config.js";
+import * as CORE_ENDGAME from "../core/endgame.js";
 
 export const SHAPE_COLS=6,SHAPE_ROWS=4,CELL=100,SHAPE_W=SHAPE_COLS*CELL,SHAPE_H=SHAPE_ROWS*CELL;
 const SEED=20261120;
@@ -15,10 +20,11 @@ const r1=v=>Math.round(v*10)/10;
 // Ponto de corte de uma linha horizontal (y) com o polígono: menor e maior x.
 function spanAt(poly,y){let lo=Infinity,hi=-Infinity;for(let k=0;k<poly.length;k++){const [ax,ay]=poly[k],[bx,by]=poly[(k+1)%poly.length];if((ay<=y&&by>y)||(by<=y&&ay>y)){const x=ax+(y-ay)/(by-ay)*(bx-ax);lo=Math.min(lo,x);hi=Math.max(hi,x)}}return [lo,hi]}
 
-let cache=null;
-export function regionShapes(){
- if(cache)return cache;
- const rnd=lcg(SEED),j=a=>(rnd()*2-1)*a,COLS=SHAPE_COLS,ROWS=SHAPE_ROWS;
+// Uma grade por tamanho (cols×rows). A 6×4 usa a mesma sequência de sempre: o mapa Original não muda.
+const cache=new Map();
+export function regionShapes(cols=SHAPE_COLS,rows=SHAPE_ROWS){
+ const key=cols+"x"+rows;if(cache.has(key))return cache.get(key);
+ const rnd=lcg(SEED),j=a=>(rnd()*2-1)*a,COLS=cols,ROWS=rows,SHAPE_W=COLS*CELL,SHAPE_H=ROWS*CELL;
  // Vértices da grade deformada. Na costa ficam um pouco para dentro (mar em volta) e os 4 cantos arredondam.
  const V=[];
  for(let r=0;r<=ROWS;r++){V[r]=[];for(let c=0;c<=COLS;c++){
@@ -53,6 +59,28 @@ export function regionShapes(){
   const deco={x:box.x+box.w/2+(rnd()<.5?-1:1)*box.w*.3,y:cy+(rnd()<.5?-1:1)*box.h*.3,kind:rnd()<.5?"hill":"tree"},tone=Math.floor(rnd()*3);
   shapes.push({i,poly,box,safeL,safeR,deco,tone,d:"M"+poly.map(p=>p[0]+" "+p[1]).join("L")+"Z"});
  }
- cache={shapes,width:SHAPE_W,height:SHAPE_H};
- return cache;
+ const out={shapes,width:SHAPE_W,height:SHAPE_H,cols:COLS,rows:ROWS};cache.set(key,out);
+ return out;
+}
+// Colunas e linhas do mapa da partida: Original 6×4 (24), 2× 8×6 (48), 3× 10×7 (70), 4× 12×8 (96), conforme o motor
+// (state.mapSize / MAP_SIZES); sem esse campo, deduzidas do número de regiões.
+export function mapGrid(s){
+ const n=s?.owners?.length||SHAPE_COLS*SHAPE_ROWS,g=MAP_SIZES[s?.mapSize];
+ if(g&&g.cols*g.rows===n)return {cols:g.cols,rows:g.rows};
+ const cols=mapColsFor(n);return {cols,rows:Math.max(1,Math.ceil(n/cols))};
+}
+
+// Regras do motor que dependem do tamanho do mapa, lidas de forma defensiva: se o motor ainda não expõe a função,
+// vale o comportamento de antes (teto de 100 eras; recomendação de 3 rivais só nos mapas 3× e 4×).
+// A função pode receber o tamanho (1–4) ou uma configuração ({map:{mapSize}}).
+const coreFn=names=>{for(const m of [CORE_CONFIG,CORE_ENDGAME])for(const n of names)if(typeof m[n]==="function")return m[n];return null};
+const askCore=(names,size)=>{const f=coreFn(names);if(!f)return NaN;
+ for(const arg of [size,{map:{mapSize:size}}]){try{const v=Number(f(arg));if(Number.isFinite(v)&&v>0)return v}catch(_){}}return NaN};
+export function unlimitedCapFor(size=1){
+ const v=askCore(["unlimitedMaxEras","unlimitedMaxErasFor","unlimitedCapFor","unlimitedEraCap"],size);
+ return Number.isFinite(v)?Math.round(v):CORE_ENDGAME.UNLIMITED?.maxEras||100;
+}
+export function recommendedRivalsFor(size=1){
+ const v=askCore(["recommendedRivals","recommendedRivalsFor","recommendedAiCount","minRivalsFor"],size);
+ return Number.isFinite(v)?Math.round(v):size>=3?3:1;
 }

@@ -1,5 +1,5 @@
 // Economia: investimentos (Militar, Obras, Ciência), retornos por era, receita e estratégias automáticas.
-import {effectiveDelay,normMode} from "./config.js";
+import {effectiveDelay,normMode,mapAreaFactor} from "./config.js";
 import {countTerritories} from "./map.js";
 import {getCiv} from "./state.js";
 import {terrainEffectsOn,terrainIncomeFactor,terrainAreaBonus} from "./terrain.js";
@@ -72,8 +72,9 @@ export function aiIncomeEffectsOf(s){
 export function collectRevenue(s,civ,era,cfg){
  const territories=countTerritories(s,civ.id);
  // Custo administrativo: cada território além do primeiro reduz a receita de TODOS os territórios
+ // (nos mapas maiores, dividido pelo fator de área k = regiões/24, para a terra continuar a render até ~k×12 regiões)
  // (rendimentos decrescentes da expansão); a receita por território nunca fica negativa.
- const perTerritory=Math.max(0,cfg.economy.baseIncome*Math.pow(1+cfg.economy.incomeGrowth,Math.max(0,era-1))-(cfg.economy.adminCostPerTerritory||0)*Math.max(0,territories-1));
+ const perTerritory=Math.max(0,cfg.economy.baseIncome*Math.pow(1+cfg.economy.incomeGrowth,Math.max(0,era-1))-(cfg.economy.adminCostPerTerritory||0)/mapAreaFactor(s)*Math.max(0,territories-1));
  let normal=territories*perTerritory;
  // Terrenos com efeitos: o ouro de cada região segue o seu terreno (Campina +20%, Floresta −20%…).
  if(terrainEffectsOn(s)){normal=0;s.owners.forEach((o,i)=>{if(o===civ.id)normal+=perTerritory*terrainIncomeFactor(s,i)})}

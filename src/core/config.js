@@ -12,7 +12,7 @@ export const DEFAULTS={
  military:{pointsPerInvestment:0.12,delay:1,conquestCost:5,defenseOwned:8,defenseNeutral:3,winCost:1,lossCost:1,aiMilitary:45,aiInfrastructure:30,aiTechnology:25,aiEnabled:true,aiTarget:"neutralFirst",aiStyle:"adaptive",aiAggression:75,aiReserve:0,decayRate:0.2,defensePerInfraRevenue:0.25,defensePerTechProgress:0,techAttackMax:0.6,techAttackHalf:40,defenseSplitExponent:0.5,defensePerReserveForce:1,pillageInvestShare:3,pillageMaxShare:0.2,pillageRevenueEras:3,simultaneousOrders:true,battleTechWeight:0.5,maxOrdersPerEra:0,extraOrderCostStep:1},
  infrastructure:{delay:1,initialReturn:0.16,peakEra:4,growthRate:0.15,declineRate:0.15,duration:12,residual:0},
  technology:{progressPerInvestment:0.2,delay:2,benefitPerProgress:0.8,maxBenefit:0,accumulation:"total",revenueBonusPerProgress:0.0011,revenueBonusCap:1.25},
- map:{territories:24,initialPlayer:1,initialAI:1,aiCount:1,randomStart:false},
+ map:{territories:24,initialPlayer:1,initialAI:1,aiCount:1,randomStart:false,mapSize:1},
  simulation:{blockSize:100,seed:SEED},
  endgame:{enabled:true,maxEras:30,supremacyEnabled:true,territoryPct:0.7,supremacyRelative:0.7,supremacyEras:5,supremacyMinEraShare:0.5,supremacyMaxNeutralShare:0.25,leaderTieMargin:0.01,iceMinAbsolute:0.5,iceFloor:0.05,
   iceWMilitary:0.2,iceWInfrastructure:0.2,iceWTechnology:0.2,iceWFinance:0.2,iceWTerritory:0.2,financeTreasuryWeight:0.4,
@@ -20,6 +20,26 @@ export const DEFAULTS={
   scoreCapMilitary:1.5,scoreCapInfrastructure:1.5,scoreCapTechnology:1.5,scoreCapTreasury:1.5,scoreCapTerritory:1.5,scoreTieMargin:0.01,extendForSupremacy:false}
 };
 export const MAX_AI=5, MAP_COLS=6;
+/* ── Tamanho do mapa (config.map.mapSize = 1, 2, 3 ou 4; padrão 1) ──
+   Grades com cerca de 1×, 2×, 3× e 4× a área do mapa original (6×4), com a mesma vizinhança (até 4 vizinhas, sem
+   diagonais). 3× = 10×7 = 70 regiões (o retângulo mais próximo de 72 com a forma do original).
+   mapSize 1 = o jogo de sempre, byte a byte (o estado nem ganha o campo mapSize). Nos maiores, algumas regras escalam
+   com o fator de área k = regiões/24 (ver MAP_SCALE em mapScaleOf): custo administrativo ÷ k e territórios ÷ k na
+   pontuação e no ICE. A meta de domínio (70%) e a trava da supremacia já são proporções do mapa. */
+export const MAP_SIZES=Object.freeze({1:Object.freeze({cols:6,rows:4}),2:Object.freeze({cols:8,rows:6}),3:Object.freeze({cols:10,rows:7}),4:Object.freeze({cols:12,rows:8})});
+export const MAP_SIZE_KEYS=[1,2,3,4];
+export const MAX_TERRITORIES=MAP_SIZES[4].cols*MAP_SIZES[4].rows;
+export const normMapSize=v=>MAP_SIZE_KEYS.includes(Number(v))?Number(v):1;
+// Número de regiões de uma configuração: o do tamanho escolhido; no tamanho 1, map.territories (24; os laboratórios
+// podem usar 4–30).
+export function mapTerritories(cfg){const k=normMapSize(cfg?.map?.mapSize);return k>1?MAP_SIZES[k].cols*MAP_SIZES[k].rows:cfg.map.territories}
+// Colunas da grade de um mapa com n regiões (48/70/96 = tamanhos 2/3/4; qualquer outro número: 6, como sempre).
+export function mapColsFor(n){for(const k of [2,3,4]){const g=MAP_SIZES[k];if(n===g.cols*g.rows)return g.cols}return MAP_COLS}
+export const mapRowsFor=n=>Math.ceil(n/mapColsFor(n));
+// Tamanho do mapa de uma partida (saves antigos e o mapa de sempre não têm o campo: 1).
+export const mapSizeOf=s=>normMapSize(s?.mapSize);
+// Fator de área k = regiões/24 (1 no mapa de sempre): escala o custo administrativo e os territórios na pontuação/ICE.
+export function mapAreaFactor(s){return mapSizeOf(s)>1?(s.owners?.length||24)/24:1}
 // Rival 5 (Turquesa): azul-turquesa mais claro e mais azul que o verde-jade do jogador (antes #3fa3a8, parecido).
 export const CIV_COLORS=["#2c9d87","#bd5268","#c98a2e","#5b7fd6","#9a5cc4","#3cb8e0"];
 export const CHART_COLORS=["#f4bd50","#ff737b","#e88a43","#62a8ff","#b49aff","#72d0df"];
@@ -46,19 +66,20 @@ export function normalizeConfig(c){
  // Configurações antigas (v3) não têm parâmetros novos: completar com os padrões.
  for(const k of keys)for(const [key,val] of Object.entries(DEFAULTS[k]))if(x[k][key]===undefined)x[k][key]=clone(val);
  const limits={initialBudget:[0,1e9],baseIncome:[0,1e9],incomeGrowth:[-0.5,5],precision:[0,6],pointsPerInvestment:[0,100],delay:[1,1000],conquestCost:[0,1e9],defenseOwned:[0,1e9],defenseNeutral:[0,1e9],winCost:[0,1],lossCost:[0,1],aiMilitary:[0,100],aiInfrastructure:[0,100],aiTechnology:[0,100],initialReturn:[0,100],peakEra:[0,10000],growthRate:[0,10],declineRate:[0,1],duration:[1,1000000],residual:[0,100],progressPerInvestment:[0,100],benefitPerProgress:[0,100],maxBenefit:[0,1e12],territories:[4,30],initialPlayer:[1,10],initialAI:[1,10],aiCount:[1,MAX_AI],blockSize:[1,1000000],seed:[0,4294967295],fastModeReturnMultiplier:[0,1000],adminCostPerTerritory:[0,1e6],aiIncomeMultiplier:[0.1,5],aiIncomeMultiplier1v1:[-1,5],decayRate:[0,1],defensePerInfraRevenue:[0,100],techAttackMax:[0,10],techAttackHalf:[0,1e9],defenseSplitExponent:[0,1],battleTechWeight:[0,100],maxOrdersPerEra:[0,100],extraOrderCostStep:[0,100],pillageInvestShare:[0,100],pillageMaxShare:[0,1],defensePerReserveForce:[0,100],pillageRevenueEras:[0,100],defensePerTechProgress:[0,100],revenueBonusPerProgress:[0,1],revenueBonusCap:[0,100],
-  maxEras:[10,150],supremacyMinEraShare:[0,1],supremacyMaxNeutralShare:[0,1],territoryPct:[0.01,1],supremacyRelative:[0,1],supremacyEras:[1,100],leaderTieMargin:[0,0.5],iceMinAbsolute:[0,1e6],iceFloor:[1e-6,1],iceWMilitary:[0,1],iceWInfrastructure:[0,1],iceWTechnology:[0,1],iceWFinance:[0,1],iceWTerritory:[0,1],scoreWTerritory:[0,1],scoreCapTerritory:[0.01,100],financeTreasuryWeight:[0,1],scoreWMilitary:[0,1],scoreWInfrastructure:[0,1],scoreWTechnology:[0,1],scoreWTreasury:[0,1],scoreCapMilitary:[0.01,100],scoreCapInfrastructure:[0.01,100],scoreCapTechnology:[0.01,100],scoreCapTreasury:[0.01,100],scoreTieMargin:[0,0.5]};
+  mapSize:[1,4],maxEras:[10,150],supremacyMinEraShare:[0,1],supremacyMaxNeutralShare:[0,1],territoryPct:[0.01,1],supremacyRelative:[0,1],supremacyEras:[1,100],leaderTieMargin:[0,0.5],iceMinAbsolute:[0,1e6],iceFloor:[1e-6,1],iceWMilitary:[0,1],iceWInfrastructure:[0,1],iceWTechnology:[0,1],iceWFinance:[0,1],iceWTerritory:[0,1],scoreWTerritory:[0,1],scoreCapTerritory:[0.01,100],financeTreasuryWeight:[0,1],scoreWMilitary:[0,1],scoreWInfrastructure:[0,1],scoreWTechnology:[0,1],scoreWTreasury:[0,1],scoreCapMilitary:[0.01,100],scoreCapInfrastructure:[0.01,100],scoreCapTechnology:[0.01,100],scoreCapTreasury:[0.01,100],scoreTieMargin:[0,0.5]};
  for(const [group,obj] of Object.entries(x))for(const [k,v] of Object.entries(obj)){if(typeof DEFAULTS[group][k]==="number"){const [min,max]=limits[k]||[0,1e12];safeNum(v,min,max)}}
  if(x.economy.precision>6)throw Error("Precisão máxima: 6");
  if(!Number.isInteger(x.map.aiCount))throw Error("Número de IAs deve ser inteiro.");
  x.map.randomStart=x.map.randomStart===true;
+ if(!MAP_SIZE_KEYS.includes(x.map.mapSize))throw Error("Tamanho do mapa deve ser 1, 2, 3 ou 4.");
  const eg=x.endgame;
  if(!Number.isInteger(eg.maxEras)||!Number.isInteger(eg.supremacyEras))throw Error("Limite de eras e eras consecutivas devem ser inteiros.");
  for(const [keys,label] of [[ICE_WEIGHT_KEYS,"Os pesos do ICE"],[SCORE_WEIGHT_KEYS,"Os pesos da pontuação final"]])if(Math.abs(keys.reduce((a,k)=>a+eg[k],0)-1)>1e-6)throw Error(label+" devem somar 100% (1,00).");
  if(!["log","linear"].includes(eg.scoreNormalization))throw Error("Normalização da pontuação deve ser log ou linear.");
  if(eg.iceMinByEra!==undefined&&eg.iceMinByEra!==null&&(!Array.isArray(eg.iceMinByEra)||eg.iceMinByEra.some(v=>!Number.isFinite(Number(v))||Number(v)<0)))throw Error("ICE mínimo por era deve ser uma lista de números ≥ 0.");
  if(x.military.aiMilitary+x.military.aiInfrastructure+x.military.aiTechnology<=0)throw Error("A soma dos percentuais da IA deve ser positiva");
- if(x.map.initialPlayer+x.map.initialAI>x.map.territories)throw Error("Territórios iniciais excedem o mapa");
- if(1+x.map.aiCount>x.map.territories)throw Error("Há mais civilizações do que territórios no mapa.");
+ if(x.map.initialPlayer+x.map.initialAI>mapTerritories(x))throw Error("Territórios iniciais excedem o mapa");
+ if(1+x.map.aiCount>mapTerritories(x))throw Error("Há mais civilizações do que territórios no mapa.");
  if(x.infrastructure.residual>x.infrastructure.initialReturn*(1+x.infrastructure.growthRate)**Math.min(x.infrastructure.peakEra,20)+1e-8)throw Error("Retorno residual incompatível com o retorno inicial; reduza o residual.");
  if(references)x.references=references;
  return x;

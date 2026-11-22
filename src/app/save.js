@@ -2,7 +2,7 @@
 // Usa o armazenamento assíncrono (src/platform/storage.js). Avisa a interface pelo gancho saveStatus.
 import {runHook} from "./hooks.js";
 import {gameMode,configApplied,state,opponentChoices,currentDifficulty,aiConfigBase} from "./session.js";
-import {SUPPORTED_VERSIONS,MAX_AI,normalizeConfig,DIFFICULTIES,validAiBase,pickAiDifficulty,DEFAULTS} from "../core/config.js";
+import {SUPPORTED_VERSIONS,MAX_AI,normalizeConfig,DIFFICULTIES,validAiBase,pickAiDifficulty,DEFAULTS,MAP_SIZES} from "../core/config.js";
 import {storage} from "../platform/storage.js";
 
 /* ── Guardar a partida no aparelho ──
@@ -48,7 +48,11 @@ export function validateSavedState(st){
   for(const k of ["invested","attacks","lastRevenue"])if(c[k]!==undefined&&!obj(c[k]))return "dados da civilização inválidos";
  }
  if(st.civs[0].id!=="player")return "o jogador não é a primeira civilização";
- if(!arr(st.owners)||st.owners.length<4||st.owners.length>30)return "mapa inválido";
+ // Mapa: 4–30 regiões (o de sempre tem 24) ou um dos tamanhos maiores (state.mapSize 2–4 com 48/70/96 regiões).
+ // Saves sem mapSize são do mapa de sempre (tamanho 1).
+ if(!arr(st.owners))return "mapa inválido";
+ if(st.mapSize!==undefined){const g=MAP_SIZES[st.mapSize];if(!g||st.mapSize===1||st.owners.length!==g.cols*g.rows)return "tamanho do mapa inválido"}
+ else if(st.owners.length<4||st.owners.length>30)return "mapa inválido";
  if(st.owners.some(o=>o!=="neutral"&&!ids.has(o)))return "território com dono desconhecido";
  if(!isInt(st.era)||st.era<0||!isInt(st.maxEras)||st.maxEras<1)return "era inválida";
  for(const k of ["investments","history","timeline","log"])if(!arr(st[k]))return "lista "+k+" ausente";

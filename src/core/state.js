@@ -1,5 +1,5 @@
 // Estado de uma partida: civilizações, criação do estado inicial e acesso às civilizações.
-import {CIV_COLORS,CHART_COLORS,MAX_AI,VERSION,normMode} from "./config.js";
+import {CIV_COLORS,CHART_COLORS,MAX_AI,VERSION,normMode,mapTerritories,normMapSize} from "./config.js";
 import {civIds,startPositions,startSeedFor} from "./map.js";
 import {rand} from "./rng.js";
 import {clone,clamp} from "./util.js";
@@ -19,14 +19,17 @@ export function newCiv(id,index,c,aiCount,profile=null,controller=null){
 // opts.endRules: true = aplica as condições de fim de partida (jogo normal e Modo B);
 //   false = duração fixa (Modo A): tudo é calculado e registado, mas nada elimina nem encerra.
 export function newState(cfg,opts={}){
- const c=clone(cfg), n=c.map.territories, aiCount=clamp(Number(c.map.aiCount??1)|0,1,MAX_AI), owners=Array(n).fill("neutral");
+ const c=clone(cfg), n=mapTerritories(c), aiCount=clamp(Number(c.map.aiCount??1)|0,1,MAX_AI), owners=Array(n).fill("neutral");
  const ids=civIds(aiCount),startSeed=c.map.randomStart?(Number(opts.startSeed)>>>0||0):null,pos=startPositions(n,ids.length,c.map.randomStart?rand(startSeedFor(c,startSeed)):null);
  ids.forEach((id,k)=>owners[pos[k]]=id);
  const civs=ids.map((id,k)=>newCiv(id,k,c,aiCount,opts.profiles?.[k]??null,opts.allAI?"ai":null));
- return {formatVersion:VERSION,mode:normMode(opts.mode),era:0,owners,civs,investments:[],orders:[],nextInvestmentId:1,history:[],timeline:[],log:[],
+ const st={formatVersion:VERSION,mode:normMode(opts.mode),era:0,owners,civs,investments:[],orders:[],nextInvestmentId:1,history:[],timeline:[],log:[],
   attacks:{playerWins:0,playerLosses:0,aiWins:0,aiLosses:0,neutralConquests:0,enemyConquests:0},
   rngSeed:c.simulation.seed,startSeed,initialBudget:c.economy.initialBudget,lastEraProcessed:0,stopped:false,
   endRules:!!opts.endRules,maxEras:c.endgame?.maxEras??30,supremacy:{leader:null,streak:0,status:"none"},result:null};
+ // Mapas maiores (config.map.mapSize 2–4): o estado guarda o tamanho; no mapa de sempre o campo nem existe.
+ const size=normMapSize(c.map.mapSize);if(size>1)st.mapSize=size;
+ return st;
 }
 export const getCiv=(s,id)=>s.civs.find(c=>c.id===id);
 export const P=s=>s.civs[0];            // jogador
