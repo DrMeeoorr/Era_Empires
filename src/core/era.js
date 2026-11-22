@@ -88,6 +88,8 @@ export function finishEra(s,cfg,opts={}){
   dims:{military:c.military,infrastructure:rev.infra,technology:c.techProgress,treasury:c.treasury,revenue:revWindow.reduce((a,b)=>a+b,0)/revWindow.length,territories:areaK>1?terr/areaK:terr}}})};
  s.pending=null;
  // Fim da era: avaliação central das condições de encerramento (usa o estado definitivo da era).
+ // Maravilha da Humanidade: o ouro em Obras desta era só conta se Obras foi a maior fatia do investimento da era.
+ if(s.wonder)for(const civ of s.civs){const e=civ.wonderEra;if(e&&e.era===era&&e.infrastructure>Math.max(e.military,e.technology))civ.wonderInvested=(civ.wonderInvested||0)+e.infrastructure;delete civ.wonderEra}
  evaluateEndOfEra(s,cfg,era,entry,s.endRules);
  entry.civs.forEach((r,k)=>{r.active=s.civs[k].active});
  s.timeline.push(entry);

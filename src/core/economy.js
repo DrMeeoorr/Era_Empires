@@ -1,5 +1,5 @@
 // Economia: investimentos (Militar, Obras, Ciência), retornos por era, receita e estratégias automáticas.
-import {effectiveDelay,normMode,mapAreaFactor} from "./config.js";
+import {effectiveDelay,normMode,mapAreaFactor,mapSizeOf} from "./config.js";
 import {countTerritories} from "./map.js";
 import {getCiv} from "./state.js";
 import {terrainEffectsOn,terrainIncomeFactor,terrainAreaBonus} from "./terrain.js";
@@ -43,6 +43,8 @@ export function invest(s,type,amount,cfg,owner="player"){
  const civ=getCiv(s,owner);if(!civ)throw Error("Civilização inexistente: "+owner);
  amount=Math.max(0,amount);if(amount>civ.treasury*(1+1e-9)+1e-8)throw Error("Investimento superior ao orçamento.");amount=Math.min(amount,civ.treasury);
  if(amount===0)return null;civ.treasury=Math.max(0,civ.treasury-amount);civ.invested[type]+=amount;
+ // Maravilha da Humanidade (só com state.wonder): soma o investimento da era por área (ver wonderEraClose em era.js).
+ if(s.wonder){const e=civ.wonderEra&&civ.wonderEra.era===s.era?civ.wonderEra:(civ.wonderEra={era:s.era,military:0,infrastructure:0,technology:0});e[type]+=amount}
  const inv=makeInvestment(type,amount,s.era,cfg,owner,s.mode);
  // Terrenos com efeitos: cada região de Colinas soma +10% aos pontos de Força deste investimento.
  if(type==="military"&&terrainEffectsOn(s))inv.points*=1+terrainAreaBonus(s,owner,"forca");
@@ -91,7 +93,9 @@ export function collectRevenue(s,civ,era,cfg){
  // a toda a receita da era. Fica contabilizado como receita de tecnologia.
  let activeProgress=0;for(const inv of s.investments)if(inv.owner===civ.id&&inv.type==="technology"&&era>=inv.origin+effectiveDelay("technology",inv.params.delay,inv.mode))activeProgress+=inv.progress;
  // Teto do bônus: sem limite, receita → investimento → progresso → receita cresce de forma explosiva.
- const bonusRate=Math.min(cfg.technology.revenueBonusCap??1,(cfg.technology.revenueBonusPerProgress||0)*activeProgress);
+ // Mapas maiores (2–4): o teto sobe revenueBonusCapPerSize por tamanho acima do Original (padrão 0: desligado; medido com 0,25 e o Científico ficava forte demais com 3 rivais).
+ const capSize=mapSizeOf(s)>1?(cfg.technology.revenueBonusCapPerSize||0)*(mapSizeOf(s)-1):0;
+ const bonusRate=Math.min((cfg.technology.revenueBonusCap??1)+capSize,(cfg.technology.revenueBonusPerProgress||0)*activeProgress);
  const techBonus=bonusRate*(normal+infra+tech);tech+=techBonus;
  // Dificuldade: multiplicador de receita das IAs. Só em partidas com jogador humano, para não
  // distorcer os laboratórios (onde todas as civilizações são IA e o lugar 0 também).

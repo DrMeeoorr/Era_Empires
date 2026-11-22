@@ -7,6 +7,7 @@ import {territoryDefense,attackNeed,orderAttack,attackTerritory,orderCostMultipl
 import {terrainEffectsOn,ruleTerrain,TERRAIN_EFFECTS} from "../core/terrain.js";
 import {rand} from "../core/rng.js";
 import {clamp} from "../core/util.js";
+import {greatDiscoveryOf,discoveryPoints,wonderOf,wonderPoints} from "../core/endgame.js";
 
 // Terrenos com efeitos: a IA mede cada alvo pelo custo dividido pelo valor do terreno = ouro que ele rende
 // (Campina/Montanha/Deserto 1,2; os outros 0,8) + a afinidade do seu estilo (Construtor gosta de Obras,
@@ -30,6 +31,29 @@ export const DEFENSE_REFLEX_POINTS=15;
 export function defenseReflexOn(s,civ,targetsNow=eligibleTargets(s,civ.id)){
  return s.civs[0]?.controller==="human"&&civ.id!=="player"&&targetsNow.some(t=>t.o==="player")&&(s.civs[0].military||0)>civ.military;
 }
+/* Grande Descoberta (22/11/2026; só com state.greatDiscovery): quando um rival passa de discoveryReact (50%) da meta e
+   tem mais pontos de Ciência que esta IA, ela põe +discoveryReactMilitary pontos no Militar (tirados de Obras e Ciência na
+   proporção) e ataca primeiro esse rival quando faz fronteira com ele (mesmo nas eras em que não atacaria).
+   Uma IA perto da meta mas abaixo do mínimo de regiões também reforça o Militar, para chegar ao mínimo. */
+// Maravilha da Humanidade: a mesma reação, com os pontos de Maravilha (mesmos limiares da Grande Descoberta).
+export function wonderThreat(s,civ,cfg){
+ const g=wonderOf(s);if(!g)return null;const react=cfg.endgame?.discoveryReact??0.5;
+ const others=s.civs.filter(c=>c.active&&c.id!==civ.id);if(!others.length)return null;
+ const pts=c=>wonderPoints(s,c),top=others.reduce((a,b)=>pts(b)>pts(a)?b:a);
+ return pts(top)>=react*g.goal&&pts(top)>pts(civ)?top.id:null;
+}
+export function wonderNeedsRegions(s,civ,cfg){const g=wonderOf(s);if(!g)return false;
+ return wonderPoints(s,civ)>=(cfg.endgame?.discoveryReact??0.5)*g.goal&&countTerritories(s,civ.id)<g.minRegions}
+export function discoveryThreat(s,civ,cfg){
+ const g=greatDiscoveryOf(s);if(!g)return null;const react=cfg.endgame?.discoveryReact??0.5;
+ const others=s.civs.filter(c=>c.active&&c.id!==civ.id);if(!others.length)return null;
+ const pts=c=>discoveryPoints(s,c),top=others.reduce((a,b)=>pts(b)>pts(a)?b:a);
+ return pts(top)>=react*g.goal&&pts(top)>pts(civ)?top.id:null;
+}
+export function discoveryNeedsRegions(s,civ,cfg){const g=greatDiscoveryOf(s);if(!g)return false;
+ return discoveryPoints(s,civ)>=(cfg.endgame?.discoveryReact??0.5)*g.goal&&countTerritories(s,civ.id)<g.minRegions}
+export function shiftToMilitary(weights,b){const tot=weights[1]+weights[2]||1;
+ return [weights[0]+b,Math.max(0,weights[1]-b*weights[1]/tot),Math.max(0,weights[2]-b*weights[2]/tot)]}
 export function applyDefenseReflex(weights){
  const b=DEFENSE_REFLEX_POINTS,tot=weights[1]+weights[2]||1;
  return [weights[0]+b,Math.max(0,weights[1]-b*weights[1]/tot),Math.max(0,weights[2]-b*weights[2]/tot)];
@@ -76,6 +100,10 @@ export function aiDecide(s,civ,cfg,era){
  // exército do jogador é maior que o dele, ganha +15 pontos de Militar, tirados de Obras e Ciência na proporção
  // de cada uma (nunca abaixo de 0). Não dispara em partidas só de IAs.
  if(defenseReflexOn(s,civ,targetsNow))weights=applyDefenseReflex(weights);
+ // Corrida mais perigosa primeiro: o líder da Grande Descoberta; senão o da Maravilha.
+ const sciLeader=discoveryThreat(s,civ,cfg)||wonderThreat(s,civ,cfg),sciTarget=!!sciLeader&&targetsNow.some(t=>t.o===sciLeader);
+ // (Só IAs: um lugar humano decidido por esta função, como nas simulações de estratégias, segue a sua própria divisão.)
+ if(civ.controller!=="human"&&(sciLeader||discoveryNeedsRegions(s,civ,cfg)||wonderNeedsRegions(s,civ,cfg)))weights=shiftToMilitary(weights,cfg.endgame?.discoveryReactMilitary??20);
  const weightSum=weights.reduce((a,b)=>a+Math.max(0,Number(b)||0),0)||1;
  const reservePct=clamp(Number(cfg.military.aiReserve||0),0,90)/100;
  const treasuryBefore=civ.treasury;
@@ -90,12 +118,12 @@ export function aiDecide(s,civ,cfg,era){
  const roll=rand((s.rngSeed||cfg.simulation.seed||SEED)+era*7919+37+(civ.index-1)*104729)();
  // Tutorial: a IA pode ter de evitar o jogador ou territórios reservados.
  const av=s.aiAvoid,targets=eligibleTargets(s,civ.id).filter(t=>!(av&&((av.player&&t.o==="player")||(av.idx||[]).includes(t.i))));let action;
- if(targets.length&&roll<aggression/100){
+ if(targets.length&&(roll<aggression/100||sciTarget)){
   const fx=terrainEffectsOn(s);
   // Rodada de balanceamento de 20/11/2026: no Só visual, com 2+ rivais ainda em jogo, a coligação contra o líder fazia
   // os rivais brigarem entre si e com regiões bem defendidas (o Difícil com 3 rivais ficava tão fácil como o Médio).
   // Aí o Difícil/Lendário vão primeiro às regiões livres (atacando sempre); no 1×1 e com efeitos, a coligação continua.
-  const priority=leaderTargetMode(s,cfg.military.aiTarget||"neutralFirst");
+  const priority=sciTarget&&targets.some(t=>t.o===sciLeader)?"discovery":leaderTargetMode(s,cfg.military.aiTarget||"neutralFirst");
   // Coligação contra o líder: alvos pagáveis (custo cheio; Científico com desconto) primeiro; depois o líder em territórios
   // (exceto a própria IA; em empate, o jogador), os neutros e, por último, as outras IAs; o mais barato em cada grupo.
   let leaderId=null,payable=null,leaderClass=null;
@@ -106,6 +134,7 @@ export function aiDecide(s,civ,cfg,era){
   const score=fx?new Map(targets.map(t=>[t.i,aiTargetScore(s,t.i,civ,cfg,style)])):null,tie=(a,b)=>fx?score.get(a.i)-score.get(b.i)||a.i-b.i:a.i-b.i;
   targets.sort((a,b)=>{
    if(priority==="leader")return (payable(a)?0:1)-(payable(b)?0:1)||leaderClass(a)-leaderClass(b)||(fx?tie(a,b):territoryDefense(s,a.i,cfg)-territoryDefense(s,b.i,cfg)||a.i-b.i);
+   if(priority==="discovery")return (a.o===sciLeader?0:1)-(b.o===sciLeader?0:1)||(fx?tie(a,b):territoryDefense(s,a.i,cfg)-territoryDefense(s,b.i,cfg)||a.i-b.i);
    if(priority==="playerFirst")return (a.o==="player"?0:1)-(b.o==="player"?0:1)||a.i-b.i;
    // Estratega: o alvo mais barato (menor defesa); em empate prefere o jogador humano.
    if(priority==="cheapest"&&fx)return tie(a,b);

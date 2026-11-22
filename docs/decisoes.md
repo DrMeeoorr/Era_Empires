@@ -259,3 +259,76 @@ antigos = Original; o tutorial usa sempre o Original. O número de rivais contin
   38/51/26%, 46 eras, ~26 min. Nenhuma partida travou nem chegou ao teto.
 - **Pendências**: o Construtor fica fraco com 3–5 rivais nos mapas maiores (5–18%) e o Científico no 4× com 5 rivais
   (0–2%); partidas 4× passam de 20 minutos.
+
+## 22/11/2026 — Ciência no fim de jogo: saque reduzido + Grande Descoberta (game-designer) — opções 1 e 2 aprovadas; números para revisão
+Problema medido: nos mapas maiores o Científico vencia 0–14% com 3–5 rivais. Por volta da era 40 a Ciência já é a
+maior receita de **todos** os estilos (o bônus de receita bate no teto por volta da era 25 e o desconto de ataque
+por volta da era 15); o fim decide-se por Força, e cada região tomada levava 20% de toda a Ciência.
+Só nos mapas 2×–4× (o Original não muda: impressões **39190b06** / **5c97e2c2**):
+1. **Saque de Ciência ÷ k^0,25** (`military.techPillageMapExponent` 0,25; ÷1,19 no 2×, ÷1,41 no 4×). Medidos e
+   recusados: ÷k e ÷√k (Científico 40–55% com 3 rivais); teto do bônus de receita +0,25 por tamanho
+   (`technology.revenueBonusCapPerSize`, deixado em 0: com ele o Científico ia a 51% no 4× com 3 rivais).
+2. **Grande Descoberta**: vence quem tiver **pontos de Ciência ≥ 6000 × k** e **≥ ⌈5 × k⌉ regiões** (2×: 12.000 / 10;
+   3×: 17.500 / 15; 4×: 24.000 / 20). Pontos = ouro investido em Ciência pelo próprio império × 0,2: o progresso
+   saqueado **não conta** (contando, quem conquistava ganhava a corrida — Agressivo/Militar venciam 55–80% das
+   Grandes Descobertas). **Reação das IAs**: rival acima de 50% da meta com mais pontos → +20 Militar e ataque a ele
+   primeiro; IA perto da meta com poucas regiões → +20 Militar. **No Original fica desligada** (opção nos
+   laboratórios): ligada com os mesmos números, o Científico ia a 38/43/42% (1/3/5 rivais) e a faixa entre estilos
+   piorava com 3–5 rivais (26 → 34, 23 → 39); precisaria de calibração própria.
+
+Partidas só de IAs, Médio, Sem limite (Científico % · faixa entre estilos · duração média / mais longa · finais por
+Grande Descoberta):
+
+| Mapa, rivais (justo) | Antes | Depois |
+| --- | --- | --- |
+| 2×, 1 (50) | 44 · 54 · 33 / 53 | 60 · 48 · 33 / 52 · 8% |
+| 3×, 1 (50) | 38 · 44 · 34 / 52 | 56 · 40 · 34 / 49 · 9% |
+| 4×, 1 (50) | 48 · 32 · 36 / 57 | 64 · 46 · 35 / 48 · 13% |
+| 2×, 3 (25) | 14 · 25 · 41 / 71 | 31 · 26 · 37 / 52 · 41% |
+| 3×, 3 (25) | 28 · 25 · 42 / 79 | 40 · 30 · 39 / 51 · 51% |
+| 4×, 3 (25) | 14 · 30 · 45 / 67 | 40 · 38 · 41 / 60 · 61% |
+| 2×, 5 (17) | 10 · 18 · 41 / 69 | 24 · 15 · 37 / 50 · 44% |
+| 3×, 5 (17) | 5 · 23 · 44 / 85 | 15 · 7 · 39 / 51 · 48% |
+| 4×, 5 (17) | 0 · 33 · 46 / 83 | 17 · 11 · 41 / 56 · 47% |
+
+Jogador × IAs (melhor divisão fixa · melhor plano fixo com Ciência ≥ 40% · ganho de quem reage): 2× 2 rivais
+31 · 28 · +33 → 29 · 24 · +22; 3× 2 rivais 38 · 25 · +27 → 39 · 18 · +19; 3× 3 rivais 25 · 9 · +35 → 25 · 15 · +25;
+4× 3 rivais 38 · 27 · +14 → 36 · 24 · +6. Um plano de Ciência **que reforça a Força quando faltam regiões** chega a
+46–59% nesses cenários (o melhor plano; a receita a vigiar).
+- **Fora da meta (para o usuário decidir)**: Científico um pouco acima no 1×1 do 4× (64%, meta 35–60) e com 3 rivais no 3×/4× (40%,
+  meta 15–35); faixa pior no 4× com 1 e 3 rivais (32 → 46, 30 → 38); a Grande Descoberta decide cerca de metade das
+  partidas com 3–5 rivais; o Construtor continua fraco (6–22%).
+
+## 22/11/2026 — Maravilha da Humanidade (vitória por Obras) e Força militar mantida (game-designer) — aprovado
+Problema: o Construtor vencia 8–14% com 3–5 rivais nos mapas maiores (14–28% no 1×1): as Obras rendem durante 12 eras
+e acabam, ele tem a menor Força e, quando vencia, era quase sempre pela Grande Descoberta.
+- **Maravilha da Humanidade** (só mapas 2×–4×; no Original desligada, opção `endgame.wonder`): vence quem tiver
+  **pontos de Maravilha ≥ 3000 × k** e **≥ ⌈4 × k⌉ regiões** (2×: 6.000 / 8; 3×: 8.750 / 12; 4×: 12.000 / 16).
+  Pontos = ouro investido em Obras **só nas eras em que Obras foi a maior fatia** do investimento do império × 0,2 (sem
+  essa condição o Equilibrado, com economia maior, acumulava tanto como o Construtor); o saque não conta. Reação das
+  IAs igual à da Grande Descoberta (esta tem prioridade quando as duas corridas estão ativas).
+- Partidas só de IAs, Médio, Sem limite (média de 2 lotes de sementes; Construtor % / Científico % · menor entre
+  Militar e Agressivo · faixa · finais domínio/Grande Descoberta/Maravilha):
+
+  | Mapa, rivais | Antes | Depois |
+  | --- | --- | --- |
+  | 2×, 1 | 14 / 63 · 48 · 52 · 89/10/– | 26 / 61 · 46 · 37 · 82/8/8 |
+  | 3×, 1 | 28 / 61 · 40 · 41 · 88/11/– | 35 / 59 · 40 · 33 · 78/8/12 |
+  | 4×, 1 | 22 / 65 · 39 · 45 · 82/16/– | 34 / 58 · 38 · 32 · 76/10/11 |
+  | 2×, 3 | 10 / 32 · 20 · 26 · 60/38/– | 22 / 26 · 20 · 18 · 55/26/14 |
+  | 3×, 3 | 10 / 44 · 16 · 36 · 48/50/– | 18 / 36 · 15 · 24 · 49/35/12 |
+  | 4×, 3 | 8 / 39 · 20 · 32 · 44/54/– | 14 / 32 · 21 · 21 · 42/44/9 |
+  | 2×, 5 | 14 / 23 · 14 · 14 · 57/42/– | 18 / 22 · 12 · 16 · 50/28/18 |
+  | 3×, 5 | 13 / 17 · 16 · 8 · 50/47/– | 21 / 15 · 12 · 10 · 48/28/21 |
+  | 4×, 5 | 12 / 19 · 15 · 13 · 52/48/– | 22 / 15 · 14 · 14 · 50/26/22 |
+
+  A partida mais longa continua a acabar perto da era 60 (teto 125–175). Jogador × IAs, melhor plano fixo com Obras
+  ≥ 50% (distância ao melhor): 2× 2 rivais 29% (0) → 51% (é o melhor plano); 3× 3 rivais 17% (−8) → 19% (−2); 4× 1
+  rival 51% (−20) → 64% (−6); 4× 3 rivais 19% (−18) → 21% (−14).
+- **Força militar mantida** (não aprovado reduzir): com a Maravilha, desgaste 0,2 → 0,3, Força por investimento ×0,8
+  ou custo de conquista +0,2 por era levavam o Científico a 64–96% no 1×1 e o Militar/Agressivo a 3–9% com 3–5 rivais
+  (faixa até 74); Força ×0,9 com a meta da Grande Descoberta 8000 também deixava o Científico em 70–71% no 1×1.
+- Original com a Maravilha ligada (sem a Grande Descoberta): quase nada muda (Construtor 25/16/12 → 24/18/12% com
+  1/3/5 rivais) — fica desligada.
+- **Pendências**: Construtor ainda abaixo de 35% no 1×1 do 2× (26%) e 14% no 4× com 3 rivais; domínio decide 76–82%
+  dos 1×1; no 2× com 2 rivais o plano de Obras virou a melhor receita do jogador (reagir −9).

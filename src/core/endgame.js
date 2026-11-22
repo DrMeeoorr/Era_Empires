@@ -13,7 +13,7 @@ import {clamp,clone} from "./util.js";
    3) se ninguém venceu e a era é a última: pontuação final por recursos.
    Uma civilização com vários motivos = uma vitória com todos os motivos;
    civilizações diferentes ao mesmo tempo = empate. */
-export const END_REASON_NAMES={territorial:"maioria territorial",elimination:"eliminação dos adversários",supremacy:"supremacia",score:"pontuação final por recursos",allEliminated:"todas as civilizações eliminadas"};
+export const END_REASON_NAMES={wonder:"Maravilha da Humanidade",discovery:"Grande Descoberta",territorial:"maioria territorial",elimination:"eliminação dos adversários",supremacy:"supremacia",score:"pontuação final por recursos",allEliminated:"todas as civilizações eliminadas"};
 export const SCORE_DIMS=[["military","scoreWMilitary","scoreCapMilitary"],["infrastructure","scoreWInfrastructure","scoreCapInfrastructure"],["technology","scoreWTechnology","scoreCapTechnology"],["treasury","scoreWTreasury","scoreCapTreasury"],["territories","scoreWTerritory","scoreCapTerritory"]];
 export const refsFor=(cfg,set)=>cfg.references?.[set]||DEFAULT_REFERENCES[set];
 // 3.1 — mínimo de territórios: ⌈p × T⌉ (tolerância numérica para p×T inteiro, ex.: 0,8×25).
@@ -30,6 +30,27 @@ export function unlimitedMaxEras(mapSize=1){const k=[1,2,3,4].includes(Number(ma
 export const RECOMMENDED_RIVALS=Object.freeze({1:1,2:2,3:2,4:3});
 export function recommendedRivals(mapSize=1){return RECOMMENDED_RIVALS[Number(mapSize)]??1}
 // Primeira era em que a supremacia pode contar.
+/* ── Grande Descoberta (vitória por Ciência) ──
+   Ativa nos mapas 2×–4× (e no Original só com endgame.greatDiscovery ligado): no fim de uma era vence quem tiver
+   progresso de Ciência ≥ meta e pelo menos o mínimo de regiões. Conta junto com as outras vitórias da mesma era. */
+export function greatDiscoveryOf(s){const g=s?.greatDiscovery;return g&&Number.isFinite(g.goal)&&g.goal>0&&Number.isInteger(g.minRegions)&&g.minRegions>0&&Number.isFinite(g.perGold)&&g.perGold>0?g:null}
+// Pontos de Ciência de um império para a Grande Descoberta: ouro que ELE investiu em Ciência × fator (sem o saque).
+export function discoveryPoints(s,civ){const g=greatDiscoveryOf(s);return g&&civ?Math.max(0,(civ.invested?.technology||0)*g.perGold):0}
+export const greatDiscoveryActive=s=>!!greatDiscoveryOf(s);
+export const greatDiscoveryGoal=s=>greatDiscoveryOf(s)?.goal??null;
+export const greatDiscoveryMinRegions=s=>greatDiscoveryOf(s)?.minRegions??null;
+// Progresso de cada império ativo: {id, progress, goal, share (0–1, limitado a 1), regions, minRegions, regionsOk, reached}.
+export function greatDiscoveryProgress(s){const g=greatDiscoveryOf(s);if(!g)return [];
+ return s.civs.filter(c=>c.active).map(c=>{const p=discoveryPoints(s,c),r=countTerritories(s,c.id);return {id:c.id,progress:p,goal:g.goal,share:Math.min(1,p/g.goal),regions:r,minRegions:g.minRegions,regionsOk:r>=g.minRegions,reached:p>=g.goal&&r>=g.minRegions}})}
+/* ── Maravilha da Humanidade (vitória por Obras) ── mesmo padrão da Grande Descoberta, com o ouro investido em Obras. */
+export function wonderOf(s){const g=s?.wonder;return g&&Number.isFinite(g.goal)&&g.goal>0&&Number.isInteger(g.minRegions)&&g.minRegions>0&&Number.isFinite(g.perGold)&&g.perGold>0?g:null}
+export const wonderActive=s=>!!wonderOf(s);
+export const wonderGoal=s=>wonderOf(s)?.goal??null;
+export const wonderMinRegions=s=>wonderOf(s)?.minRegions??null;
+// Pontos de Maravilha: ouro que o império investiu em Obras nas eras em que Obras foi a maior fatia do seu investimento × fator.
+export function wonderPoints(s,civ){const g=wonderOf(s);return g&&civ?Math.max(0,(civ.wonderInvested||0)*g.perGold):0}
+export function wonderProgress(s){const g=wonderOf(s);if(!g)return [];
+ return s.civs.filter(c=>c.active).map(c=>{const p=wonderPoints(s,c),r=countTerritories(s,c.id);return {id:c.id,progress:p,goal:g.goal,share:Math.min(1,p/g.goal),regions:r,minRegions:g.minRegions,regionsOk:r>=g.minRegions,reached:p>=g.goal&&r>=g.minRegions}})}
 export const unlimitedMaxErasOf=s=>unlimitedMaxEras(s?.mapSize);
 export function supremacyMinEra(s,cfg){return s?.unlimited?UNLIMITED.supremacyFromEra:Math.ceil((cfg.endgame.supremacyMinEraShare||0)*s.maxEras)}
 /* Domínio com escolha (21/11/2026): só nas partidas do jogador humano (state.dominion, criado por app/session.js;
@@ -122,6 +143,9 @@ export function evaluateEndOfEra(s,cfg,era,entry,apply=true){
   // Modo Conquista: supremacia desligada; só a maioria territorial, a eliminação ou a pontuação na última era decidem.
   out.supremacy=g.supremacyEnabled===false?{leader:null,streak:0,status:"off",achieved:false}:(era<minEra||neutralShare>(g.supremacyMaxNeutralShare??1)+1e-12)?{leader:null,streak:0,status:"notYet",achieved:false,minEra,neutralShare}:evaluateSupremacy(s.supremacy,ices,era,cfg);
   if(out.supremacy.achieved)add(out.supremacy.leader,"supremacy");
+  // 2e) Grande Descoberta (só com state.greatDiscovery): pontos de Ciência próprios no fim desta era.
+  if(wonderOf(s))for(const c of active){if(wonderPoints(s,c)>=s.wonder.goal&&countTerritories(s,c.id)>=s.wonder.minRegions)add(c.id,"wonder")}
+  if(greatDiscoveryOf(s))for(const c of active){const gp=discoveryPoints(s,c);if(gp>=s.greatDiscovery.goal&&countTerritories(s,c.id)>=s.greatDiscovery.minRegions)add(c.id,"discovery")}
   if(apply){
    s.supremacy={leader:out.supremacy.leader,streak:out.supremacy.streak,status:out.supremacy.status};
    // Domínio do jogador antes da última era: se outra condição decide a era, conta junto (como antes); senão pergunta

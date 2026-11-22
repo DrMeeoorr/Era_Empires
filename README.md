@@ -160,6 +160,40 @@ o jogo de sempre, byte a byte** (impressões digitais **39190b06** / **5c97e2c2*
   Equilibrado vencia 86–90% (faixa entre estilos 64–74 pontos; Original 46); agora 46–66% (faixa 32–54). Com 4–6
   impérios, a diferença entre a melhor e a pior posição inicial caiu de 26–45 para 10–23 pontos.
 
+## Grande Descoberta e Ciência nos mapas maiores (22/11/2026)
+
+- **Grande Descoberta** (nova vitória por Ciência): **sempre ativa nos mapas 2×–4×**; no Original fica **desligada**
+  (opção `config.endgame.greatDiscovery`, só nos laboratórios), para o jogo de sempre não mudar (impressões digitais
+  **39190b06** / **5c97e2c2**). Vence, no fim de uma era, quem tiver **pontos de Ciência ≥ meta** e **regiões ≥
+  mínimo**. Pontos de Ciência = ouro que o próprio império investiu em Ciência × 0,2 (o saqueado não conta).
+  Meta = 6000 × k e mínimo = ⌈5 × k⌉ (k = regiões/24): 2× 12.000 / 10 regiões, 3× 17.500 / 15, 4× 24.000 / 20.
+  Gravada na partida (`state.greatDiscovery = {goal, minRegions, perGold}`); saves sem o campo não têm a regra.
+- **Reação das IAs**: quando um rival passa de 50% da meta e tem mais pontos, a IA põe +20 no Militar e ataca-o
+  primeiro se faz fronteira com ele; uma IA perto da meta com menos regiões que o mínimo também reforça o Militar.
+- **Saque de Ciência** nos mapas maiores ÷ k^0,25 (÷1,19 no 2×, ÷1,41 no 4×); as Obras saqueadas não mudam.
+- Motor para a interface (`src/core/endgame.js`): `greatDiscoveryActive(state)`, `greatDiscoveryGoal(state)`,
+  `greatDiscoveryMinRegions(state)`, `greatDiscoveryProgress(state)` (por império: pontos, meta, fração, regiões,
+  mínimo, se já cumpre), `discoveryPoints(state, civ)`; motivo de vitória `"discovery"` (`END_REASON_NAMES`).
+- Medido (partidas só de IAs, Médio, Sem limite, 9 cenários 2×–4× com 1/3/5 rivais): Científico 0–14% com 3–5 rivais
+  → 15–40%; partidas mais curtas (a mais longa: 85 → 60 eras); Grande Descoberta em 8–13% dos finais no 1×1 e
+  41–61% com 3–5 rivais. Detalhes em `docs/decisoes.md`.
+
+## Maravilha da Humanidade (22/11/2026)
+
+- Nova vitória **por Obras**, só nos mapas 2×–4× (no Original fica **desligada**: opção `config.endgame.wonder`, só nos
+  laboratórios; impressões digitais iguais). Vence, no fim de uma era, quem tiver **pontos de Maravilha ≥ meta** e
+  **regiões ≥ mínimo**. Pontos = ouro que o próprio império investiu em Obras **só nas eras em que Obras foi a maior
+  fatia do seu investimento** (maior que Força e que Ciência; empate não conta) × 0,2; o saque não conta.
+  Meta = 3000 × k, mínimo = ⌈4 × k⌉ (k = regiões/24): 2× 6.000 / 8, 3× 8.750 / 12, 4× 12.000 / 16.
+  Gravada na partida (`state.wonder = {goal, minRegions, perGold}`; pontos em `civ.wonderInvested`).
+- Reação das IAs igual à da Grande Descoberta (rival acima de 50% da meta com mais pontos → +20 Militar e ataque a
+  ele primeiro; a Grande Descoberta tem prioridade).
+- Motor para a interface (`src/core/endgame.js`): `wonderActive`, `wonderGoal`, `wonderMinRegions`, `wonderProgress`,
+  `wonderPoints`; motivo `"wonder"` ("Maravilha da Humanidade").
+- Medido (só IAs, Médio, Sem limite, 2×–4×): Construtor 8–14% → 14–22% com 3–5 rivais e 14–28% → 26–35% no 1×1; faixa
+  entre estilos menor em 7 de 9 cenários. **A Força militar não foi reduzida**: as três formas testadas faziam o
+  Científico disparar (até 90–96% no 1×1). Detalhes em `docs/decisoes.md`.
+
 ## Desafios e medalhas
 
 12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
@@ -266,6 +300,8 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/player-version.test.js` | No `index.html` não aparece (nem é baixado) nada de laboratórios/Exportar/"Versão completa"; no `dev.html` aparece tudo; `index.html?dev=1` abre o `dev.html`; a partida da chave antiga passa para a do jogador e as duas versões não mexem no save uma da outra. |
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Cinco delas já substituem os internos fracos em `src/labs/tests-def.js`; ver `tests/README.md`. |
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
+| `tests/wonder.test.js` | Maravilha da Humanidade (Node): ativa só nos mapas 2×–4× (no Original só ligada), meta e mínimo por tamanho, pontos só nas eras com Obras como maior fatia (empate não conta), saque não conta, mínimo de regiões, motivos somados com a Grande Descoberta e empate entre impérios, reação das IAs, save/load (e saves antigos sem o campo) e partidas só de IAs com vitórias pela Maravilha sem dominar. |
+| `tests/great-discovery.test.js` | Grande Descoberta (Node): ativa só nos mapas 2×–4× (no Original só ligada), meta e mínimo por tamanho, vitória com pontos próprios e mínimo de regiões (saque não conta), reação das IAs (+Militar e alvo), saque de Ciência ÷ k^0,25, save/load e partidas só de IAs que terminam bem antes do teto. |
 | `tests/map-size.test.js` | Tamanho do mapa (Node, sem navegador): grades 6×4/8×6/10×7/12×8, Original idêntico, vizinhança simétrica e ligada, posições (escolhidas com 4–6 impérios, perto da borda), terrenos padrão em mosaico e sorteado válido, 96 nomes sem repetir, regras escaladas (custo administrativo, territórios na pontuação, passo das ordens extra), teto do Sem limite por tamanho, rivais recomendados, save/load (e dados inválidos), tutorial no Original, laboratórios e partidas sem limite até o fim nos 4 tamanhos. |
 | `tests/terrain.test.js` | Terrenos do mapa (só visuais): tabela do mapa padrão, sorteio determinístico pela semente e com as regras (milhares de sementes, 1–6 impérios), save/recarregar, save antigo = mapa padrão, opção "Mapa" em Personalizar, tutorial sempre no padrão, folha "ⓘ Terrenos" e Como jogar, fronteira + bandeira do dono, espadas nos alvos (sem tracejado), região escolhida com o resto escurecido, "⚔ ordem", nomes legíveis nos 3 celulares (também com a fonte larga). |
 | `tests/terrain-effects.test.js` | Terrenos com efeitos: tabela final, desligado idêntico (também com terrenos variados), um teste por efeito (ouro, defesa, custo de ataque, % de Obras/Força/Ciência), proteção só para quem ocupa, região inicial como Campina, IA prefere o terreno do seu estilo, laboratórios com `terrain`, opção "Terrenos" em Personalizar e resumos, save (ligado sobrevive a recarregar; save antigo = Só visual), tutorial sempre Só visual, folha da região (etiquetas + / + / − e custo com o terreno), folha ⓘ Terrenos e Como jogar ligados e desligados. |

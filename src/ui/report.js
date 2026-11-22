@@ -16,6 +16,7 @@ import {civLabel} from "./labels.js";
 import {medalNoticeHtml,medalToastText} from "./medals.js";
 import {showModal} from "./modal.js";
 import {showToast} from "./toast.js";
+import {gdSnapshot,gdEvents} from "./discovery.js";
 
 const reduced=()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rankOf=lv=>{if(!lv)return null;const k=lv.findIndex(x=>x.id==="player");return k<0?null:{pos:k+1,pts:PTS(lv[k].score)}};
@@ -25,7 +26,7 @@ const ptsMap=lv=>Object.fromEntries((lv||[]).map(x=>[x.id,PTS(x.score)]));
 export function eraSnapshot(){
  const lv=liveScores();
  return {era:state.era,owners:state.owners.slice(),orders:(state.orders||[]).filter(o=>o.owner==="player").map(o=>o.idx),
-  rank:rankOf(lv),pts:ptsMap(lv),active:Object.fromEntries(state.civs.map(c=>[c.id,!!c.active]))};
+  rank:rankOf(lv),pts:ptsMap(lv),gd:gdSnapshot(),active:Object.fromEntries(state.civs.map(c=>[c.id,!!c.active]))};
 }
 // O que mudou entre a foto e agora (sem DOM: os testes podem chamar).
 export function eraChanges(b){
@@ -49,7 +50,9 @@ export function eraChanges(b){
  if(state.dominion?.declined&&!state.unlimited&&countTerritories(state,"player")>=min)dom.push({kind:"dom",ok:true,title:"Você domina o mapa",sub:`mantenha ${min} regiões até a era ${state.maxEras} para vencer por domínio`});
  const lv=liveScores(),rank=rankOf(lv),r=state.pending?.revenue?.player||{total:0,normal:0,infra:0,tech:0};
  const mine=ev.length>0,moved=!!(b.rank&&rank&&b.rank.pos!==rank.pos);
- return {era:b.era,next:state.era,gold:r.total||0,rev:r,events:[...dom,...ev,...grow],mine,moved,rank,before:b.rank,lv,prevPts:b.pts,full:mine||moved};
+ // Grande Descoberta e Maravilha (mapas 2×–4×): quem passou da metade de uma meta nesta era. Mostra o resumo em tela cheia.
+ const disc=gdEvents(b.gd);
+ return {era:b.era,next:state.era,gold:r.total||0,rev:r,events:[...disc,...dom,...ev,...grow],disc,mine,moved,rank,before:b.rank,lv,prevPts:b.pts,full:mine||moved||disc.length>0};
 }
 function titleFor(c){const k=new Set(c.events.map(e=>e.kind));
  if(k.has("elim")&&c.events.some(e=>e.kind==="elim"&&e.civ==="player"))return "Você foi eliminado";
@@ -58,8 +61,9 @@ function titleFor(c){const k=new Set(c.events.map(e=>e.kind));
  if(k.has("held"))return "Defesa firme!";
  if(k.has("failed"))return "Ataque repelido";
  if(c.moved)return c.rank.pos<c.before.pos?"Subiu no placar!":"Caiu no placar";
+ if(c.disc?.length){const w=c.disc.every(e=>e.kind==="wonder"),d=c.disc.every(e=>e.kind==="disc");return c.disc.some(e=>e.civ)?(w?"Corrida pela Maravilha":d?"Corrida pela Descoberta":"Corrida pelo fim do jogo"):(w?"Rumo à Maravilha":d?"Rumo à Grande Descoberta":"Rumo à vitória")}
  return "Era tranquila";}
-const ICON={dom:["♛","ok"],won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
+const ICON={disc:["✦","warn"],wonder:["▰","warn"],dom:["♛","ok"],won:["⚑","ok"],failed:["⚔","bad"],cancel:["↩","info"],lost:["⚑","bad"],held:["🛡","ok"],elim:["☠","info"],grow:["▲","info"]};
 function eventHtml(e,k){const [ic,tone]=ICON[e.kind]||["•","info"],civ=e.civ&&e.civ!=="player"?getCiv(state,e.civ):null;
  const tag=e.ok===true?`<span class="ev-tag ok" aria-label="deu certo">✓</span>`:e.ok===false?`<span class="ev-tag bad" aria-label="deu errado">✗</span>`:"";
  const title=escapeHtml(e.title).replace(escapeHtml(civ?civName(civ):"\u0000"),civ?civLabel(civ):"");
@@ -75,7 +79,7 @@ export function showEraSummary(b,medals=[]){
  if(!b||state.result)return "";
  const c=eraChanges(b),skip=!!state.ui?.skipReport;
  if((!c.full&&!medals.length)||skip){
-  showToast(medals.length?medalToastText(medals)+` · Era ${escapeHtml(c.era)} concluída`:`<strong>Era ${escapeHtml(c.era)} concluída</strong> · +${hudNum(c.gold)} de ouro${c.rank?` · ${c.rank.pos}.º no placar`:""}${skip&&c.mine?" · veja ☰ → Detalhes":""}`);
+  showToast(medals.length?medalToastText(medals)+` · Era ${escapeHtml(c.era)} concluída`:`<strong>Era ${escapeHtml(c.era)} concluída</strong> · +${hudNum(c.gold)} de ouro${c.rank?` · ${c.rank.pos}.º no placar`:""}${skip&&c.mine?" · veja ☰ → Detalhes":""}${c.disc.length?" · "+c.disc.map(e=>escapeHtml(e.title)).join(" · "):""}`);
   return "toast";
  }
  const r=c.rev,parts=[["dos territórios",r.normal],["das Obras",r.infra],["da Ciência",r.tech]].filter(([,v])=>v>=0.05).map(([n,v])=>`${hudNum(v)} ${n}`).join(" · ");

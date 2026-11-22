@@ -44,19 +44,19 @@ export function gameOutcome(rec){
  }
  return {ended:false};
 }
-export const OUTCOME_KEYS=[["supremacy","Supremacia","#b49aff"],["territorial","Maioria territorial","#56d6a1"],["elimination","Eliminação","#ff737b"],["score","Pontuação final","#62a8ff"],["draw","Empate","#9fb0c7"],["none","Sem encerramento","#3a4c66"]];
+export const OUTCOME_KEYS=[["wonder","Maravilha da Humanidade","#e88a43"],["discovery","Grande Descoberta","#f4bd50"],["supremacy","Supremacia","#b49aff"],["territorial","Maioria territorial","#56d6a1"],["elimination","Eliminação","#ff737b"],["score","Pontuação final","#62a8ff"],["draw","Empate","#9fb0c7"],["none","Sem encerramento","#3a4c66"]];
 export const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
 export const median=a=>{if(!a.length)return NaN;const s=[...a].sort((x,y)=>x-y);return quantile(s,.5)};
 // Indicadores de um conjunto de partidas (um cenário).
 export function summarizeRecords(recs){
- const n=recs.length,out={games:n,kind:recs[0]?.kind,outcomes:Object.fromEntries(OUTCOME_KEYS.map(([k])=>[k,0])),reasonMentions:{supremacy:0,territorial:0,elimination:0,score:0},
+ const n=recs.length,out={games:n,kind:recs[0]?.kind,outcomes:Object.fromEntries(OUTCOME_KEYS.map(([k])=>[k,0])),reasonMentions:{wonder:0,discovery:0,supremacy:0,territorial:0,elimination:0,score:0},
   endEras:[],winnerTerrShare:[],thresholdEra:[],streaksStarted:0,streaksInterrupted:0,supremacyEra:[],ratioByEra:[],terrPerCiv:[],durationHist:{},unusedShare:[],maxEra:0};
  for(const rec of recs){
   const o=gameOutcome(rec);out.maxEra=Math.max(out.maxEra,rec.eras);
   if(!o.ended)out.outcomes.none++;
   else{
    if(o.type==="draw")out.outcomes.draw++;
-   else{const rs=o.reasons[o.winners[0]]||[];const key=["supremacy","territorial","elimination","score"].find(k=>rs.includes(k));out.outcomes[key]++;
+   else{const rs=o.reasons[o.winners[0]]||[];const key=["wonder","discovery","supremacy","territorial","elimination","score"].find(k=>rs.includes(k));out.outcomes[key]++;
     const last=rec.rows.find(r=>r.era===o.era)||rec.rows.at(-1);out.winnerTerrShare.push(last.civs[o.winners[0]][RC.T]/rec.territories)}
    const mentioned=new Set();for(const w of o.winners)for(const r of o.reasons[w]||[])mentioned.add(r);for(const r of mentioned)out.reasonMentions[r]=(out.reasonMentions[r]||0)+1;
    out.endEras.push(o.era);out.durationHist[o.era]=(out.durationHist[o.era]||0)+1;
