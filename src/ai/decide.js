@@ -7,7 +7,7 @@ import {territoryDefense,attackNeed,orderAttack,attackTerritory,orderCostMultipl
 import {terrainEffectsOn,ruleTerrain,TERRAIN_EFFECTS} from "../core/terrain.js";
 import {rand} from "../core/rng.js";
 import {clamp} from "../core/util.js";
-import {greatDiscoveryOf,discoveryPoints} from "../core/endgame.js";
+import {greatDiscoveryOf,discoveryPoints,wonderOf,wonderPoints} from "../core/endgame.js";
 
 // Terrenos com efeitos: a IA mede cada alvo pelo custo dividido pelo valor do terreno = ouro que ele rende
 // (Campina/Montanha/Deserto 1,2; os outros 0,8) + a afinidade do seu estilo (Construtor gosta de Obras,
@@ -35,6 +35,15 @@ export function defenseReflexOn(s,civ,targetsNow=eligibleTargets(s,civ.id)){
    tem mais pontos de Ciência que esta IA, ela põe +discoveryReactMilitary pontos no Militar (tirados de Obras e Ciência na
    proporção) e ataca primeiro esse rival quando faz fronteira com ele (mesmo nas eras em que não atacaria).
    Uma IA perto da meta mas abaixo do mínimo de regiões também reforça o Militar, para chegar ao mínimo. */
+// Maravilha da Humanidade: a mesma reação, com os pontos de Maravilha (mesmos limiares da Grande Descoberta).
+export function wonderThreat(s,civ,cfg){
+ const g=wonderOf(s);if(!g)return null;const react=cfg.endgame?.discoveryReact??0.5;
+ const others=s.civs.filter(c=>c.active&&c.id!==civ.id);if(!others.length)return null;
+ const pts=c=>wonderPoints(s,c),top=others.reduce((a,b)=>pts(b)>pts(a)?b:a);
+ return pts(top)>=react*g.goal&&pts(top)>pts(civ)?top.id:null;
+}
+export function wonderNeedsRegions(s,civ,cfg){const g=wonderOf(s);if(!g)return false;
+ return wonderPoints(s,civ)>=(cfg.endgame?.discoveryReact??0.5)*g.goal&&countTerritories(s,civ.id)<g.minRegions}
 export function discoveryThreat(s,civ,cfg){
  const g=greatDiscoveryOf(s);if(!g)return null;const react=cfg.endgame?.discoveryReact??0.5;
  const others=s.civs.filter(c=>c.active&&c.id!==civ.id);if(!others.length)return null;
@@ -91,9 +100,10 @@ export function aiDecide(s,civ,cfg,era){
  // exército do jogador é maior que o dele, ganha +15 pontos de Militar, tirados de Obras e Ciência na proporção
  // de cada uma (nunca abaixo de 0). Não dispara em partidas só de IAs.
  if(defenseReflexOn(s,civ,targetsNow))weights=applyDefenseReflex(weights);
- const sciLeader=discoveryThreat(s,civ,cfg),sciTarget=!!sciLeader&&targetsNow.some(t=>t.o===sciLeader);
+ // Corrida mais perigosa primeiro: o líder da Grande Descoberta; senão o da Maravilha.
+ const sciLeader=discoveryThreat(s,civ,cfg)||wonderThreat(s,civ,cfg),sciTarget=!!sciLeader&&targetsNow.some(t=>t.o===sciLeader);
  // (Só IAs: um lugar humano decidido por esta função, como nas simulações de estratégias, segue a sua própria divisão.)
- if(civ.controller!=="human"&&(sciLeader||discoveryNeedsRegions(s,civ,cfg)))weights=shiftToMilitary(weights,cfg.endgame?.discoveryReactMilitary??20);
+ if(civ.controller!=="human"&&(sciLeader||discoveryNeedsRegions(s,civ,cfg)||wonderNeedsRegions(s,civ,cfg)))weights=shiftToMilitary(weights,cfg.endgame?.discoveryReactMilitary??20);
  const weightSum=weights.reduce((a,b)=>a+Math.max(0,Number(b)||0),0)||1;
  const reservePct=clamp(Number(cfg.military.aiReserve||0),0,90)/100;
  const treasuryBefore=civ.treasury;

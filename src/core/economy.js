@@ -43,6 +43,8 @@ export function invest(s,type,amount,cfg,owner="player"){
  const civ=getCiv(s,owner);if(!civ)throw Error("Civilização inexistente: "+owner);
  amount=Math.max(0,amount);if(amount>civ.treasury*(1+1e-9)+1e-8)throw Error("Investimento superior ao orçamento.");amount=Math.min(amount,civ.treasury);
  if(amount===0)return null;civ.treasury=Math.max(0,civ.treasury-amount);civ.invested[type]+=amount;
+ // Maravilha da Humanidade (só com state.wonder): soma o investimento da era por área (ver wonderEraClose em era.js).
+ if(s.wonder){const e=civ.wonderEra&&civ.wonderEra.era===s.era?civ.wonderEra:(civ.wonderEra={era:s.era,military:0,infrastructure:0,technology:0});e[type]+=amount}
  const inv=makeInvestment(type,amount,s.era,cfg,owner,s.mode);
  // Terrenos com efeitos: cada região de Colinas soma +10% aos pontos de Força deste investimento.
  if(type==="military"&&terrainEffectsOn(s))inv.points*=1+terrainAreaBonus(s,owner,"forca");

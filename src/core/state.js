@@ -31,6 +31,7 @@ export function newState(cfg,opts={}){
  const size=normMapSize(c.map.mapSize);if(size>1)st.mapSize=size;
  // Grande Descoberta (vitória por Ciência): sempre nos mapas maiores; no Original só se ligada (endgame.greatDiscovery).
  const gd=makeGreatDiscovery(c,size,n);if(gd)st.greatDiscovery=gd;
+ const wd=makeWonder(c,size,n);if(wd)st.wonder=wd;
  return st;
 }
 /* Grande Descoberta (22/11/2026): vence quem junta discoveryGoal × k pontos de Ciência tendo pelo menos
@@ -41,6 +42,14 @@ export function newState(cfg,opts={}){
 export function makeGreatDiscovery(c,size,n){
  const g=c.endgame||{};if(!(size>1||g.greatDiscovery===true))return null;
  const k=size>1?n/24:1;return {goal:Math.round((g.discoveryGoal??6000)*k),minRegions:Math.ceil((g.discoveryMinRegions??5)*k-1e-9),perGold:c.technology?.progressPerInvestment??0.2};
+}
+/* Maravilha da Humanidade (vitória por Obras, espelho da Grande Descoberta): vence quem junta wonderGoal × k pontos de
+   Maravilha (ouro que o próprio império investiu em Obras nas eras em que Obras foi a MAIOR fatia do seu investimento ×
+   wonderPerGold; o saque não conta; civ.wonderInvested) com pelo menos
+   ⌈wonderMinRegions × k⌉ regiões. Sempre nos mapas maiores; no Original só se ligada (endgame.wonder). */
+export function makeWonder(c,size,n){
+ const g=c.endgame||{};if(!(size>1||g.wonder===true))return null;
+ const k=size>1?n/24:1;return {goal:Math.round((g.wonderGoal??3000)*k),minRegions:Math.ceil((g.wonderMinRegions??4)*k-1e-9),perGold:g.wonderPerGold??0.2};
 }
 export const getCiv=(s,id)=>s.civs.find(c=>c.id===id);
 export const P=s=>s.civs[0];            // jogador
