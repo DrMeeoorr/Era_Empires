@@ -194,6 +194,20 @@ o jogo de sempre, byte a byte** (impressões digitais **39190b06** / **5c97e2c2*
   entre estilos menor em 7 de 9 cenários. **A Força militar não foi reduzida**: as três formas testadas faziam o
   Científico disparar (até 90–96% no 1×1). Detalhes em `docs/decisoes.md`.
 
+## Tipos de vitória escolhidos pelo jogador (23/11/2026)
+
+- Antes de começar, o jogador escolhe quais vitórias valem: **`config.endgame.victories = {dominion, supremacy,
+  discovery, wonder}`** (padrão: tudo ligado = o jogo de sempre; a Grande Descoberta e a Maravilha só existem nos mapas
+  2×–4×). **Eliminação** (último império) e **pontos no fim** (limite de eras ou teto do Sem limite) ficam sempre
+  ligados, para toda partida terminar. A partida grava `state.victories` só quando algo foi desligado (impressões
+  digitais e saves antigos iguais). Desligada, a vitória nunca acontece: sem domínio não há a pergunta "Você domina o
+  mapa!"; Grande Descoberta/Maravilha desligadas nem são criadas (as IAs não reagem). O modo Conquista
+  (`supremacyEnabled: false`) continua a valer. O tutorial usa o padrão e devolve a escolha.
+- Motor para a interface (`src/core/endgame.js`): `victoryTypes(mapSize)` (id, nome, se é desligável, se existe no
+  tamanho), `activeVictories(state, cfg)`, `victoriesOf(state)`; nos laboratórios, 4 interruptores em "Fim de partida".
+- Medido (só IAs, Médio, Sem limite, tudo desligado): termina sempre por eliminação, nunca no teto; Original 37 eras
+  em média no 1×1 (mais longa 77) e 43 com 3 rivais (82); 4× 45 no 1×1 (68) e 56 com 3 rivais (101; teto 175).
+
 ## Desafios e medalhas
 
 12 medalhas **só de honra** (não mudam regras, números nem IAs; as impressões digitais não mudam). Os critérios
@@ -300,6 +314,7 @@ Para uma verificação rápida só das regras: `npm run test:node` (uns 2 segund
 | `tests/player-version.test.js` | No `index.html` não aparece (nem é baixado) nada de laboratórios/Exportar/"Versão completa"; no `dev.html` aparece tudo; `index.html?dev=1` abre o `dev.html`; a partida da chave antiga passa para a do jogador e as duas versões não mexem no save uma da outra. |
 | `tests/reinforced.test.js` | Versões reforçadas de testes internos fracos (adjacência e resultado dos ataques, botão Reiniciar, Cancelar no avanço rápido, desempenho estável, dificuldades com `aiIncomeMultiplier1v1`). Cinco delas já substituem os internos fracos em `src/labs/tests-def.js`; ver `tests/README.md`. |
 | `tests/ptbr.test.js` | Textos do jogador em português do Brasil: telas principais, relatório da era, resultado e tutorial sem palavras de pt-PT ("registo", "Toque num", "resolvem-se"…) nem os nomes antigos ("u.", "Poder militar", "Infraestrutura", "Tecnologia"). |
+| `tests/victory-types.test.js` | Tipos de vitória (Node): padrão = jogo de sempre (sem campo no estado), configurações antigas/parciais completadas e inválidas recusadas, lista e vitórias ativas, domínio/supremacia/Grande Descoberta/Maravilha desligados nunca vencem (e as IAs não reagem), tudo desligado em Sem limite termina por eliminação ou pontos, save/load e saves antigos, tutorial no padrão e interruptores dos laboratórios. |
 | `tests/wonder.test.js` | Maravilha da Humanidade (Node): ativa só nos mapas 2×–4× (no Original só ligada), meta e mínimo por tamanho, pontos só nas eras com Obras como maior fatia (empate não conta), saque não conta, mínimo de regiões, motivos somados com a Grande Descoberta e empate entre impérios, reação das IAs, save/load (e saves antigos sem o campo) e partidas só de IAs com vitórias pela Maravilha sem dominar. |
 | `tests/great-discovery.test.js` | Grande Descoberta (Node): ativa só nos mapas 2×–4× (no Original só ligada), meta e mínimo por tamanho, vitória com pontos próprios e mínimo de regiões (saque não conta), reação das IAs (+Militar e alvo), saque de Ciência ÷ k^0,25, save/load e partidas só de IAs que terminam bem antes do teto. |
 | `tests/map-size.test.js` | Tamanho do mapa (Node, sem navegador): grades 6×4/8×6/10×7/12×8, Original idêntico, vizinhança simétrica e ligada, posições (escolhidas com 4–6 impérios, perto da borda), terrenos padrão em mosaico e sorteado válido, 96 nomes sem repetir, regras escaladas (custo administrativo, territórios na pontuação, passo das ordens extra), teto do Sem limite por tamanho, rivais recomendados, save/load (e dados inválidos), tutorial no Original, laboratórios e partidas sem limite até o fim nos 4 tamanhos. |
