@@ -346,3 +346,7 @@ e acabam, ele tem a menor Força e, quando vencia, era quase sempre pela Grande 
   média no 1×1 / 43 com 3 rivais (mais longas 77 / 82); 4× 45 / 56 (68 / 101; teto 175). Mais longo que o padrão
   (Original 29 / 36; 4× 35 / 41), mas aceitável. Só sem domínio: Original 1×1 37 eras (71% eliminação, 29% supremacia);
   4× com 3 rivais 41 eras (Grande Descoberta 62%, supremacia 18%, Maravilha 12%).
+- **Atualização (23/11/2026, aprovado pelo usuário):** os botões **Clássica/Conquista** saíram de Personalizar. O campo
+  passou a se chamar "Como vencer" e as 4 chaves ficam sempre à vista; a chave **Supremacia** é o único controle.
+  Desligada, grava `supremacyEnabled=false` (igual ao antigo Conquista) e `victories.supremacy=false`. Configurações e
+  saves antigos em Conquista abrem com a chave desligada. As referências a Clássica/Conquista acima são históricas.

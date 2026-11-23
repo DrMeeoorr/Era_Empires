@@ -18,7 +18,7 @@ const coreFn=name=>[CORE_ENDGAME,CORE_CONFIG].map(m=>m[name]).find(f=>typeof f==
 export function victoriesOfConfig(cfg){
  const v=cfg?.endgame?.victories,out={};
  for(const k of VICTORY_KEYS)out[k]=!(v&&typeof v==="object"&&v[k]===false);
- if(cfg?.endgame?.supremacyEnabled===false)out.supremacy=false;   // "Conquista" (sem supremacia), como antes
+ if(cfg?.endgame?.supremacyEnabled===false)out.supremacy=false;   // saves antigos do modo Conquista (sem supremacia)
  return out;
 }
 // A vitória vale nesta partida? (motor primeiro; senão a configuração da partida + as regras ativas no estado)

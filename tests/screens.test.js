@@ -80,8 +80,8 @@ for (const [name, opts] of MOBILE_SCREENS) {
       assert.equal(await page.locator("#homeDifficulty [data-diff].selected").getAttribute("data-diff"), "medio");
       assert.equal(await page.locator("#homeOpponents [data-ai].selected").getAttribute("data-ai"), "1");
       assert.equal(await page.locator("#setupCustomize").evaluate((d) => d.open), false, "Personalizar devia começar fechado");
-      for (const sel of ["#homeEraPresets", "#modeSlow", "#homeClassic", "#homeProfiles", "#homeRandomStart"]) assert.equal(await page.locator(sel).isVisible(), false, `${sel} devia ficar dentro de Personalizar`);
-      assert.match(await page.locator("#customizeSummary").innerText(), /^30 eras · ritmo normal · vitória clássica$/);
+      for (const sel of ["#homeEraPresets", "#modeSlow", "#victoryTypes", "#homeProfiles", "#homeRandomStart"]) assert.equal(await page.locator(sel).isVisible(), false, `${sel} devia ficar dentro de Personalizar`);
+      assert.match(await page.locator("#customizeSummary").innerText(), /^30 eras · ritmo normal$/);
       await assertTargets(page, [
         ["#setupBack", "Voltar"], ...["muitofacil", "facil", "medio", "dificil", "hardcore"].map((d) => [`#homeDifficulty [data-diff="${d}"]`, d]),
         ...[1, 2, 3].map((n) => [`#homeOpponents [data-ai="${n}"]`, `${n} rival(is)`]), ["#setupCustomize > summary", "Personalizar"], ["#setupStart", "Jogar"],
@@ -94,7 +94,7 @@ for (const [name, opts] of MOBILE_SCREENS) {
       await openCustomize(page);
       await assertTargets(page, [
         ...[15, 30].map((e) => [`#homeEraPresets [data-eras="${e}"]`, `${e} eras`]), ['#homeEraPresets [data-eras="unlimited"]', "Sem limite"], ["#homeEraPresets .pg-other", "Outra duração"],
-        ["#modeSlow", "Ritmo Normal"], ["#modeFast", "Ritmo Rápido"], ["#homeClassic", "Clássica"], ["#homeConquest", "Conquista"],
+        ["#modeSlow", "Ritmo Normal"], ["#modeFast", "Ritmo Rápido"], ['[data-vrow="dominion"]', "Domínio"], ['[data-vrow="supremacy"]', "Supremacia"],
         ["#mapFixed", "Mapa Padrão"], ["#mapRandom", "Mapa Sorteado"],
         ...[0, 1, 2].map((i) => [`#homeProfiles [data-prof="${i}"]`, `estilo do rival ${i + 1}`]), ["#allRandom", "Todos aleatórios"],
         ["label.pg-switch", "Posição inicial aleatória"],
@@ -102,18 +102,20 @@ for (const [name, opts] of MOBILE_SCREENS) {
       assert.ok(await page.locator("#homeMaxEras").isVisible(), "campo de duração livre");
       assert.deepEqual((await page.locator("#homeEraPresets button").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), ["15 curta", "30 média", "Sem limite até vencer"]);
       assert.deepEqual((await page.locator("#modeSlow, #modeFast").allInnerTexts()).map((t) => t.trim()), ["Normal", "Rápido"]);
-      assert.deepEqual((await page.locator("#homeClassic, #homeConquest").allInnerTexts()).map((t) => t.trim()), ["Clássica", "Conquista"]);
+      assert.deepEqual((await page.locator("#victoryTypes .pg-vrow .t b").allInnerTexts()).map((t) => t.trim()), ["Domínio", "Supremacia", "Grande Descoberta", "Maravilha da Humanidade"]);
+      assert.equal(await page.locator('[data-victory="supremacy"]').isChecked(), true, "Supremacia ligada por padrão");
       // Os controles funcionam e o resumo acompanha.
       await page.locator("#modeFast").click();
-      await page.locator("#homeConquest").click();
+      await page.locator('[data-vrow="supremacy"]').click();
+      assert.equal(await page.locator('[data-victory="supremacy"]').isChecked(), false);
       await page.locator("#homeMaxEras").fill("42");
       await page.locator("#homeMaxEras").press("Tab");
       await page.locator("label.pg-switch").click();
       assert.equal(await page.locator("#homeRandomStart").isChecked(), true, "tocar na linha liga a posição aleatória");
-      assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · vitória por conquista · posição aleatória$/);
-      assert.match(await page.locator("#setupSummary").innerText(), /3 rivais.*Médio.*42 eras.*Conquista.*posição aleatória.*ritmo rápido/);
+      assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · sem Supremacia · posição aleatória$/);
+      assert.match(await page.locator("#setupSummary").innerText(), /3 rivais.*Médio.*42 eras.*sem Supremacia.*posição aleatória.*ritmo rápido/);
       await page.locator("#mapRandom").click();
-      assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · vitória por conquista · posição aleatória · mapa sorteado$/);
+      assert.match(await page.locator("#customizeSummary").innerText(), /^42 eras · ritmo rápido · sem Supremacia · posição aleatória · mapa sorteado$/);
       assert.match(await page.locator("#setupSummary").innerText(), /posição aleatória · mapa sorteado · ritmo rápido/);
       assert.equal(await page.locator("#homeEraPresets .pg-other").evaluate((e) => e.classList.contains("on")), true, '"Outra" devia ficar marcada com 42 eras');
       assert.deepEqual(await horizontalOverflow(page), [], "rolagem horizontal em Personalizar");

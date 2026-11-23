@@ -209,15 +209,9 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .pg-win>div.wide{grid-column:1/-1}
 .pg-desc.pg-gd{color:#d2c2ff;white-space:pre-line}
 .pg-desc.pg-gd[hidden]{display:none}
-/* Tipos de vitória (Personalizar → Vitória): linha resumida que abre as chaves de cada tipo. */
-.pg-vic{margin-top:8px;border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
-.pg-vic>summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.pg-vic>summary::-webkit-details-marker{display:none}
-.pg-vic>summary .t{flex:1;min-width:0}.pg-perso .pg-vic>summary .t b{display:block;font-family:inherit;font-weight:700;letter-spacing:0;font-size:14.5px;color:var(--scr-parch)}
-.pg-vic>summary .t span{display:block;font-size:12.5px;color:var(--scr-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pg-vic .chev{width:20px;height:20px;color:var(--scr-gold);transition:transform .2s}.pg-vic[open]>summary .chev{transform:rotate(90deg)}
+/* Como vencer (Personalizar): uma chave por tipo de vitória (a Supremacia substitui o antigo Clássica/Conquista). */
+.pg-vic{border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
 .pg-vbody{padding:0 12px 10px}
-.pg-vrow{border-top:1px solid #1d2f4d}
+.pg-vrow{border-top:1px solid #1d2f4d}.pg-vbody>.pg-vrow:first-child{border-top:0}
 .pg-vrow.na{cursor:default}.pg-vrow.na .t b{color:var(--scr-muted)}.pg-vrow.na input{opacity:.45;cursor:not-allowed}
 .pg-always{margin-top:6px}
-@media (prefers-reduced-motion:reduce){.pg-vic .chev{transition:none}}

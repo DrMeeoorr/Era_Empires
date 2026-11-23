@@ -19,7 +19,8 @@ import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 // Tamanho do mapa: 1 = Original (6×4), 2×, 3×, 4× a área (8×6, 10×7, 12×8). Grava em config.map.mapSize.
 const MAP_SIZE_INFO={1:["6 × 4",24],2:["8 × 6",48],3:["10 × 7",70],4:["12 × 8",96]};
 const mapSizeChoice=v=>MAP_SIZE_INFO[Number(v)]?Number(v):1;
-// Tipos de vitória escolhidos (a Supremacia anda junto com Clássica/Conquista).
+// Tipos de vitória escolhidos. A chave Supremacia é o único controle da supremacia (substitui Clássica/Conquista):
+// desligada grava supremacyEnabled=false, como o antigo modo Conquista; saves antigos de Conquista abrem com ela desligada.
 const victoriesOf=(v,sup)=>({...victoriesOfConfig({endgame:{victories:v}}),supremacy:sup!==false});
 const joinOu=l=>l.length<2?(l[0]||""):l.slice(0,-1).join(", ")+" ou "+l.at(-1);
 export function initHome(){
@@ -45,9 +46,8 @@ export function initHome(){
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
   // Duração: 15 / 30 / Sem limite (teto de segurança por tamanho do mapa, decidido por pontos) / Outra (10–150).
   let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=b.dataset.eras==="unlimited"?!!choice.unlimited:!choice.unlimited&&Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
-  for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   // Textos da Duração e da Vitória a partir dos tipos de vitória ligados (os de sempre quando está tudo no padrão).
-  choice.victories.supremacy=!choice.conquest;
+  choice.conquest=!choice.victories.supremacy;
   const vOn=k=>choice.victories[k]&&victoryAvailable(k,choice.mapSize),dom=vOn("dominion"),sup=vOn("supremacy");
   const ends=[dom&&"domínio","eliminação",sup&&"supremacia",vOn("discovery")&&"Grande Descoberta",vOn("wonder")&&"Maravilha"].filter(Boolean);
   $("homeErasDesc").textContent=choice.unlimited?`Termina por ${joinOu(ends)}.`:`A partida acaba na era ${choice.eras}, ou antes se alguém vencer.`;
@@ -62,9 +62,8 @@ export function initHome(){
    el.checked=!!choice.victories[k]&&av;el.disabled=!av;el.closest(".pg-vrow")?.classList.toggle("na",!av);
    const txt=document.querySelector(`[data-vtxt="${k}"]`);if(txt){txt.dataset.base??=txt.textContent;txt.textContent=av?txt.dataset.base:"Só em mapas 2×, 3× e 4×."}});
   {const eff=effectiveVictories(choice.victories,choice.mapSize);
-   $("victoryTypesSummary").textContent=eff.length?eff.map(k=>VICTORY_SHORT[k]).join(" · "):"Só eliminação e pontos no fim";
    $("victoryNoneTip").hidden=eff.length>0}
-  const offTxt=VICTORY_KEYS.filter(k=>k!=="supremacy"&&victoryAvailable(k,choice.mapSize)&&!choice.victories[k]).map(k=>` · sem ${VICTORY_SHORT[k]}`).join("");
+  const offTxt=VICTORY_KEYS.filter(k=>victoryAvailable(k,choice.mapSize)&&!choice.victories[k]).map(k=>` · sem ${VICTORY_SHORT[k]}`).join("");
   for(const [id,on] of [["mapFixed",choice.map!=="sorteado"],["mapRandom",choice.map==="sorteado"]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
   document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>{const on=Number(b.dataset.mapSize)===choice.mapSize;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
@@ -83,8 +82,8 @@ export function initHome(){
   const styleName=v=>v==="random"?"aleatório":v==="config"?"das Configurações":playerProfileName(v).toLowerCase();
   const styles=Array.from({length:choice.ai},(_,i)=>styleName(opponentChoices[i]||"random"));const uniq=[...new Set(styles)];
   const erasTxt=choice.unlimited?"sem limite":`${choice.eras} eras`;
-  $("customizeSummary").textContent=`${choice.unlimited?"Sem limite":erasTxt} · ritmo ${choice.mode==="fast"?"rápido":"normal"} · vitória ${choice.conquest?"por conquista":"clássica"}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""}`;
-  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${erasTxt}${choice.conquest?" · Conquista":""}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
+  $("customizeSummary").textContent=`${choice.unlimited?"Sem limite":erasTxt} · ritmo ${choice.mode==="fast"?"rápido":"normal"}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""}`;
+  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${erasTxt}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
   // Com partida salva: "Continuar · Era N" é o botão principal e "Nova partida" fica como secundário.
   const saved=inProgress(),cont=$("homeContinue"),start=$("homeStart");
   cont.classList.toggle("hidden",!saved);
@@ -101,8 +100,8 @@ export function initHome(){
  $("modeSlow").onclick=()=>{choice.mode="slow";sync()};$("modeFast").onclick=()=>{choice.mode="fast";sync()};
  document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>b.onclick=()=>{choice.ai=Number(b.dataset.ai);sync()});
  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{if(b.dataset.eras==="unlimited")choice.unlimited=true;else{choice.unlimited=false;choice.eras=Number(b.dataset.eras)}sync()});
- document.querySelectorAll("#victoryTypes [data-victory]").forEach(el=>el.onchange=()=>{const k=el.dataset.victory;choice.victories[k]=el.checked;if(k==="supremacy")choice.conquest=!el.checked;sync()});
- $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
+ document.querySelectorAll("#victoryTypes [data-victory]").forEach(el=>el.onchange=()=>{const k=el.dataset.victory;choice.victories[k]=el.checked;sync()});
+ $("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};
  $("mapFixed").onclick=()=>{choice.map="padrao";sync()};$("mapRandom").onclick=()=>{choice.map="sorteado";sync()};
  document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>b.onclick=()=>{choice.mapSize=mapSizeChoice(b.dataset.mapSize);sync()});
  if($("mapSizeUseRivals"))$("mapSizeUseRivals").onclick=()=>{choice.ai=clamp(Number($("mapSizeUseRivals").dataset.ai)|0,1,MAX_AI);sync();$("homeMapSize").querySelector(".selected")?.focus()};
