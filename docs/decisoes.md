@@ -344,3 +344,24 @@ e acabam, ele tem a menor Força e, quando vencia, era quase sempre pela Grande 
   Violet, Turquoise…); **"Você" traduzido**; **IMPÉRIOS traduzido** — EMPIRES (en, fr), IMPÉRIOS (pt-PT), IMPERI (it),
   IMPERIEN (de). A confirmar antes da publicação: se o nome do app no ícone fica único ("Impérios").
 - Números no formato de cada idioma (`Intl`); o pt-BR continua 1.234,5.
+
+## 23/11/2026 — Seletor de idioma (mobile-ux) — autorizado aplicar direto
+Nenhuma regra, número ou IA mudou (impressões digitais **39190b06** / **5c97e2c2**). Detalhes em `docs/idiomas.md`
+(secção 3) e capturas antes/depois em `docs/img/idiomas/`.
+- **Tela inicial ("Aurora")**: botão 🌐 + código do idioma (`PT-BR`, `EN`, `DE`, `FR`…) no canto inferior esquerdo da
+  cena, sobre as colinas — fora do caminho do "Jogar" e do nome do jogo, perto do polegar; cabe em 360×640 sem rolar.
+- **Partida**: item **Idioma** no menu ☰ (com o idioma atual à direita); troca ao vivo sem mexer na partida nem no save.
+- **Folha de idiomas ("Atlas")**: 6 idiomas pelo nome nativo, radio acessível (aria-checked, foco no atual, setas,
+  Esc/Voltar fecham sem trocar); o atual marcado com ✓ e borda, não só pela cor. Tocar escolhe e fecha.
+- **Primeira abertura**: sem pergunta obrigatória; vale o idioma do aparelho e o botão fica à vista.
+- **Textos apertados** (ajustados por layout ou encurtando o texto, mesmo sentido):
+  - Tela inicial: "Tutorial" e "Como jogar" sempre numa linha (fr "Comment jouer", de "Spielanleitung").
+  - Personalizar → Duração: a coluna "Sem limite" ficou mais larga (de "Unbegrenzt / bis zum Sieg").
+  - Personalizar → Terrenos, "Com efeitos": subtítulo curto em en/it/de/fr ("changes the game", "cambia il gioco",
+    "ändert das Spiel", "change le jeu"); o pt continua "cada terreno muda o jogo".
+  - Menu ☰ (de): "Ära-Zusammenfassung: an" (antes "Zusammenfassung jeder Ära:"); o estado não quebra sozinho.
+  - Fim de jogo: de "Punkte Vorsprung" / "Punkte Rückstand", fr "points d'avance" / "points de retard",
+    en "points ahead" / "points behind" (a posição já aparece no placar logo acima).
+  - Legenda do mapa: em telas estreitas (360 px), quando a legenda não cabe, "ⓘ Terrenos" vira só "ⓘ" (o nome continua
+    no aria-label) e "Pode atacar" / "Angreifbar" / "Attaquable" aparece inteiro em todos os idiomas (antes ficava
+    cortado também em pt-BR).

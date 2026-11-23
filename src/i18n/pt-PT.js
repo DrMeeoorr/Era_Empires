@@ -9,6 +9,8 @@ export const DICT_PT_PT={
  "format.gold":"{n} de ouro",
  "format.goldShort":"{n} 🪙",
  "settings.language":"Idioma",
+ "settings.languageAria":"Idioma: {name}. Mudar de idioma",
+ "settings.languageHint":"Só os textos mudam; a partida continua igual.",
  // ── Comuns ──
  "common.cancel":"Cancelar",
  "common.close":"Fechar",

@@ -12,6 +12,7 @@ import {initGame} from "./game.js";
 import {initHome} from "./home.js";
 import {fillTerrainLists} from "./map.js";
 import {initMedals} from "./medals.js";
+import {initLanguagePicker} from "./language.js";
 import {initTutorial} from "./tutorial.js";
 import {$} from "./dom.js";
 import {initLanguage,onLanguageChange} from "../i18n/index.js";
@@ -30,7 +31,7 @@ export async function boot({saveSlot="player",migrateOldSave=false,labs=null,deb
  initSheets();watchShortScreen();fillTerrainLists();
  await loadMedals();
  await initGame();
- initHome();initMedals();
+ initHome();initMedals();initLanguagePicker();
  await initTutorial();
  if(labs&&$("lab"))await labs();
  window.__imperiosReady=true;

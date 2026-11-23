@@ -9,6 +9,8 @@ export const DICT_IT={
  "format.gold":"{n} di oro",
  "format.goldShort":"{n} 🪙",
  "settings.language":"Lingua",
+ "settings.languageAria":"Lingua: {name}. Cambia lingua",
+ "settings.languageHint":"Cambiano solo i testi; la partita resta uguale.",
  // ── Comuns ──
  "common.cancel":"Annulla",
  "common.close":"Chiudi",
@@ -617,7 +619,7 @@ export const DICT_IT={
  "setup.terrVisual":"Solo visivi",
  "setup.terrVisual.sub":"regole di sempre",
  "setup.terrEffects":"Con effetti",
- "setup.terrEffects.sub":"ogni terreno cambia il gioco",
+ "setup.terrEffects.sub":"cambia il gioco",
  "setup.rivalStyles":"Stile dei rivali",
  "setup.randomStart":"Posizione iniziale casuale",
  "setup.randomStart.sub":"Inizi in un punto qualsiasi della mappa.",

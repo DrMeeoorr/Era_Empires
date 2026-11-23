@@ -463,3 +463,27 @@ html.game-fit .map-box.map-big{min-height:150px}
 .wonder-hint.off{border-color:#6b5420;background:#2a2210;color:#f3dca0}
 .wonder-hint[hidden]{display:none}
 .ev.warn .ev-ic{background:#2c2350;color:#d2c2ff}
+/* ===== Folha de idiomas (src/ui/language.js): 6 idiomas pelo nome nativo; o atual tem círculo cheio com ✓, borda
+   dourada e fundo mais claro (não só a cor). Linhas de 52 px. ===== */
+#languageSheetTitle{display:flex;align-items:center;gap:9px}
+#languageSheetTitle .lang-h-ic{width:22px;height:22px;color:#f4bd50}
+.lang-list{display:grid;gap:6px}
+.lang-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;margin:0;padding:8px 14px;border:1px solid #263a5a;border-radius:14px;background:linear-gradient(180deg,#17283f,#13213a);color:var(--text);font-size:16px;font-weight:650;text-align:left;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.lang-opt:active{filter:brightness(1.15)}
+.lang-opt:focus-visible{outline:3px solid #ffd58a;outline-offset:2px}
+.lang-opt.on{border:2px solid #f4bd50;padding:7px 13px;background:linear-gradient(180deg,#25334c,#1c2a42)}
+.lang-radio{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid #8a98ad}
+.lang-radio .ic{width:15px;height:15px;stroke-width:3;opacity:0}
+.lang-opt.on .lang-radio{background:#f4bd50;border-color:#f4bd50;color:#1d1405}
+.lang-opt.on .lang-radio .ic{opacity:1}
+.lang-name{min-width:0}
+.lang-code{margin-left:auto;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:.06em}
+.menu-item .mi-lang{font-size:14.5px}
+/* "Resumo de cada era: ligado" (de "Ära-Zusammenfassung: an"): o estado não quebra sozinho na linha de baixo. */
+.menu-item .mi-state{white-space:nowrap}
+/* Legenda que não cabe numa linha (360 px): "ⓘ Terrenos" vira só "ⓘ" (o nome continua no aria-label) para que
+   "Pode atacar" / "Angreifbar" / "Attaquable" apareça inteiro; markLegend() (map.js) decide pela largura real. */
+.legend-row.lg-compact{gap:6px}
+.legend-row.lg-compact .legend{column-gap:9px}
+.legend-row.lg-compact .lg-ter{font-size:0;padding:1px 0;width:30px;text-align:center}
+.legend-row.lg-compact .lg-ter>span{font-size:15px}

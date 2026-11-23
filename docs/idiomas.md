@@ -50,6 +50,22 @@ No arranque (`initLanguage`, chamado por `src/ui/boot.js` antes de desenhar qual
   que o motor guarda (registro de eventos, motivos de recusa, resultado) continuam como estão; a tradução deles é
   feita **só na exibição** (como já faz `uiText()` para o pt-BR).
 
+### Seletor de idioma (`src/ui/language.js`, 23/11/2026)
+
+- **Tela inicial**: botão 🌐 com o código do idioma (`PT-BR`, `EN`, `DE`…) no canto inferior esquerdo da cena
+  "Aurora", por cima das colinas (48 px, não tapa "Jogar" nem o nome do jogo; cabe em 360×640 sem rolar).
+  `aria-label` = `settings.languageAria` ("Idioma: Português (Brasil). Trocar o idioma").
+- **Durante a partida**: item **Idioma** no menu ☰ (depois de "Como jogar"), com o nome nativo do idioma atual à
+  direita. Troca ao vivo: a partida, o save e o ouro dividido não mudam.
+- **Folha `#languageSheet`**: os 6 idiomas pelo nome nativo (com `lang=` de cada um), em `role="radiogroup"` com
+  `role="radio"` + `aria-checked`; o atual tem círculo cheio com ✓, borda dourada e fundo mais claro (não só a cor).
+  Linhas de 52 px. Abre com o foco no idioma atual; ↑/↓ (e Home/End) movem o foco; toque, Enter ou Espaço escolhem,
+  gravam (`setLanguage`) e fecham; Esc, ✕, toque fora e o Voltar do Android fecham sem trocar. Frase curta por
+  baixo do título: `settings.languageHint` ("Só os textos mudam; a partida continua igual.").
+- **Primeira abertura**: nenhuma pergunta. O idioma vem do aparelho (sem gravar) e o botão 🌐 fica à vista; o
+  convite do tutorial abre como antes.
+- Testes: `tests/language-picker.test.js`. Capturas antes/depois: `docs/img/idiomas/`.
+
 ## 4. O que se traduz e o que não
 
 Traduz-se: tudo o que o jogador vê na versão do jogador — telas, botões, `aria-label`/`title`, toasts, modais,

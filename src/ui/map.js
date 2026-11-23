@@ -35,7 +35,9 @@ export function fitRegionNames(){
  });
 }
 // Legenda mais larga que a tela: marca para esmaecer a borda (indica que rola para o lado).
-export function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
+// Legenda larga demais (telas de 360 px, nomes longos em outros idiomas): o botão "ⓘ Terrenos" fica só "ⓘ" para
+// que o último item ("Pode atacar") apareça inteiro; se ainda não couber, a legenda rola com a borda esmaecida.
+export function markLegend(){const l=$("mapLegend");if(!l)return;const row=l.closest(".legend-row");if(row){row.classList.remove("lg-compact");if(l.scrollWidth>l.clientWidth+1)row.classList.add("lg-compact")}const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
 // Mapa ilustrado (Fase 3): um desenho em SVG (mar, costa, regiões com o seu terreno, fronteiras dos impérios) e, por cima,
 // um botão por região recortado na forma dela (clip-path), com o nome, o número e o símbolo do dono.
 // O toque só acerta a região desenhada; a vizinhança é a da grade (src/ui/mapshape.js). Mapas maiores que o Original

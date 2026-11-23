@@ -287,7 +287,7 @@ for (const [name, opts, wide] of [...MOBILE_SCREENS.map(([n, o]) => [n, o, true]
       const b = await assertClickable(page, `#${id}`, id);
       assert.ok(b.height >= 47.5);
     }
-    assert.equal(await page.locator("#menuList .menu-item svg.ic").count(), 7); // 7 itens desde as Medalhas (20/11/2026)
+    assert.equal(await page.locator("#menuList .menu-item svg.ic").count(), 8); // 7 itens desde as Medalhas (20/11/2026); 8 com o Idioma (23/11/2026)
     assert.doesNotMatch(await page.locator("#menuList").innerText(), /🏆|⌂|▤|↺/);
     // Tab preso no menu, mesmo com os ícones SVG (<use href> não é um alvo de foco).
     for (const k of ["Tab", "Tab", "Tab", "Tab", "Tab", "Tab", "Tab", "Tab", "Shift+Tab", "Shift+Tab"]) {

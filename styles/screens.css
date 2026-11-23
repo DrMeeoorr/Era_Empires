@@ -209,3 +209,14 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .pg-win>div.wide{grid-column:1/-1}
 .pg-desc.pg-gd{color:#d2c2ff;white-space:pre-line}
 .pg-desc.pg-gd[hidden]{display:none}
+
+/* ===== Idioma (23/11/2026): botão 🌐 no canto inferior esquerdo da cena "Aurora" (por cima das colinas, longe
+   das bandeiras e do nome do jogo; perto do polegar), abre a folha #languageSheet (estilos em game.css). ===== */
+.au-lang{position:absolute;z-index:3;left:max(16px,env(safe-area-inset-left,0px));bottom:12px;display:inline-flex;align-items:center;gap:7px;min-width:48px;min-height:48px;padding:0 15px 0 12px;border-radius:999px;border:1px solid #ffffff4d;background:#0e1a30c7;backdrop-filter:blur(6px);color:var(--scr-parch);font-size:14px;font-weight:700;letter-spacing:.06em;-webkit-tap-highlight-color:transparent}
+.au-lang .ic{width:20px;height:20px;color:#ffd58a}
+.au-lang:active{transform:translateY(1px);filter:brightness(1.12)}
+/* Textos longos em outros idiomas (fr "Comment jouer", de "Spielanleitung", it "Come si gioca"): uma linha só. */
+.au-row2 .btn-glass{white-space:nowrap;gap:6px;padding-left:8px;padding-right:8px;font-size:clamp(13.5px,4vw,15px)}
+/* Duração: "Sem limite / até vencer" (de "Unbegrenzt / bis zum Sieg", it "Senza limite / fino alla vittoria")
+   ganha a coluna mais larga; 15 e 30 precisam de pouco. */
+#homeEraPresets{grid-template-columns:minmax(0,.78fr) minmax(0,.78fr) minmax(0,1.4fr) minmax(0,1.04fr)}
