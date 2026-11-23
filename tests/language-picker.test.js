@@ -182,10 +182,16 @@ test("primeira abertura com o idioma do aparelho: nenhuma pergunta obrigatória,
   await context.close();
 });
 
-// Textos apertados apontados pelo tradutor (23/11/2026), em 360×640.
-for (const lang of ["pt-BR", "en", "pt-PT", "it", "de", "fr"]) {
-  test(`${lang}: textos apertados cabem em 360 px (Como jogar, Duração, Terrenos, menu, legenda, fim de jogo)`, async () => {
+// Textos apertados apontados pelo tradutor (23/11/2026), em 360×640. Também com a fonte larga DejaVu Sans (a do
+// GitHub Actions e de vários Android): o CI falhava aqui com textos que cabiam na Inter.
+const WIDE_FONT = '*{font-family:"DejaVu Sans",sans-serif!important}';
+for (const wide of [false, true]) for (const lang of ["pt-BR", "en", "pt-PT", "it", "de", "fr"]) {
+  test(`${lang}${wide ? " com fonte larga (DejaVu Sans)" : ""}: textos apertados cabem em 360 px (Como jogar, Duração, Terrenos, menu, legenda, fim de jogo)`, async () => {
     const { context, page, errors } = await openGame(browser, { contextOptions: { ...S360, reducedMotion: "reduce" }, query: "?lang=" + lang });
+    if (wide) {
+      await page.addStyleTag({ content: WIDE_FONT });
+      assert.ok(await page.evaluate(() => document.fonts.check('16px "DejaVu Sans"')), "fonte DejaVu Sans indisponível");
+    }
     const oneLine = (sel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].map((el) => { const lh = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.25; return [el.textContent.trim(), Math.round(el.getBoundingClientRect().height / lh)]; }), sel);
     for (const [txt, n] of await oneLine("#homeTutorial > span, #homeHowTo > span")) assert.equal(n, 1, `"${txt}" quebra em ${n} linhas`);
     await page.locator("#homeStart").click();

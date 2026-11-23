@@ -25,8 +25,13 @@ async function showResult(page, { winner, reason, player, rival, kept = false })
   }, { winner, reason, player, rival, kept });
 }
 
-async function openInGame(lang) {
+const WIDE_FONT = '*{font-family:"DejaVu Sans",sans-serif!important}';
+async function openInGame(lang, wide = false) {
   const o = await openGame(browser, { contextOptions: SMALL, query: "?lang=" + lang });
+  if (wide) {
+    await o.page.addStyleTag({ content: WIDE_FONT });
+    assert.ok(await o.page.evaluate(() => document.fonts.check('16px "DejaVu Sans"')), "fonte DejaVu Sans indisponível");
+  }
   await o.page.locator("#homeStart").click();
   await o.page.locator("#setupStart").click();
   await o.page.waitForFunction(() => document.getElementById("homeScreen").hidden && state.era === 1);
@@ -63,7 +68,8 @@ test("pt-BR: vitória por domínio/supremacia/eliminação sem liderar os pontos
   await context.close();
 });
 
-test("os 6 idiomas têm o texto novo e cabem em 360×640 (de e fr incluídos)", async () => {
+// Também com a fonte larga DejaVu Sans (a do GitHub Actions e de vários Android).
+for (const wide of [false, true]) test(`os 6 idiomas têm o texto novo e cabem em 360×640 (de e fr incluídos)${wide ? " com fonte larga (DejaVu Sans)" : ""}`, async () => {
   const want = {
     en: [/domination wins, even without leading on points/, /domination wins, even with you ahead on points/],
     "pt-PT": [/^Controla 70% das regiões — o domínio vence/, /mesmo consigo à frente nos pontos/],
@@ -73,7 +79,7 @@ test("os 6 idiomas têm o texto novo e cabem em 360×640 (de e fr incluídos)", 
     "pt-BR": [/o domínio vence, mesmo sem liderar/, /mesmo com você à frente/],
   };
   for (const [lang, [winRe, lostRe]] of Object.entries(want)) {
-    const { context, page, errors } = await openInGame(lang);
+    const { context, page, errors } = await openInGame(lang, wide);
     for (const [args, re] of [[{ winner: "player", reason: "territorial", player: 0.4, rival: 0.6 }, winRe], [{ winner: "rival", reason: "territorial", player: 0.6, rival: 0.4 }, lostRe],
       [{ winner: "player", reason: "supremacy", player: 0.4, rival: 0.6 }, /\S/], [{ winner: "rival", reason: "elimination", player: 0.6, rival: 0.4 }, /\S/]]) {
       const r = await showResult(page, args);
@@ -92,7 +98,13 @@ test("os 6 idiomas têm o texto novo e cabem em 360×640 (de e fr incluídos)", 
       const b = await page.locator(sel).boundingBox();
       assert.ok(b && b.y + b.height <= vh + 1, `${lang}: ${sel} fora da tela (${b && b.y + b.height} > ${vh})`);
     }
-    await screenshot(page, `resultado-dominio-sem-liderar-${lang}-360x640`);
+    await screenshot(page, `resultado-dominio-sem-liderar-${lang}-360x640${wide ? "-dejavu" : ""}`);
+    // Os botões ficam presos embaixo; rolando até o fim, nada do conteúdo fica escondido atrás deles.
+    const hidden = await page.evaluate(() => { const scr = document.getElementById("resultScreen"); scr.scrollTop = scr.scrollHeight;
+      const top = document.querySelector("#resultScreen .res-actions").getBoundingClientRect().top;
+      return [...document.querySelectorAll("#resultScreen .res-inner > :not(.res-actions)")].filter((el) => el.getBoundingClientRect().bottom > top + 1).map((el) => el.className); });
+    assert.deepEqual(hidden, [], `${lang}: conteúdo escondido atrás dos botões`);
+    await page.evaluate(() => { document.getElementById("resultScreen").scrollTop = 0; });
     assert.deepEqual(errors, []);
     await context.close();
   }

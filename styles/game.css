@@ -275,7 +275,7 @@ html.game-fit .map .territory{height:auto;min-height:0}
 @keyframes sumIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes evIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes barGrow{from{width:0}to{width:var(--w)}}
-.menu-item .mi-state{color:var(--muted);font-weight:600;margin-left:-6px}
+.menu-item .mi-state{color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap;margin-left:-6px}
 #summaryToggle[aria-pressed="false"] .mi{color:var(--muted)}
 /* ===== UX Fase 3: tela de resultado (fim da partida) ===== */
 html.result-open,html.result-open body{overflow:hidden}
@@ -283,7 +283,7 @@ html.result-open,html.result-open body{overflow:hidden}
 .result-screen[hidden]{display:none!important}
 .result-screen.won{background:radial-gradient(90% 42% at 50% 6%,#5a4416 0,#0b1220 70%)}
 .result-screen.lost{background:radial-gradient(90% 42% at 50% 6%,#3a1d2a 0,#0b1220 70%)}
-.res-inner{max-width:520px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.res-inner{max-width:520px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 0}
 .res-emblem{width:96px;height:110px;margin:4px auto 6px}.res-emblem svg{width:100%;height:100%}
 .won .res-emblem{filter:drop-shadow(0 10px 30px #f5c04e88)}
 .res-title{text-align:center;font-size:32px;font-weight:900;line-height:1.15;margin:4px 0 4px}
@@ -294,10 +294,12 @@ html.result-open,html.result-open body{overflow:hidden}
 .res-tile{background:#14213a;border:1px solid var(--line);border-radius:14px;padding:10px 6px;text-align:center;min-width:0}
 .res-tile .v{font-size:24px;font-weight:900;line-height:1.15}.res-tile .v small{font-size:13px;color:var(--muted);font-weight:700}
 .res-tile .k{font-size:12px;color:var(--muted);line-height:1.25}
-.res-actions{margin-top:auto;display:grid;gap:10px;padding-top:6px}
+/* Botões presos embaixo: com textos longos (fr, de), fontes largas do Android ou o cartão de medalhas novas, o conteúdo
+   rola por baixo deles e "Jogar de novo" / "Ver detalhes" / "Início" continuam sempre à vista (e perto do polegar). */
+.res-actions{margin-top:auto;display:grid;gap:10px;position:sticky;bottom:0;z-index:1;margin-inline:-16px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(#0b122000,#0b1220 12px)}
 .res-again{min-height:58px;font-size:18px;font-weight:850;border-radius:16px}
 .res-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.res-two button{min-height:52px;font-weight:750;border-radius:14px}
-@media (max-height:700px){.res-emblem{width:70px;height:80px;margin-top:0}.res-title{font-size:25px}.res-sub{margin-bottom:8px;font-size:14px}.res-tile{padding:8px 4px}.res-tile .v{font-size:20px}.res-tiles{margin:8px 0}}
+@media (max-height:700px){.res-emblem{width:56px;height:64px;margin-top:0}.res-actions{padding-top:10px}.res-title{font-size:25px}.res-sub{margin-bottom:8px;font-size:14px}.res-tile{padding:8px 4px}.res-tile .v{font-size:20px}.res-tiles{margin:8px 0}}
 @media (prefers-reduced-motion:no-preference){.result-screen:not([hidden]) .res-inner{animation:sumIn .3s ease-out}.result-screen .sum-row .bar i{animation:barGrow .7s ease-out .2s both}}
 #resultSheet .chart{width:100%}
 /* ===== UX Fase 3: tutorial com dicas curtas, seta e o resto da tela escurecido ===== */

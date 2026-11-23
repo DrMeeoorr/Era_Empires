@@ -274,7 +274,7 @@ export const DICT_IT={
  "end.lostLead.elimination":"{civ} ha eliminato tutti i rivali — l'eliminazione vince, anche se sei tu in testa ai punti.",
  "end.tile.lands":"territori",
  "end.tile.points":"punti",
- "end.tile.ahead":"punti di vantaggio sul 2º",
+ "end.tile.ahead":"punti di vantaggio",
  "end.tile.toFirst":"punti dal 1º",
  "end.tile.conquests":{one:"conquista",other:"conquiste"},
  "end.tile.sciPts":"punti di Scienza",

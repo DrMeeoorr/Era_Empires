@@ -365,6 +365,11 @@ Nenhuma regra, número ou IA mudou (impressões digitais **39190b06** / **5c97e2
   - Legenda do mapa: em telas estreitas (360 px), quando a legenda não cabe, "ⓘ Terrenos" vira só "ⓘ" (o nome continua
     no aria-label) e "Pode atacar" / "Angreifbar" / "Attaquable" aparece inteiro em todos os idiomas (antes ficava
     cortado também em pt-BR).
+  - **Fonte larga** (DejaVu Sans, a do GitHub Actions e de vários Android; os testes de idioma também rodam com ela):
+    Duração com colunas que nunca ficam menores que a palavra mais longa (fr "moyenne"); Terrenos lado a lado quando
+    cabe, senão uma opção por linha (o pt continua "cada terreno muda o jogo"); it "punti di vantaggio" (sem "sul 2º",
+    como en/de/fr); fr menu "Résumé des ères : activé"; tela de resultado com os botões presos embaixo (o conteúdo rola
+    por baixo deles) e emblema menor em telas baixas.
 
 ## 23/11/2026 — Dúvidas de tradução (tradutor) — decididas
 - Força em inglês: **Might**. Obras: **fr "Ouvrages"**, **de "Bauwerke"** (em todo o jogo). Domínio em alemão:

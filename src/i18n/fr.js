@@ -700,7 +700,7 @@ export const DICT_FR={
  "menu.navAria":"Menu du jeu",
  "menu.score":"Classement et victoire",
  "menu.details":"Détails de la partie",
- "menu.summary":"Résumé de chaque ère :",
+ "menu.summary":"Résumé des ères :",
  "menu.restartAria":"Recommencer la partie",
  "vic.conditions":"Conditions de victoire",
  "plan.title":"Plans rapides",

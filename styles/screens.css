@@ -219,7 +219,12 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 .au-row2 .btn-glass{white-space:nowrap;gap:6px;padding-left:8px;padding-right:8px;font-size:clamp(13.5px,4vw,15px)}
 /* Duração: "Sem limite / até vencer" (de "Unbegrenzt / bis zum Sieg", it "Senza limite / fino alla vittoria")
    ganha a coluna mais larga; 15 e 30 precisam de pouco. */
-#homeEraPresets{grid-template-columns:minmax(0,.78fr) minmax(0,.78fr) minmax(0,1.4fr) minmax(0,1.04fr)}
+#homeEraPresets{grid-template-columns:minmax(min-content,.78fr) minmax(min-content,.78fr) minmax(min-content,1.4fr) minmax(min-content,1.04fr)}
+/* (Fontes mais largas do Android, ex. DejaVu Sans: fr "moyenne" não cabe em .78fr; a coluna nunca fica menor que a
+   palavra mais longa dela.) Terrenos: lado a lado quando cabe; se o subtítulo não cabe (pt "cada terreno muda o
+   jogo" com fonte larga em 360 px), cada opção ocupa uma linha inteira em vez de quebrar ou cortar o texto. */
+.pg-seg-wrap{display:flex;flex-wrap:wrap}
+.pg-seg-wrap>button{flex:1 1 0;min-width:max-content}
 /* Como vencer (Personalizar): uma chave por tipo de vitória (a Supremacia substitui o antigo Clássica/Conquista). */
 .pg-vic{border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
 .pg-vbody{padding:0 12px 10px}
