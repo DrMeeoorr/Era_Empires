@@ -6,7 +6,8 @@ import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {parseAmount,fmtInput,escapeHtml,fmt,money} from "./format.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
-import {wonderCountsNow,WONDER_HINT_OFF,WONDER_HINT_ON} from "./discovery.js";
+import {wonderCountsNow,wonderHintOff,wonderHintOn} from "./discovery.js";
+import {t} from "../i18n/index.js";
 
 /* ── Investimentos: botões, planos e valores ── */
 export const AREAS=[["mil","military"],["infra","infrastructure"],["tech","technology"]];
@@ -23,24 +24,24 @@ export function renderAllocation(statusMessage=null){
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=Math.max(0,b-sum),c=configApplied;
  const shownLeft=left<0.01?0:left,ended=!!state.result,over=sum>b+1e-8;
  $("actionLeft").classList.toggle("hidden",ended);$("actionEnded").classList.toggle("hidden",!ended);
- if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?"O total passa do ouro disponível":shownLeft===0?`<span aria-hidden="true">✓</span> tudo investido`:shownLeft<0.05?`sobra <strong>menos de 0,1</strong> de ouro`:`sobram <strong>${fmt(shownLeft,1)}</strong> de ouro`;
+ if(!ended)$("actionLeft").innerHTML=statusMessage?escapeHtml(statusMessage):over?t("alloc.over"):shownLeft===0?`<span aria-hidden="true">✓</span> ${t("alloc.allIn")}`:shownLeft<0.05?t("alloc.leftTiny",{n:fmt(0.1,1)}):t("alloc.left",{n:fmt(shownLeft,1),count:shownLeft});
  $("advance").classList.toggle("done-all",!ended&&shownLeft===0&&!over&&!statusMessage);
  AREAS.forEach(([k],i)=>{$(k+"Bar").style.width=(b>0?clamp(100*vals[i]/b,0,100):0)+"%";$(k+"Fine").textContent=fmt(vals[i],2)});
- $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?"O total ultrapassa o orçamento.":left<0.01?"Orçamento todo investido.":`Por investir: ${money(left)} (fica guardado para a próxima era).`);
+ $("allocationStatus").className="status"+(statusMessage||over?" error":"");$("allocationStatus").textContent=statusMessage||(over?t("alloc.overBudget"):left<0.01?t("alloc.allInvested"):t("alloc.toInvest",{gold:money(left)}));
  const milGain=vals[0]*c.military.pointsPerInvestment,infraGain=vals[1]*c.infrastructure.initialReturn,techGain=vals[2]*c.technology.progressPerInvestment*c.technology.benefitPerProgress,techEra=state.era+effectiveDelay("technology",c.technology.delay,state.mode);
- $("milForecast").textContent=`+${fmt(milGain,1)} de Força na próxima era. Curto prazo: a Força não usada defende suas regiões, mas perde 20% por era.`;
- $("infraForecast").textContent=`Rende cerca de ${money(infraGain)} por era a partir da próxima, crescendo até a 4.ª era e depois acabando.`;
- $("techForecast").textContent=`Rende ${money(techGain)} por era, para sempre, a partir da era ${techEra}.`;
- $("milPrev").innerHTML=vals[0]>0?`<span class="gold">+${fmt(milGain,1)}</span> de Força`:"curto prazo";
- $("infraPrev").innerHTML=vals[1]>0?`<span class="green">+${fmt(infraGain,2)}</span>/era`:"médio prazo";
+ $("milForecast").textContent=t("alloc.milForecast",{n:fmt(milGain,1)});
+ $("infraForecast").textContent=t("alloc.infraForecast",{gold:money(infraGain)});
+ $("techForecast").textContent=t("alloc.techForecast",{gold:money(techGain),era:String(techEra)});
+ $("milPrev").innerHTML=vals[0]>0?t("alloc.milPrev",{n:`<span class="gold">+${fmt(milGain,1)}</span>`}):t("alloc.short");
+ $("infraPrev").innerHTML=vals[1]>0?`<span class="green">+${fmt(infraGain,2)}</span>${t("hud.perEra")}`:t("alloc.medium");
  // Maravilha da Humanidade (mapas 2×–4×): as Obras só contam nas eras em que são a maior fatia. Aviso curto na linha
  // das Obras e a frase inteira na folha de ajuste fino; muda a cada toque nos controles.
  const wc=wonderCountsNow(vals),ip=$("infraPrev");
- if(wc===false){ip.innerHTML=`<span class="wd-warn">fora da Maravilha</span>`;ip.title=WONDER_HINT_OFF}else ip.removeAttribute("title");
- const wh=$("wonderHint");if(wh){wh.hidden=wc===null;wh.textContent=wc===null?"":wc?WONDER_HINT_ON:WONDER_HINT_OFF;wh.classList.toggle("off",wc===false)}
- $("techPrev").innerHTML=vals[2]>0?`<span class="purple">+${fmt(techGain,2)}</span>/era<span class="wide"> · era ${techEra}</span>`:"longo prazo";
- $("advTitle").textContent=ended?"Jogar de novo →":`Concluir era ${state.era}`;
- $("advance").setAttribute("aria-label",ended?"Jogar de novo":`Concluir era ${state.era}: ${$("actionLeft").textContent.trim()}`);
+ if(wc===false){ip.innerHTML=`<span class="wd-warn">${t("alloc.offWonder")}</span>`;ip.title=wonderHintOff()}else ip.removeAttribute("title");
+ const wh=$("wonderHint");if(wh){wh.hidden=wc===null;wh.textContent=wc===null?"":wc?wonderHintOn():wonderHintOff();wh.classList.toggle("off",wc===false)}
+ $("techPrev").innerHTML=vals[2]>0?`<span class="purple">+${fmt(techGain,2)}</span>${t("hud.perEra")}<span class="wide"> · ${t("alloc.techEra",{era:String(techEra)})}</span>`:t("alloc.long");
+ $("advTitle").textContent=ended?t("alloc.againArrow"):t("alloc.conclude",{era:String(state.era)});
+ $("advance").setAttribute("aria-label",ended?t("alloc.again"):t("alloc.concludeAria",{era:String(state.era),left:$("actionLeft").textContent.trim()}));
  $("advance").disabled=busy||(!ended&&over);
  document.querySelectorAll("#investCard button, #investCard input, #fineSheet button, #plans button").forEach(el=>{if(!el.matches("[data-open]"))el.disabled=ended||!P(state).active});
 }

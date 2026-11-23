@@ -11,7 +11,7 @@ export function svgLine(canvas,series,opts={}){
  const n=Math.max(1,...series.map(s=>s.data.length));
  if(opts.markX){const x=pad.l+(n<=1?0:(opts.markX-1)/(n-1))*pw;ctx.save();ctx.strokeStyle="#f4bd50";ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();ctx.restore()}
  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();let started=false;s.data.forEach((p,i)=>{let x=pad.l+(n<=1?0:i/(n-1))*pw,y=pad.t+ph-(p.y-min)/range*ph;if(!Number.isFinite(y))return;if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)});ctx.stroke()});
- ctx.fillStyle="#9fb0c7";ctx.textAlign="center";ctx.fillText("Era",pad.l+pw/2,h-5);if(n>1){ctx.fillText("1",pad.l,h-5);ctx.fillText(String(n),w-pad.r-4,h-5)}ctx.textAlign="start";
+ ctx.fillStyle="#9fb0c7";ctx.textAlign="center";ctx.fillText(opts.xLabel??"Era",pad.l+pw/2,h-5);if(n>1){ctx.fillText("1",pad.l,h-5);ctx.fillText(String(n),w-pad.r-4,h-5)}ctx.textAlign="start";
 }
 /* ── Gráfico de barras agrupadas (canvas) ── */
 export function barChart(canvas,labels,series,opts={}){

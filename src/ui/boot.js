@@ -6,7 +6,8 @@
 import {loadMedals,useMedalSlot} from "../app/medals.js";
 import {migrateLegacySaveKey,useSaveSlot} from "../app/save.js";
 import {initSheets} from "./sheets.js";
-import {watchShortScreen} from "./allocation.js";
+import {watchShortScreen,readAlloc,AREAS} from "./allocation.js";
+import {fmtInput} from "./format.js";
 import {initGame} from "./game.js";
 import {initHome} from "./home.js";
 import {fillTerrainLists} from "./map.js";
@@ -23,7 +24,8 @@ export async function boot({saveSlot="player",migrateOldSave=false,labs=null,deb
  // Idioma da interface (preferência do aparelho, fora do save): ?lang= › escolha gravada › idioma do aparelho › pt-BR.
  // Lido antes de desenhar qualquer tela. Trocar o idioma (setLanguage) só redesenha: a partida não muda.
  await initLanguage();
- onLanguageChange(()=>{if(state)renderAll()});
+ // Os campos de investimento passam ao separador decimal do novo idioma (o valor é o mesmo; a partida não muda).
+ onLanguageChange(()=>{if(!state)return;const v=readAlloc();renderAll();AREAS.forEach(([k],i)=>{const el=$(k+"Spend");if(el)el.value=fmtInput(v[i])})});
  if(migrateOldSave)await migrateLegacySaveKey();
  initSheets();watchShortScreen();fillTerrainLists();
  await loadMedals();

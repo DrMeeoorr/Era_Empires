@@ -19,6 +19,7 @@ import {renderForecast,renderHistory,renderNotifications,renderVictory,renderCha
 import {eraSnapshot,showEraSummary,toggleEraSummary,renderSummaryToggle} from "./report.js";
 import {noteEraMedals,noteEndMedals} from "./medals.js";
 import {sheetOpen,closeSheet} from "./sheets.js";
+import {t} from "../i18n/index.js";
 
 export function showSaveWarning(err){
  if(typeof document==="undefined")return;let el=document.getElementById("saveWarning");
@@ -26,12 +27,12 @@ export function showSaveWarning(err){
  if(!el){el=document.createElement("div");el.id="saveWarning";el.className="save-warning";el.setAttribute("role","alert");document.body.appendChild(el)}
  const full=err&&(err.name==="QuotaExceededError"||err.code===22);
  // Estilo "Atlas": cartão escuro com faixa vermelha, ícone de alerta (não depende só da cor) e ✕ de 48 px.
- el.innerHTML=`<span class="sw-ic" aria-hidden="true"><svg class="ic"><use href="#i-alert"/></svg></span><span class="sw-t"><strong>Não foi possível salvar a partida.</strong> ${full?"O armazenamento do navegador está cheio.":"O navegador bloqueou o armazenamento."} Se fechar o jogo agora, você pode perder o que fez desde o último salvamento.</span><button type="button" class="sw-x" aria-label="Fechar aviso"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>`;
+ el.innerHTML=`<span class="sw-ic" aria-hidden="true"><svg class="ic"><use href="#i-alert"/></svg></span><span class="sw-t">${t("save.warn",{why:t(full?"save.full":"save.blocked")})}</span><button type="button" class="sw-x" aria-label="${t("save.closeWarn")}"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>`;
  el.querySelector("button").onclick=()=>{el.hidden=true};el.hidden=false;
 }
 // savedRaw: o texto do save carregado ao abrir o jogo (para pôr de lado se falhar ao desenhar).
 export let savedGameLoaded=false,saveProblem=null,savedRaw=null;
-export function noticeBrokenSave(){setTimeout(()=>showDialog({icon:"alert",tone:"danger",title:"Não foi possível continuar a partida salva",text:"Os dados da partida salva neste aparelho estão danificados ou são de uma versão incompatível. Uma nova partida foi iniciada, e uma cópia dos dados antigos foi guardada separadamente.",buttons:[{label:"Entendi",kind:"primary"}],esc:0}),350)}
+export function noticeBrokenSave(){setTimeout(()=>showDialog({icon:"alert",tone:"danger",title:t("save.broken.title"),text:t("save.broken.text"),buttons:[{label:t("common.understood"),kind:"primary"}],esc:0}),350)}
 // Primeiro desenho com um save carregado: se falhar, o save é posto de lado e começa uma partida nova.
 export function renderSavedSafely(render){
  try{render()}catch(e){
@@ -48,12 +49,12 @@ export function concludeEra(){
  if(dominionAsking(state)){showDominionChoice();return}
  if(state.result){startNewGame();return}
  const vals=readAlloc(),sum=vals.reduce((a,b)=>a+b,0),b=P(state).treasury,left=b-sum;
- if(sum>b+1e-8){renderAllocation("O total ultrapassa o orçamento.");return}
+ if(sum>b+1e-8){renderAllocation(t("alloc.overBudget"));return}
  const go=()=>{const tst=$("toast");if(tst)tst.hidden=true;const alloc={military:vals[0],infrastructure:vals[1],technology:vals[2]},before=eraSnapshot();playEra(alloc);const medals=noteEraMedals(before);saveGame();AREAS.forEach(([k])=>$(k+"Spend").value=0);setSelectedTerritory(null);renderAll();window.scrollTo({top:0,behavior:"smooth"});if(dominionAsking(state))showDominionChoice({before,medals});else showEraSummary(before,medals)};
  if(P(state).active&&!state.ui?.skipIdleWarning&&left>=Math.max(0.5,b*0.01)){
-  showDialog({icon:"coins",title:`Você ainda tem ${money(left)} para investir`,text:"O saldo fica guardado para as próximas eras e conta para a vitória, mas não rende nada nem defende o império.",
-   body:`<label class="dlg-check"><input type="checkbox" id="skipIdle"> Não perguntar de novo nesta partida</label>`,
-   buttons:[{label:"Voltar e investir",kind:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:"Concluir mesmo assim",onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}],esc:0});
+  showDialog({icon:"coins",title:t("idle.title",{gold:money(left)}),text:t("idle.text"),
+   body:`<label class="dlg-check"><input type="checkbox" id="skipIdle"> ${t("idle.dontAsk")}</label>`,
+   buttons:[{label:t("idle.back"),kind:"primary",onClick:()=>{if($("skipIdle").checked){state.ui.skipIdleWarning=true;saveGame()}}},{label:t("idle.conclude"),onClick:()=>{if($("skipIdle").checked)state.ui.skipIdleWarning=true;go()}}],esc:0});
   return;
  }
  go();
@@ -69,9 +70,9 @@ export function showDominionChoice(ctx){
  if(document.getElementById("dominionChoice"))return true;
  const s=state,mine=countTerritories(s,"player"),total=territoryBase(s),min=territorialMinimum(total,configApplied.endgame.territoryPct);
  const after=win=>{const c=domCtx;domCtx=null;chooseDominion(win);if(win)noteEndMedals();saveGame();setSelectedTerritory(null);renderAll();if(!state.result&&c)showEraSummary(c.before,c.medals)};
- showDialog({icon:"crown",title:"Você domina o mapa!",text:`Você controla ${mine} de ${total} regiões (70% ou mais).`,
-  body:`<p class="dlg-help">Continuando, você ainda vence por domínio no fim se mantiver 70% (${min} regiões).</p>`,
-  buttons:[{label:"Vencer agora",kind:"primary",onClick:()=>after(true)},{label:`Continuar até a era ${escapeHtml(s.maxEras)}`,onClick:()=>after(false)}],esc:0});
+ showDialog({icon:"crown",title:t("dom.title"),text:t("dom.text",{mine:String(mine),total:String(total)}),
+  body:`<p class="dlg-help">${t("dom.help",{min:String(min)})}</p>`,
+  buttons:[{label:t("dom.win"),kind:"primary",onClick:()=>after(true)},{label:t("dom.continue",{era:escapeHtml(s.maxEras)}),onClick:()=>after(false)}],esc:0});
  const m=$("modalRoot").querySelector(".modal");if(m)m.id="dominionChoice";
  return true;
 }
@@ -104,7 +105,7 @@ export async function initGame(){
  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
  AREAS.forEach(([k],idx)=>{
   const input=$(k+"Spend");
-  input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation("Ajustado ao máximo disponível.")}else renderAllocation()});
+  input.addEventListener("input",()=>{const v=readAlloc(),b=P(state).treasury,others=v.reduce((s,x,j)=>s+(j===idx?0:x),0),max=Math.max(0,b-others);if(v[idx]>max+1e-9){input.value=fmtInput(round2(max));renderAllocation(t("alloc.adjusted"))}else renderAllocation()});
   input.addEventListener("focus",()=>{if(parseAmount(input.value)===0)input.select()});
   const ctrl=input.parentElement,fine=document.querySelector(`.fine-row[data-area="${k}"]`);
   input.addEventListener("keydown",e=>{if(e.key==="Enter")input.blur()});
@@ -118,7 +119,7 @@ export async function initGame(){
  $("advance").onclick=concludeEra;
  $("attack").onclick=attackSelected;
  // Menu: a folha fecha antes da ação (o aviso de Reiniciar é um modal por cima do jogo).
- $("restart").onclick=()=>{closeSheet({focus:false});showDialog({icon:"restart",tone:"danger",title:"Reiniciar a partida?",text:"A partida atual será substituída por uma nova com as mesmas escolhas.",buttons:[{label:"Cancelar"},{label:"Reiniciar",kind:"danger",onClick:startNewGame}],esc:0,returnFocus:()=>$("menuBtn")})};
+ $("restart").onclick=()=>{closeSheet({focus:false});showDialog({icon:"restart",tone:"danger",title:t("restart.title"),text:t("restart.text"),buttons:[{label:t("common.cancel")},{label:t("restart.button"),kind:"danger",onClick:startNewGame}],esc:0,returnFocus:()=>$("menuBtn")})};
  // Resumo da era: liga/desliga no menu ☰ (o resumo aparece em concludeEra, só quando o jogador conclui a era).
  $("summaryToggle").onclick=toggleEraSummary;
  window.addEventListener("resize",()=>{fitRegionNames();markLegend();renderCharts();placePlans();if(state.result)renderResult()});

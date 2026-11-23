@@ -1,6 +1,6 @@
 // Formatação para o jogador (pt-BR: 1.234,5 · "de ouro"), texto seguro em HTML e conversão dos textos do motor.
 import {regionName} from "../core/names.js";
-import {formatNumber,t} from "../i18n/index.js";
+import {formatNumber,getLanguage,ordinal,t} from "../i18n/index.js";
 
 // Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
 export const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
@@ -43,6 +43,19 @@ export const UI_TEXT_RULES=[
  [/e foi eliminada\./g,"e foi eliminado."]
 ];
 export const uiText=t=>UI_TEXT_RULES.reduce((s,[re,to])=>s.replace(re,to),String(t??""));
-// Campos de investimento: mostram vírgula decimal (formato do Brasil) e aceitam "12,5", "12.5" e "1.250" (milhar).
-export const fmtInput=v=>String(Math.round(v*100)/100).replace(".",",");
-export function parseAmount(raw){let t=String(raw??"").trim().replace(/\s/g,"");if(t.includes(","))t=t.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");const v=Number(t);return Number.isFinite(v)?v:0}
+// Campos de investimento: mostram o separador decimal do idioma (vírgula em pt-BR, pt-PT, it, de e fr; ponto em en)
+// e aceitam as duas formas e o separador de milhar ("12,5", "12.5", "1.250" em pt-BR; "12.5", "1,250" em en).
+// Sem separador de milhar no valor mostrado (o campo é curto). lang: idioma (padrão: o atual).
+export const decimalSeparator=(lang=getLanguage())=>lang==="en"?".":",";
+export const fmtInput=(v,lang=getLanguage())=>String(Math.round(v*100)/100).replace(".",decimalSeparator(lang));
+export function parseAmount(raw,lang=getLanguage()){
+ let t=String(raw??"").trim().replace(/\s/g,"");
+ if(decimalSeparator(lang)==="."){
+  // Inglês: ponto decimal, vírgula de milhar ("1,250.75"); só vírgula: milhar se tiver grupos de 3 ("1,250"), senão decimal ("12,5").
+  if(t.includes("."))t=t.replace(/,/g,"");else if(/^\d{1,3}(,\d{3})+$/.test(t))t=t.replace(/,/g,"");else t=t.replace(",",".");
+ }
+ else if(t.includes(","))t=t.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");
+ const v=Number(t);return Number.isFinite(v)?v:0;
+}
+// Ordinal no idioma: "1.º" (pt), "1st" (en), "1º" (it), "1." (de), "1er" (fr). fem: feminino do português ("1.ª").
+export const ord=(n,fem=false)=>ordinal(n,fem?"format.ordinalF":"format.ordinal");

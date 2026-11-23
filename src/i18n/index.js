@@ -59,20 +59,34 @@ export function formatNumber(n,d=1,code=current){return Number.isFinite(n)?n.toL
 const pluralRules={};
 export function pluralCategory(n,code=current){const pr=pluralRules[code]||(pluralRules[code]=new Intl.PluralRules(numberLocale(code)));return pr.select(Number(n))}
 
+// Número ordinal no idioma ("1.º", "1st", "1er", "1."): o dicionário tem um objeto com as categorias de
+// Intl.PluralRules({type:"ordinal"}) (en: one/two/few/other; fr: one/other) ou só "other". key: a chave do formato
+// (padrão "format.ordinal"; "format.ordinalF" para o feminino do português, ex.: "1.ª").
+const ordinalRules={};
+export function ordinal(n,key="format.ordinal",code=current){
+ let v=lookup(key,code),lang=code;if(v===undefined){v=lookup(key,DEFAULT_LANGUAGE);lang=DEFAULT_LANGUAGE}
+ if(v===undefined)return String(n);
+ if(typeof v==="object"){const pr=ordinalRules[lang]||(ordinalRules[lang]=new Intl.PluralRules(numberLocale(lang),{type:"ordinal"}));v=v[pr.select(Number(n))]??v.other}
+ return String(v).replace(/\{n\}/g,String(n));
+}
+
 function lookup(key,code){const v=DICTIONARIES[code]?.[key];return v===undefined||v===null||v===""?undefined:v}
 /* Texto da chave no idioma atual (ou em pt-BR, se faltar; ou a própria chave, se faltar também em pt-BR).
    params: {n: 3, name: "Rubro"} substitui {n} e {name}. Números são formatados no idioma (até 2 casas);
    passe um texto já formatado se precisar de outra forma.
-   Plural: o valor no dicionário pode ser um objeto {one:"…", other:"…"} (e zero/two/few/many quando o idioma usar);
-   a forma é escolhida por params.count ou, se não houver, params.n. "other" é sempre a forma de reserva. */
+   Plural: o valor no dicionário pode ser um objeto {one:"…", other:"…"} (e two/few/many quando o idioma usar);
+   a forma é escolhida por params.count ou, se não houver, params.n. "zero", se existir, é usada para o número 0
+   (em qualquer idioma). "other" é sempre a forma de reserva. */
 export function translate(key,params){
  let v=lookup(key,current),lang=current;
  if(v===undefined&&current!==DEFAULT_LANGUAGE){v=lookup(key,DEFAULT_LANGUAGE);lang=DEFAULT_LANGUAGE}
  if(v===undefined){missingKeys.add(key);return key}
  if(typeof v==="object"){
   const count=params?.count??params?.n;
-  const cat=Number.isFinite(Number(count))?pluralCategory(count,lang):"other";
-  v=v[cat]??v.other??Object.values(v)[0]??key;
+  const num=Number(count),cat=Number.isFinite(num)?pluralCategory(num,lang):"other";
+  // "zero" (opcional) vale para o número 0 em qualquer idioma: o português do Brasil trata 0 como singular no Intl
+  // ("one"), mas o jogo escreve "0 conquistas".
+  v=(num===0&&v.zero!=null?v.zero:v[cat])??v.other??Object.values(v)[0]??key;
  }
  return fill(String(v),params,lang);
 }

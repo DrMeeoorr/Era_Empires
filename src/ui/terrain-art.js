@@ -1,7 +1,13 @@
 // Desenhos dos terrenos (SVG feito à mão, sem imagens externas): cor de base, textura fina, desenhos espalhados
 // (longe do nome da região) e ícone pequeno para a legenda, a folha da região e o Como jogar.
 // Cada terreno tem uma forma própria, para não depender só da cor (daltonismo).
-import {TERRAINS,TERRAIN_NAMES,TERRAIN_EFFECT_TEXT} from "../core/terrain.js";
+import {TERRAINS,TERRAIN_EFFECT_TEXT} from "../core/terrain.js";
+import {t} from "../i18n/index.js";
+
+// Nome, dica e efeitos de cada terreno no idioma do jogador (chaves terrain.*; o motor guarda as chaves internas).
+export const terrainName=k=>TERRAINS.includes(k)?t("terrain."+k):"";
+export const terrainHint=k=>TERRAINS.includes(k)?t("terrain."+k+".hint"):"";
+export const terrainEffectTexts=k=>TERRAINS.includes(k)?(TERRAIN_EFFECT_TEXT[k]||[]).map((_,i)=>t("terrain."+k+".fx"+(i+1))):[];
 
 // base: fundo (contraste ≥ 5,9:1 com o nome branco); ink/acc: cores do desenho.
 export const TERRAIN_STYLE={
@@ -49,16 +55,16 @@ export function terrainIcon(k,px=20){
  return `<svg class="ter-ico" width="${px}" height="${px}" viewBox="-12 -12 24 24" aria-hidden="true" focusable="false"><rect x="-12" y="-12" width="24" height="24" rx="5" fill="${t.base}"/><rect x="-11.5" y="-11.5" width="23" height="23" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".28"/><g transform="translate(0 .5) scale(.86)">${terrainGlyph(k,ink,acc,false)}</g></svg>`;
 }
 // Etiqueta "ícone + nome" (folha da região).
-export const terrainChip=k=>`<span class="ter-chip">${terrainIcon(k,20)}${TERRAIN_NAMES[k]||""}</span>`;
+export const terrainChip=k=>`<span class="ter-chip">${terrainIcon(k,20)}${terrainName(k)}</span>`;
 // Efeitos de um terreno (terrenos com efeitos) como etiquetas curtas: as 2 vantagens ("up") e a desvantagem ("down").
 // Não depende só da cor: cada etiqueta tem o sinal (+ / −) no texto e a desvantagem tem borda tracejada.
 // Cada etiqueta fica numa linha só (sem quebrar no meio); as etiquetas passam para a linha de baixo quando não cabem.
-export const terrainEffectChips=k=>{const t=TERRAIN_EFFECT_TEXT[k]||[];return `<span class="ter-eff" role="list">${t.map((x,i)=>`<span class="fx ${i<t.length-1?"up":"down"}" role="listitem">${x}</span>`).join("")}</span>`};
+export const terrainEffectChips=k=>{const l=terrainEffectTexts(k);return `<span class="ter-eff" role="list">${l.map((x,i)=>`<span class="fx ${i<l.length-1?"up":"down"}" role="listitem">${x}</span>`).join("")}</span>`};
 // Texto corrido "+ … · + … · − …" (para leitores e resumos).
-export const terrainEffectLine=k=>(TERRAIN_EFFECT_TEXT[k]||[]).join(" · ");
+export const terrainEffectLine=k=>terrainEffectTexts(k).join(" · ");
 // Lista dos 7 terrenos (folha ⓘ Terrenos e Como jogar): ícone + nome e, embaixo, a dica (só visual, 2 colunas) ou as
 // etiquetas de vantagens/desvantagem (com efeitos, 1 coluna, para caber em 360 px sem quebrar o texto).
-export const terrainListHtml=(hints,fx=false)=>`<ul class="ter-list${fx?" ter-fx":""}">${TERRAINS.map(k=>`<li>${terrainIcon(k,28)}<span class="ter-txt"><b>${TERRAIN_NAMES[k]}</b>${fx?terrainEffectChips(k):hints?`<small>${hints[k]}</small>`:""}</span></li>`).join("")}</ul>`;
+export const terrainListHtml=(hints,fx=false)=>`<ul class="ter-list${fx?" ter-fx":""}">${TERRAINS.map(k=>`<li>${terrainIcon(k,28)}<span class="ter-txt"><b>${terrainName(k)}</b>${fx?terrainEffectChips(k):hints?`<small>${terrainHint(k)}</small>`:""}</span></li>`).join("")}</ul>`;
 // Onde ficam os desenhos de cada região: 2 em cima e 2 embaixo, longe da faixa do nome no meio.
 // Semente fixa (por região): o desenho é sempre o mesmo e não toca no sorteio do jogo.
 export function terrainSpots(shape){

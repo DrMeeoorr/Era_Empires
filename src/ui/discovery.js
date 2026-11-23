@@ -6,26 +6,29 @@ import {state,configApplied} from "../app/session.js";
 import {MAP_SIZES} from "../core/config.js";
 import {greatDiscoveryActive,greatDiscoveryProgress,greatDiscoveryGoal,greatDiscoveryMinRegions,wonderActive,wonderProgress,wonderGoal,wonderMinRegions} from "../core/endgame.js";
 import {makeGreatDiscovery,makeWonder,getCiv} from "../core/state.js";
-import {civName} from "../core/names.js";
 import {$} from "./dom.js";
 import {cssColor,escapeHtml,fmt} from "./format.js";
-import {civLabel} from "./labels.js";
+import {civLabel,civDisplayName} from "./labels.js";
+import {t} from "../i18n/index.js";
 
+// Nomes das corridas (pt-BR; na tela usa-se r.name(), traduzido).
 export const GD_NAME="Grande Descoberta",WD_NAME="Maravilha da Humanidade";
 const pts=v=>fmt(Math.floor(v+1e-9),0);
 const pct=x=>fmt(100*x,0)+"%";
 // As duas corridas: o que muda entre elas (nome, área, ícone, funções do motor, textos).
 export const RACES=[
- {key:"discovery",kind:"disc",name:GD_NAME,short:"Descoberta",area:"Ciência",icon:"i-spark",cls:"gd",
+ {key:"discovery",kind:"disc",icon:"i-spark",cls:"gd",
+  name:()=>t("gd.name"),short:()=>t("gd.short"),area:()=>t("gd.area"),
   active:s=>greatDiscoveryActive(s),progress:s=>greatDiscoveryProgress(s),goal:s=>greatDiscoveryGoal(s),min:s=>greatDiscoveryMinRegions(s),make:makeGreatDiscovery,
-  rule:(goal,min)=>`${GD_NAME}: junte ${pts(goal)} pontos de Ciência (o que você investe em Ciência) com pelo menos ${min} regiões. Os rivais atacam quem se aproxima da meta.`,
-  how:"Pontos = 20% do ouro que cada um investiu em Ciência (o saque não conta).",
-  rival:n=>`${n} está a caminho da ${GD_NAME}`,me:`Você passou da metade da ${GD_NAME}`},
- {key:"wonder",kind:"wonder",name:WD_NAME,short:"Maravilha",area:"Obras",icon:"i-temple",cls:"wd",
+  rule:(goal,min)=>t("gd.rule",{goal:pts(goal),min:String(min),count:min}),
+  how:()=>t("gd.how"),
+  rival:n=>t("gd.rival",{name:n}),me:()=>t("gd.me")},
+ {key:"wonder",kind:"wonder",icon:"i-temple",cls:"wd",
+  name:()=>t("wd.name"),short:()=>t("wd.short"),area:()=>t("wd.area"),
   active:s=>wonderActive(s),progress:s=>wonderProgress(s),goal:s=>wonderGoal(s),min:s=>wonderMinRegions(s),make:makeWonder,
-  rule:(goal,min)=>`${WD_NAME}: junte ${pts(goal)} pontos de Obras, contando só as eras em que Obras é o seu maior investimento, com pelo menos ${min} regiões. Os rivais atacam quem se aproxima da meta.`,
-  how:"Pontos = 20% do ouro investido em Obras nas eras em que Obras foi a maior fatia (mais que Força e que Ciência; empate não conta). O saque não conta.",
-  rival:n=>`${n} está construindo uma Maravilha`,me:`Você passou da metade da ${WD_NAME}`}
+  rule:(goal,min)=>t("wd.rule",{goal:pts(goal),min:String(min),count:min}),
+  how:()=>t("wd.how"),
+  rival:n=>t("wd.rival",{name:n}),me:()=>t("wd.me")}
 ];
 const raceOf=key=>RACES.find(r=>r.key===key);
 const on=(r,s=state)=>!!s&&r.active(s);
@@ -41,18 +44,18 @@ export const wdRuleText=(goal,min)=>RACES[1].rule(goal,min);
 export function racesRuleForSize(size){return RACES.map(r=>{const g=forSize(r,size);return g?r.rule(g.goal,g.minRegions):""}).filter(Boolean)}
 // Sem partida com a regra: os números dos 3 tamanhos.
 function ruleGeneric(r){
- const l=[2,3,4].map(k=>{const g=forSize(r,k);return g?`${k}× ${pts(g.goal)} com ${g.minRegions} regiões`:""}).filter(Boolean).join("; ");
- return `${r.name} (só nos mapas 2×, 3× e 4×): ${r.key==="wonder"?"junte pontos de Obras (contam só as eras em que Obras é o seu maior investimento; o saque não conta)":"junte pontos de Ciência (o que você investe em Ciência; o saque não conta)"} e tenha um mínimo de regiões${l?` — ${l}`:""}. Vence no fim da era. Os rivais atacam quem se aproxima da meta.`;
+ const l=[2,3,4].map(k=>{const g=forSize(r,k);return g?t("race.sizeGoal",{size:String(k),goal:pts(g.goal),min:String(g.minRegions),count:g.minRegions}):""}).filter(Boolean).join("; ");
+ return t(r.key==="wonder"?"wd.generic":"gd.generic",{list:l?t("race.sizeList",{list:l}):""});
 }
 export const gdRuleGeneric=()=>ruleGeneric(RACES[0]);
 // Regras completas (Como jogar): [data-gd-rule] e [data-wd-rule].
 export function fillGdRules(){
  const s=state;
- for(const r of RACES){const txt=on(r,s)?r.rule(r.goal(s),r.min(s))+" Vence no fim da era; o saque não conta.":ruleGeneric(r);
+ for(const r of RACES){const txt=on(r,s)?r.rule(r.goal(s),r.min(s))+" "+t("race.endOfEra"):ruleGeneric(r);
   document.querySelectorAll(`[data-${r.cls}-rule]`).forEach(el=>{el.textContent=txt})}
 }
 const mineOf=(r,s=state)=>r.progress(s).find(x=>x.id==="player")||null;
-const ariaOf=(r,me)=>`${r.name}: ${pts(me.progress)} de ${pts(me.goal)} pontos de ${r.area} (${pct(me.share)}); regiões ${me.regions} de ${me.minRegions}${me.regionsOk?", mínimo atingido":`, faltam ${me.minRegions-me.regions}`}.`;
+const ariaOf=(r,me)=>t(me.regionsOk?"race.ariaOk":"race.ariaLack",{name:r.name(),pts:pts(me.progress),goal:pts(me.goal),area:r.area(),pct:pct(me.share),regions:String(me.regions),min:String(me.minRegions),lack:String(me.minRegions-me.regions),count:me.minRegions-me.regions});
 
 // Faixa do topo. Uma corrida: "✦ Descoberta [barra] 7.430/24.000 ⚑ 18/20". As duas (mapas 2×–4×): duas metades na
 // mesma linha, "✦ [barra] 31% ⚑18/20 │ ▰ [barra] 12% ⚑18/16" (números exatos no leitor de tela e no Placar).
@@ -64,15 +67,15 @@ export function renderDiscoveryHud(){
  el.className=`hud-gd${two?" two":""}`;
  el.setAttribute("aria-label",list.map(({r,me})=>ariaOf(r,me)).join(" "));
  el.innerHTML=list.map(({r,me})=>{const st=me.reached?" done":me.share>=.5?" half":"";
-  return `<span class="gd-part ${r.cls}${st}" data-race="${r.key}" aria-hidden="true"><svg class="ic gd-ic" aria-hidden="true"><use href="#${r.icon}"/></svg>${two?"":`<span class="gd-k">${r.short}</span>`}<span class="gd-bar"><i style="width:${(100*me.share).toFixed(1)}%"></i><b></b></span>${two?`<span class="gd-v gd-pct"><b>${pct(me.share)}</b></span>`:`<span class="gd-v"><b>${pts(me.progress)}</b>/${pts(me.goal)}</span>`}<span class="gd-r ${me.regionsOk?"ok":"lack"}">⚑${two?"":" "}${me.regions}/${me.minRegions}${me.regionsOk&&!two?" ✓":""}</span></span>`}).join(two?'<span class="gd-sep" aria-hidden="true"></span>':"");
+  return `<span class="gd-part ${r.cls}${st}" data-race="${r.key}" aria-hidden="true"><svg class="ic gd-ic" aria-hidden="true"><use href="#${r.icon}"/></svg>${two?"":`<span class="gd-k">${r.short()}</span>`}<span class="gd-bar"><i style="width:${(100*me.share).toFixed(1)}%"></i><b></b></span>${two?`<span class="gd-v gd-pct"><b>${pct(me.share)}</b></span>`:`<span class="gd-v"><b>${pts(me.progress)}</b>/${pts(me.goal)}</span>`}<span class="gd-r ${me.regionsOk?"ok":"lack"}">⚑${two?"":" "}${me.regions}/${me.minRegions}${me.regionsOk&&!two?" ✓":""}</span></span>`}).join(two?'<span class="gd-sep" aria-hidden="true"></span>':"");
 }
 // Blocos do Placar ("Condições de vitória"): uma barra por império, % da meta e regiões ok/faltando.
 function racePanelHtml(r){
  const s=state;if(!on(r,s))return "";
  const list=r.progress(s).slice().sort((a,b)=>b.share-a.share||b.progress-a.progress);if(!list.length)return "";
- return `<h3>${r.name}: ${pts(r.goal(s))} pontos de ${r.area} + ${r.min(s)} regiões</h3><div class="small muted" style="margin:-2px 0 6px">${r.how} Quem passa da metade vira alvo dos rivais.</div>`+
+ return `<h3>${t("race.panelTitle",{name:r.name(),goal:pts(r.goal(s)),area:r.area(),min:String(r.min(s)),count:r.min(s)})}</h3><div class="small muted" style="margin:-2px 0 6px">${r.how()} ${t("race.halfTarget")}</div>`+
   list.map(x=>{const c=getCiv(s,x.id),lack=x.minRegions-x.regions;
-   return `<div class="gd-row${x.id==="player"?" me":""}" data-${r.cls}="${escapeHtml(x.id)}"><div class="row between small"><span>${civLabel(c)}${x.share>=.5&&!x.reached?' <span class="gold">· passou da metade</span>':""}</span><strong>${pts(x.progress)} <span class="muted">· ${pct(x.share)}</span></strong></div><div class="bar gd-pbar" style="margin:3px 0 2px"><span style="width:${(100*x.share).toFixed(1)}%;background:${cssColor(c?.chartColor)}"></span><i class="gd-half" aria-hidden="true"></i></div><div class="gd-reg small ${x.regionsOk?"ok":"lack"}">${x.regionsOk?`✓ ${x.regions} regiões (mínimo ${x.minRegions})`:`✗ ${x.regions} de ${x.minRegions} regiões · faltam ${lack}`}</div></div>`}).join("");
+   return `<div class="gd-row${x.id==="player"?" me":""}" data-${r.cls}="${escapeHtml(x.id)}"><div class="row between small"><span>${civLabel(c)}${x.share>=.5&&!x.reached?` <span class="gold">· ${t("race.passedHalf")}</span>`:""}</span><strong>${pts(x.progress)} <span class="muted">· ${pct(x.share)}</span></strong></div><div class="bar gd-pbar" style="margin:3px 0 2px"><span style="width:${(100*x.share).toFixed(1)}%;background:${cssColor(c?.chartColor)}"></span><i class="gd-half" aria-hidden="true"></i></div><div class="gd-reg small ${x.regionsOk?"ok":"lack"}">${x.regionsOk?`✓ ${t("race.regionsOk",{n:String(x.regions),min:String(x.minRegions),count:x.regions})}`:`✗ ${t("race.regionsLack",{n:String(x.regions),min:String(x.minRegions),lack:String(lack),count:x.minRegions})}`}</div></div>`}).join("");
 }
 export const discoveryPanelHtml=()=>racePanelHtml(RACES[0]);
 export const wonderPanelHtml=()=>racePanelHtml(RACES[1]);
@@ -88,8 +91,8 @@ export function gdEvents(before){
  for(const r of RACES){if(!on(r))continue;const b=old?(r.key==="discovery"?before:null):before[r.key];if(!b)continue;
   for(const x of r.progress(state)){if(x.reached||x.share<.5||(b[x.id]??0)>=.5)continue;
    out.push(x.id==="player"
-    ?{kind:r.kind,race:r.key,ok:null,title:r.me,sub:"os rivais vão reagir: mais Força e ataques contra você"}
-    :{kind:r.kind,race:r.key,ok:null,civ:x.id,title:r.rival(civName(getCiv(state,x.id))),sub:`${pts(x.progress)} de ${pts(x.goal)} pontos de ${r.area} · ${x.regions}/${x.minRegions} regiões`});
+    ?{kind:r.kind,race:r.key,ok:null,title:r.me(),sub:t("race.meSub")}
+    :{kind:r.kind,race:r.key,ok:null,civ:x.id,title:r.rival(civDisplayName(getCiv(state,x.id))),sub:t("race.rivalSub",{pts:pts(x.progress),goal:pts(x.goal),area:r.area(),regions:String(x.regions),min:String(x.minRegions),count:x.minRegions})});
   }
  }
  return out;
@@ -104,5 +107,5 @@ export function wonderCountsNow(vals){
  const [m,i,t]=vals;if(!(m+i+t>0))return null;
  return i>m+1e-9&&i>t+1e-9;
 }
-export const WONDER_HINT_OFF="Nesta era as Obras não contam para a Maravilha: ponha em Obras mais do que em Força e em Ciência.";
-export const WONDER_HINT_ON="Nesta era as Obras contam para a Maravilha (são o seu maior investimento).";
+export const wonderHintOff=()=>t("wd.hintOff");
+export const wonderHintOn=()=>t("wd.hintOn");

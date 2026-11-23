@@ -6,7 +6,9 @@ import {state} from "../app/session.js";
 import {$} from "./dom.js";
 import {mapGrid} from "./mapshape.js";
 import {showToast} from "./toast.js";
-import {civName,civSym} from "../core/names.js";
+import {civSym} from "../core/names.js";
+import {civDisplayName} from "./labels.js";
+import {getLanguage,t as tr} from "../i18n/index.js";
 import {cssColor,escapeHtml} from "./format.js";
 
 export const isBigGrid=g=>!!g&&(g.cols!==6||g.rows!==4);
@@ -91,9 +93,9 @@ function updateEdges(g){
  list.sort((a,b)=>a.side===b.side?(a.side==="l"||a.side==="r"?a.y-b.y:a.x-b.x):a.side<b.side?-1:1);
  for(let k=1;k<list.length;k++){const a=list[k-1],b=list[k];if(a.side!==b.side)continue;
   if(b.side==="l"||b.side==="r"){if(b.y-a.y<BADGE_GAP)b.y=a.y+BADGE_GAP}else if(b.x-a.x<BADGE_GAP)b.x=a.x+BADGE_GAP}
- const key=list.map(o=>o.civ.id).join(",");
+ const key=list.map(o=>o.civ.id).join(",")+"|"+getLanguage();
  if(wrap.dataset.key!==key){wrap.dataset.key=key;
-  wrap.innerHTML=list.map(o=>{const nm=civName(o.civ);return `<button type="button" class="map-edge${o.civ.id==="player"?" me":""}" data-edge="${escapeHtml(o.civ.id)}" style="--c:${cssColor(o.civ.color)}" aria-label="${escapeHtml(o.civ.id==="player"?"Seu império está fora da tela: mostrar":nm+" está fora da tela: mostrar")}"><span class="me-arrow" aria-hidden="true"></span><span class="me-sym" aria-hidden="true">${civSym(o.civ)}</span></button>`}).join("");
+  wrap.innerHTML=list.map(o=>{const nm=civDisplayName(o.civ);return `<button type="button" class="map-edge${o.civ.id==="player"?" me":""}" data-edge="${escapeHtml(o.civ.id)}" style="--c:${cssColor(o.civ.color)}" aria-label="${escapeHtml(o.civ.id==="player"?tr("map.edgeYou"):tr("map.edgeCiv",{civ:nm}))}"><span class="me-arrow" aria-hidden="true"></span><span class="me-sym" aria-hidden="true">${civSym(o.civ)}</span></button>`}).join("");
   wrap.querySelectorAll("[data-edge]").forEach(b=>b.onclick=()=>centerOnCiv(b.dataset.edge,true));}
  list.forEach((o,k)=>{const el=wrap.children[k];if(!el)return;el.style.left=o.x.toFixed(1)+"px";el.style.top=o.y.toFixed(1)+"px";el.style.setProperty("--a",o.ang.toFixed(3)+"rad")});
 }
@@ -110,7 +112,7 @@ const ICON_HOME='<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><circle 
 
 function bind(b){
  if(bound)return;bound=true;
- b.insertAdjacentHTML("beforeend",`<div class="map-zoom" id="mapZoom" role="group" aria-label="Navegar no mapa" hidden><button type="button" id="mapZoomIn" aria-label="Aproximar o mapa">${ICON_PLUS}</button><button type="button" id="mapZoomOut" aria-label="Afastar o mapa">${ICON_MINUS}</button><button type="button" id="mapCenter" aria-label="Centralizar no seu império">${ICON_HOME}</button></div><div class="map-edges" id="mapEdges"></div>`);
+ b.insertAdjacentHTML("beforeend",`<div class="map-zoom" id="mapZoom" role="group" aria-label="${tr("map.zoomGroup")}" data-i18n-attr="aria-label:map.zoomGroup" hidden><button type="button" id="mapZoomIn" aria-label="${tr("map.zoomIn")}" data-i18n-attr="aria-label:map.zoomIn">${ICON_PLUS}</button><button type="button" id="mapZoomOut" aria-label="${tr("map.zoomOut")}" data-i18n-attr="aria-label:map.zoomOut">${ICON_MINUS}</button><button type="button" id="mapCenter" aria-label="${tr("map.center")}" data-i18n-attr="aria-label:map.center">${ICON_HOME}</button></div><div class="map-edges" id="mapEdges"></div>`);
  $("mapZoomIn").onclick=()=>zoomCenter(Z_STEP);$("mapZoomOut").onclick=()=>zoomCenter(1/Z_STEP);$("mapCenter").onclick=()=>centerOnEmpire(true);
  // Arrastar e pinça. Um toque que anda mais que alguns px vira arrasto e não escolhe a região.
  const pts=new Map();let start=null,pinch=null,moved=false,suppress=false;
@@ -170,7 +172,7 @@ export function mapViewAfterRender(isBig){
  const g=geom();if(!g||g.vw<=0||g.sw<=0)return;   // jogo escondido (tela inicial por cima): espera o ResizeObserver
  if(view.key!==state){view.key=state;view.z=1;centerOnEmpire(false);
   // Uma vez por sessão: como andar no mapa grande.
-  if(!hinted){hinted=true;showToast("Arraste o mapa para ver o resto. Dois dedos ou + e − aproximam.")}
+  if(!hinted){hinted=true;showToast(tr("map.dragHint"))}
   return}
  apply(false);
 }
