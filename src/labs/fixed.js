@@ -8,7 +8,7 @@ import {safeNum,clone} from "../core/util.js";
 import {configEdited} from "./settings.js";
 import {download} from "../platform/files.js";
 import {$,setStatus} from "../ui/dom.js";
-import {fmt} from "../ui/format.js";
+import {fmtBR as fmt} from "../ui/format.js";
 
 // Gera as partidas em lotes (async) para não bloquear a interface; pode ser cancelado
 // e preserva as partidas já concluídas.

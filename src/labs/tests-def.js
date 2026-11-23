@@ -23,7 +23,7 @@ import {scenarioConfig,paramCatalog,parseParamValue,expState,exportExp} from "./
 import {profileDiagnostics} from "./validation.js";
 import {captureDownloads} from "../platform/files.js";
 import {storage} from "../platform/storage.js";
-import {fmt} from "../ui/format.js";
+import {fmtBR as fmt} from "../ui/format.js";
 
 // Ouro das regiões (sem Obras/Ciência) do jogador numa era: usado pelos testes dos terrenos.
 function collectRevenueOf(s,c){return collectRevenue(s,s.civs[0],3,c).normal}

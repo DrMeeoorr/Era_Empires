@@ -3,18 +3,20 @@ import {saveGame} from "../app/save.js";
 import {state,selectedTerritory,configApplied,setSelectedTerritory} from "../app/session.js";
 import {eligibleTargets,adjacentOwned} from "../core/map.js";
 import {territoryDefense,defenseParts,attackNeed,techAttackDiscount,orderCostMultiplier,attackTerritory,cancelOrder,orderAttack} from "../core/military.js";
-import {regionName,civName,civSym} from "../core/names.js";
+import {regionName,civSym} from "../core/names.js";
 import {P,aiCivs,getCiv} from "../core/state.js";
 import {$} from "./dom.js";
-import {cssColor,escapeHtml,fmt,uiText} from "./format.js";
+import {cssColor,escapeHtml,fmt,ord as ordinalOf} from "./format.js";
+// tr: tradução (aqui `t` é o índice da região em muitas funções).
+import {t as tr} from "../i18n/index.js";
 import {renderAll} from "./game.js";
-import {civLabel,profileLabel} from "./labels.js";
+import {civLabel,profileLabel,civDisplayName,engineText} from "./labels.js";
 import {openSheet,isSheetOpen,closeSheet} from "./sheets.js";
 import {showToast} from "./toast.js";
 import {regionShapes,mapGrid} from "./mapshape.js";
 import {setupMapView,mapViewAfterRender,isBigGrid} from "./mapview.js";
-import {TERRAINS,TERRAIN_NAMES,TERRAIN_HINTS,terrainOf,mapTypeOf,terrainEffectsOn,ruleTerrain,terrainStartsOf,terrainDefenseBonus,terrainAttackFactor} from "../core/terrain.js";
-import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectChips} from "./terrain-art.js";
+import {TERRAINS,TERRAIN_HINTS,terrainOf,mapTypeOf,terrainEffectsOn,ruleTerrain,terrainStartsOf,terrainDefenseBonus,terrainAttackFactor} from "../core/terrain.js";
+import {TERRAIN_STYLE,terrainGlyph,terrainTexture,terrainSpots,terrainChip,terrainListHtml,terrainEffectChips,terrainName} from "./terrain-art.js";
 
 /* ── Mapa e painel do alvo ── */
 /* Ajusta cada nome de região ao seu quadrado: a largura das letras muda com a fonte de cada
@@ -33,7 +35,9 @@ export function fitRegionNames(){
  });
 }
 // Legenda mais larga que a tela: marca para esmaecer a borda (indica que rola para o lado).
-export function markLegend(){const l=$("mapLegend");if(!l)return;const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
+// Legenda larga demais (telas de 360 px, nomes longos em outros idiomas): o botão "ⓘ Terrenos" fica só "ⓘ" para
+// que o último item ("Pode atacar") apareça inteiro; se ainda não couber, a legenda rola com a borda esmaecida.
+export function markLegend(){const l=$("mapLegend");if(!l)return;const row=l.closest(".legend-row");if(row){row.classList.remove("lg-compact");if(l.scrollWidth>l.clientWidth+1)row.classList.add("lg-compact")}const upd=()=>l.classList.toggle("more",l.scrollWidth>l.clientWidth+1&&l.scrollLeft+l.clientWidth<l.scrollWidth-2);upd();if(!l.dataset.mk){l.dataset.mk=1;l.addEventListener("scroll",upd,{passive:true})}}
 // Mapa ilustrado (Fase 3): um desenho em SVG (mar, costa, regiões com o seu terreno, fronteiras dos impérios) e, por cima,
 // um botão por região recortado na forma dela (clip-path), com o nome, o número e o símbolo do dono.
 // O toque só acerta a região desenhada; a vizinhança é a da grade (src/ui/mapshape.js). Mapas maiores que o Original
@@ -98,47 +102,48 @@ export function renderMap(){
  $("map").classList.toggle("has-sel",selectedTerritory!==null);
  const g=mapGrid(state),big=isBigGrid(g);
  $("map").innerHTML=(big?`<div class="map-stage" id="mapStage" style="width:${pc(g.cols,6)};height:${pc(g.rows,4)}">`:"")+mapArt(tset)+state.owners.map((o,i)=>{const civ=o==="neutral"?null:getCiv(state,o),cls=o==="player"?"player":civ?"ai":"free",target=tset.has(i),sel=selectedTerritory===i;
-  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" style="${shapeStyle(shapes[i],W,H)}" aria-label="${escapeHtml(regionName(i))}, região ${i+1}, ${o==="neutral"?"livre":o==="player"?"sua":"de "+escapeHtml(civName(civ))}${target?", alvo possível":""}, ${TERRAIN_NAMES[ter[i]]}"><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">Def. ${fmt(territoryDefense(state,i,configApplied),0)}</span>`:""}</button>`}).join("")+(big?"</div>":"");
- $("mapLegend").innerHTML=`<span>${flagIcon(P(state))}${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${flagIcon(c)}${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" (eliminado)"}</span>`).join("")+`<span><i class="dot sq lg-free"></i>Livre</span><span>${swordsIcon(15)}Pode atacar</span>`;
+  return `<button class="territory ${cls} ${target?"target":""} ${sel?"selected":""}" data-territory="${i}" style="${shapeStyle(shapes[i],W,H)}" aria-label="${tr("map.regionAria",{region:escapeHtml(regionName(i)),n:String(i+1),owner:o==="neutral"?tr("map.owner.free"):o==="player"?tr("map.owner.you"):tr("map.owner.civ",{civ:escapeHtml(civDisplayName(civ))}),target:target?tr("map.targetAria"):"",terrain:terrainName(ter[i])})}"><span class="rname">${escapeHtml(regionName(i))}</span><span class="who"><span class="tnum">${i+1}</span>${civ?`<span class="csym">${civSym(civ)}</span>`:""}</span>${target?`<span class="def gold">${tr("map.def",{n:fmt(territoryDefense(state,i,configApplied),0)})}</span>`:""}</button>`}).join("")+(big?"</div>":"");
+ $("mapLegend").innerHTML=`<span>${flagIcon(P(state))}${civLabel(P(state))}</span>`+aiCivs(state).map(c=>`<span>${flagIcon(c)}${civLabel(c)}<span class="muted lg-style"> · ${escapeHtml(profileLabel(c))}</span>${c.active?"":" "+tr("map.legendElim")}</span>`).join("")+`<span><i class="dot sq lg-free"></i>${tr("map.legendFree")}</span><span>${swordsIcon(15)}${tr("map.legendCanAttack")}</span>`;
  document.querySelectorAll("[data-territory]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.territory);setSelectedTerritory(i);renderMap();openSheet("attackSheet",()=>document.querySelector(`[data-territory="${i}"]`))}));
  bindMapFocus();setupMapView(big);fitRegionNames();markLegend();
  renderAttack();renderEvents();
- if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?"⚔ "+(k+1)+".ª":"⚔ ordem"}</span>`)}});
+ if(simOrders())myOrders().forEach((o,k)=>{const cell=document.querySelector(`[data-territory="${o.idx}"]`);if(cell){cell.classList.add("ordered");cell.insertAdjacentHTML("beforeend",`<span class="order-tag">${myOrders().length>1?tr("map.orderTagN",{n:ordinalOf(k+1,true)}):tr("map.orderTag")}</span>`)}});
  mapViewAfterRender(big);
 }
 // Folha "ⓘ Terrenos": os 7 terrenos e o tipo de mapa desta partida.
 // Com terrenos com efeitos mostra as 2 vantagens e 1 desvantagem de cada um (etiquetas + / −) e, num bloco que abre
 // com um toque, os detalhes das regras; só visual, avisa que nada muda.
-export const TERRAIN_FX_NOTE="Nesta partida os terrenos têm efeito: quem ocupa a região ganha as 2 vantagens (+) e a desvantagem (−) do terreno.";
-export const TERRAIN_FX_RULES=["As % de Obras, Força e Ciência somam por região desse terreno.","Defesa e custo de ataque do terreno só valem em regiões com dono.","A região inicial de cada império conta como Campina."];
-export const TERRAIN_VISUAL_NOTE="Nesta partida o terreno é só visual: não muda as regras. Para jogar com efeitos: Nova partida → Personalizar → Terrenos → Com efeitos.";
-export const terrainNote=()=>terrainEffectsOn(state)?TERRAIN_FX_NOTE:TERRAIN_VISUAL_NOTE;
-const terrainNoteHtml=()=>terrainEffectsOn(state)?`${TERRAIN_FX_NOTE}<details class="ter-more"><summary>Como os efeitos funcionam</summary><ul>${TERRAIN_FX_RULES.map(x=>`<li>${x}</li>`).join("")}</ul></details>`:TERRAIN_VISUAL_NOTE;
+export const terrainFxNote=()=>tr("terrain.fxNote");
+export const terrainFxRules=()=>[1,2,3].map(k=>tr("terrain.fxRule"+k));
+export const terrainVisualNote=()=>tr("terrain.visualNote");
+export const terrainNote=()=>terrainEffectsOn(state)?terrainFxNote():terrainVisualNote();
+const terrainNoteHtml=()=>terrainEffectsOn(state)?`${terrainFxNote()}<details class="ter-more"><summary>${tr("terrain.howFx")}</summary><ul>${terrainFxRules().map(x=>`<li>${x}</li>`).join("")}</ul></details>`:terrainVisualNote();
 export function renderTerrainSheet(){const el=$("terrainBody");if(!el)return;const fx=terrainEffectsOn(state);
- el.innerHTML=`<p class="small muted ter-mapnote">${mapTypeOf(state)==="sorteado"?"<b>Mapa sorteado</b>: os terrenos desta partida foram sorteados.":"<b>Mapa padrão</b>: cada região tem sempre o mesmo terreno."}</p><div class="small ter-rulenote${fx?" on":""}">${terrainNoteHtml()}</div>${terrainListHtml(TERRAIN_HINTS,fx)}`}
+ el.innerHTML=`<p class="small muted ter-mapnote">${tr(mapTypeOf(state)==="sorteado"?"terrain.mapRandom":"terrain.mapFixed")}</p><div class="small ter-rulenote${fx?" on":""}">${terrainNoteHtml()}</div>${terrainListHtml(TERRAIN_HINTS,fx)}`}
 // Listas de terrenos do Como jogar (tela inicial e dentro da partida): refeitas ao abrir, conforme a partida atual.
 export function fillTerrainLists(){const fx=terrainEffectsOn(state);
  document.querySelectorAll("[data-terrain-list]").forEach(el=>{el.innerHTML=terrainListHtml(TERRAIN_HINTS,fx)});
  document.querySelectorAll("[data-terrain-note]").forEach(el=>{el.innerHTML=terrainNoteHtml();el.classList.toggle("on",fx)})}
 // Folha da região com terrenos com efeitos: etiquetas + / − do terreno (a região inicial conta como Campina).
 export function regionTerrainHtml(t){const k=terrainOf(state)[t];let h=terrainChip(k);
- if(terrainEffectsOn(state)){const r=ruleTerrain(state,t);h+=terrainEffectChips(r);if(r!==k)h+=`<span class="ter-note">Região inicial: conta como Campina.</span>`}
+ if(terrainEffectsOn(state)){const r=ruleTerrain(state,t);h+=terrainEffectChips(r);if(r!==k)h+=`<span class="ter-note">${tr("terrain.startNote")}</span>`}
  return h}
 // Parte do custo que vem do terreno (só com efeitos): "(terreno +2)" na defesa e "× 1,2 (Pântano)" no custo.
-export function terrainCostParts(t){if(!terrainEffectsOn(state))return {def:"",mult:""};const d=terrainDefenseBonus(state,t),f=terrainAttackFactor(state,t),n=TERRAIN_NAMES[ruleTerrain(state,t)];
+export function terrainCostParts(t){if(!terrainEffectsOn(state))return {def:"",mult:""};const d=terrainDefenseBonus(state,t),f=terrainAttackFactor(state,t),n=terrainName(ruleTerrain(state,t));
  return {def:d?` (${n} ${d>0?"+":"−"}${fmt(Math.abs(d),0)})`:"",mult:f!==1?` × ${fmt(f,1)} (${n})`:""}}
 // Folha de ataque: região + dono, 3 números (Custo, Sua força, Chance), botão com o motivo quando não dá,
 // atalho "Investir em Militar" e a explicação longa atrás de "Por quê?".
 export const ATTACK_CHANCE="82%";
+const chance=()=>tr("map.chance82");
 // Defesa explicada (rodada 4): "defesa 8 + 2,1 de Obras + 3,4 de Força guardada (Floresta +2)"; região livre: "defesa 3".
 export function defenseText(t){const d=defenseParts(state,t,configApplied),tc=terrainCostParts(t);
- if(state.owners[t]==="neutral")return `defesa ${fmt(d.total,0)}`;
- return `defesa ${fmt(d.base,0)}${d.works>0.05?` + ${fmt(d.works,1)} de Obras`:""}${d.reserve>0.05?` + ${fmt(d.reserve,1)} de Força guardada`:""}${tc.def}`}
+ if(state.owners[t]==="neutral")return tr("map.defBase",{n:fmt(d.total,0)});
+ return `${tr("map.defBase",{n:fmt(d.base,0)})}${d.works>0.05?tr("map.defWorks",{n:fmt(d.works,1)}):""}${d.reserve>0.05?tr("map.defReserve",{n:fmt(d.reserve,1)}):""}${tc.def}`}
 // Linha da folha de uma região sua: a defesa total e a parte que vem da Força guardada.
 export function ownDefenseLine(t){const d=defenseParts(state,t,configApplied);
- return `<p class="tgt-sub own-def"><span class="od-n"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Defesa <strong>${fmt(d.total,1)}</strong></span>${d.reserve>0.05?` · <span class="od-n">Força guardada <strong class="gold">+${fmt(d.reserve,1)}</strong></span>`:""}. <span class="od-why">Obras e a Força que você não usa em ataques reforçam a defesa.</span></p>`}
-export const infoTip=(html,label="Por quê?")=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> O ataque acontece no fim da era. <u>${label}</u></summary><div>${html}</div></details>`;
-export const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>Custo</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>Sua força</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>Chance</span> <b>${ATTACK_CHANCE}</b></div></div>`;
+ return `<p class="tgt-sub own-def"><span class="od-n"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>${tr("map.ownDef",{n:`<strong>${fmt(d.total,1)}</strong>`})}</span>${d.reserve>0.05?` · <span class="od-n">${tr("map.ownReserve",{n:`<strong class="gold">+${fmt(d.reserve,1)}</strong>`})}</span>`:""}. <span class="od-why">${tr("map.ownWhy")}</span></p>`}
+export const infoTip=(html,label=tr("map.why"))=>`<details class="tgt-info"><summary><span aria-hidden="true">ⓘ</span> ${tr("map.endOfEra")} <u>${label}</u></summary><div>${html}</div></details>`;
+export const targetNums=(cost,have)=>`<div class="tgt-nums"><div class="tgt-num"><span>${tr("map.num.cost")}</span> <b>${fmt(cost,1)}</b></div><div class="tgt-num"><span>${tr("map.num.force")}</span> <b class="${have+1e-9>=cost?"ok":"red"}">${fmt(have,1)}</b></div><div class="tgt-num"><span>${tr("map.num.chance")}</span> <b>${chance()}</b></div></div>`;
 // Região no painel do alvo: nome + número pequeno (o mesmo do mapa).
 export const regionHtml=t=>`<strong>${escapeHtml(regionName(t))}</strong> <span class="muted small">${t+1}</span>`;
 export const tgtTitle=html=>`<h2 class="tgt-title" id="attackTitle">${html}</h2>`;
@@ -148,21 +153,22 @@ export const simOrders=()=>!!configApplied.military.simultaneousOrders,myOrders=
 // Painel do alvo com ordens simultâneas (configuração padrão): a ordem é resolvida no fim da era.
 export function renderOrderAttack(){
  const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military,ords=myOrders(),ord=t!==null?myOrder(t):null,next=orderCostMultiplier(configApplied,ords.length,state),maxO=m.maxOrdersPerEra||Infinity;
- setAttackBtn(btn,"Escolha um alvo",false);
+ setAttackBtn(btn,tr("map.chooseTarget"),false);
  if(t===null&&isSheetOpen("attackSheet"))closeSheet();
- if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
- const ordTxt=ords.length?`<p class="tgt-orders">⚔ Ordens desta era: ${ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")}</p>`:"";
- const costTxt=maxO===1?"":ords.length?` O próximo ataque desta era custa ×${fmt(next,1)}.`:" Você pode dar várias ordens por era; cada ataque a mais custa mais (2.º ×2, 3.º ×3…).";
- const howOrders=`As ordens de todos são resolvidas juntas no fim da era: se um rival atacar o mesmo território, há <strong>batalha</strong> (vence quem tiver mais Força, somada à Ciência); depois, ${ATTACK_CHANCE} de chance de conquistar. A Força é gasta mesmo se o ataque falhar.`;
- if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}${ordTxt}<p class="tgt-sub">Toque em uma região com <span class="gold">⚔</span> para atacar. Força livre: <strong>${fmt(mil,1)}</strong>.</p>${infoTip(`Cada ataque custa, em Força, a defesa do alvo + ${fmt(m.conquestCost,0)} de conquista. A defesa de um rival sobe com as Obras dele e com a Força que ele não usa em ataques (Força guardada).${costTxt} ${howOrders}`)}`;return}
- if(ord){setAttackBtn(btn,"Cancelar ordem",true,{cancel:true});$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ordem dada`)}${ordTxt}<p class="tgt-sub">${fmt(ord.need,1)} de Força reservada. Cancelar devolve a Força${ords.length>1?" e recalcula o custo das outras ordens":""}.</p>${infoTip(`A ordem é resolvida quando você concluir a era, junto com as dos rivais. ${howOrders}`)}`;return}
+ if(state.result||!P(state).active){setAttackBtn(btn,tr(state.result?"map.btnEnded":"map.btnNoAttacks"),false);$("mapStatus").innerHTML=tgtTitle(t===null?tr("map.title"):regionHtml(t))+`<p class="tgt-sub">${tr(state.result?"map.ended":"map.eliminated")}</p>`;return}
+ const ordTxt=ords.length?`<p class="tgt-orders">⚔ ${tr("map.ordersEra",{list:ords.map(o=>`${escapeHtml(regionName(o.idx))} (${fmt(o.need,1)}${o.mult>1?`, ×${fmt(o.mult,1)}`:""})`).join(" · ")})}</p>`:"";
+ const costTxt=maxO===1?"":ords.length?" "+tr("map.nextCost",{m:fmt(next,1)}):" "+tr("map.manyOrders");
+ const howOrders=tr("map.howOrders",{chance:chance()});
+ if(t===null){$("mapStatus").innerHTML=`${tgtTitle(tr("map.chooseTarget"))}${ordTxt}<p class="tgt-sub">${tr("map.tapFree",{n:`<strong>${fmt(mil,1)}</strong>`})}</p>${infoTip(`${tr("map.eachCosts",{n:fmt(m.conquestCost,0)})}${costTxt} ${howOrders}`)}`;return}
+ if(ord){setAttackBtn(btn,tr("map.cancelOrder"),true,{cancel:true});$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${tr("map.orderGiven")}`)}${ordTxt}<p class="tgt-sub">${tr(ords.length>1?"map.reservedMany":"map.reserved",{n:fmt(ord.need,1)})}</p>${infoTip(`${tr("map.resolvedOnConclude")} ${howOrders}`)}`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ordTxt}${ownDefenseLine(t)}`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}${ordTxt}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
+ if(owner==="player"){setAttackBtn(btn,tr("map.btnOwn"),false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${tr("map.titleOwn")}`)}${ordTxt}${ownDefenseLine(t)}`;return}
+ if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,tr("map.btnFar"),false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?tr("map.owner.free"):tr("map.owner.civ",{civ:civLabel(getCiv(state,owner))})}`)}${ordTxt}<p class="tgt-sub">${tr("map.far")}</p>`;return}
  const tc=terrainCostParts(t),replacing=maxO===1&&ords.length,mult=replacing?1:next,base=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),need=base*mult,civ=owner==="neutral"?null:getCiv(state,owner),avail=mil+(replacing?ords[0].need:0);
- if(!replacing&&ords.length>=maxO){setAttackBtn(btn,`Máximo de ${maxO} ordens`,false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${ordTxt}<p class="tgt-sub">Você já deu o máximo de ${maxO} ordens nesta era.</p>`;return}
- const ok=avail+1e-9>=need;setAttackBtn(btn,ok?`${replacing?"Trocar ordem":"Atacar"} · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-avail,1)} de Força`,ok,{invest:!ok&&mult<=1});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${mult>1?`<p class="tgt-sub">${ords.length+1}.º ataque desta era: custo ×${fmt(mult,1)}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`Custo = ${tc.mult?"(":""}${defenseText(t)} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:""}${mult>1?` = ${fmt(base,1)} × ${fmt(mult,1)} (${ords.length+1}.º ataque da era)`:""} = ${fmt(need,1)} de Força.${ok?"":mult>1?" Ataques a mais na mesma era custam mais.":" Invista em Militar: a Força chega na era seguinte."} ${howOrders}`)}`;
+ const ownerTxt=civ?tr("map.owner.civ",{civ:civLabel(civ)}):tr("map.owner.free");
+ if(!replacing&&ords.length>=maxO){setAttackBtn(btn,tr("map.btnMax",{n:String(maxO),count:maxO}),false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${ownerTxt}`)}${ordTxt}<p class="tgt-sub">${tr("map.maxGiven",{n:String(maxO),count:maxO})}</p>`;return}
+ const ok=avail+1e-9>=need;setAttackBtn(btn,ok?tr(replacing?"map.btnSwap":"map.btnAttack",{n:fmt(need,1)}):tr("map.btnLack",{n:fmt(need-avail,1)}),ok,{invest:!ok&&mult<=1});
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${ownerTxt}`)}${mult>1?`<p class="tgt-sub">${tr("map.nthCost",{k:ordinalOf(ords.length+1),m:fmt(mult,1)})}</p>`:""}${ordTxt}${targetNums(need,avail)}${infoTip(`${tr("map.costEq",{f:`${tc.mult?"(":""}${defenseText(t)}${tr("map.plusConquest",{n:fmt(m.conquestCost,0)})}${tc.mult?")"+tc.mult:""}${disc>=0.005?tr("map.minusSci",{pct:fmt(100*disc,0)}):""}${mult>1?tr("map.timesNth",{base:fmt(base,1),m:fmt(mult,1),k:ordinalOf(ords.length+1)}):""}`,n:fmt(need,1)})}${ok?"":mult>1?" "+tr("map.moreCost"):" "+tr("map.invest")} ${howOrders}`)}`;
 }
 // Painel do alvo com o terreno da região (ícone + nome) logo abaixo do título.
 export function renderAttack(){
@@ -173,32 +179,32 @@ export function renderAttack(){
 function renderAttackBody(){
  if(simOrders())return renderOrderAttack();
  const t=selectedTerritory,m=configApplied.military,btn=$("attack"),mil=P(state).military;
- setAttackBtn(btn,"Escolha um alvo",false);
+ setAttackBtn(btn,tr("map.chooseTarget"),false);
  if(t===null&&isSheetOpen("attackSheet"))closeSheet();
- if(state.result||!P(state).active){setAttackBtn(btn,state.result?"Partida terminada":"Sem ataques",false);$("mapStatus").innerHTML=tgtTitle(t===null?"Mapa":regionHtml(t))+`<p class="tgt-sub">${state.result?"A partida terminou.":"Você foi eliminado e não pode mais atacar."}</p>`;return}
- if(t===null){$("mapStatus").innerHTML=`${tgtTitle("Escolha um alvo")}<p class="tgt-sub">Toque em uma região com <span class="gold">⚔</span> para atacar. Força: <strong>${fmt(mil,1)}</strong>.</p>`;return}
+ if(state.result||!P(state).active){setAttackBtn(btn,tr(state.result?"map.btnEnded":"map.btnNoAttacks"),false);$("mapStatus").innerHTML=tgtTitle(t===null?tr("map.title"):regionHtml(t))+`<p class="tgt-sub">${tr(state.result?"map.ended":"map.eliminated")}</p>`;return}
+ if(t===null){$("mapStatus").innerHTML=`${tgtTitle(tr("map.chooseTarget"))}<p class="tgt-sub">${tr("map.tapForce",{n:`<strong>${fmt(mil,1)}</strong>`})}</p>`;return}
  const owner=state.owners[t];
- if(owner==="player"){setAttackBtn(btn,"Território seu",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · seu`)}${ownDefenseLine(t)}`;return}
- if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,"Fora do alcance",false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?"livre":"de "+civLabel(getCiv(state,owner))}`)}<p class="tgt-sub">Não faz fronteira com o seu império. Escolha uma com ⚔.</p>`;return}
- const need=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),discTxt=disc>=0.005?` − ${fmt(100*disc,0)}% (Ciência)`:"",civ=owner==="neutral"?null:getCiv(state,owner);
+ if(owner==="player"){setAttackBtn(btn,tr("map.btnOwn"),false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${tr("map.titleOwn")}`)}${ownDefenseLine(t)}`;return}
+ if(!adjacentOwned(state,t,"player")){setAttackBtn(btn,tr("map.btnFar"),false);$("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${owner==="neutral"?tr("map.owner.free"):tr("map.owner.civ",{civ:civLabel(getCiv(state,owner))})}`)}<p class="tgt-sub">${tr("map.far")}</p>`;return}
+ const need=attackNeed(state,t,"player",configApplied),disc=techAttackDiscount(state,"player",configApplied),discTxt=disc>=0.005?tr("map.minusSci",{pct:fmt(100*disc,0)}):"",civ=owner==="neutral"?null:getCiv(state,owner);
  const tc=terrainCostParts(t),defTxt=defenseText(t);
- const ok=mil+1e-9>=need;setAttackBtn(btn,ok?`Atacar · usa ${fmt(need,1)} de Força`:`Faltam ${fmt(need-mil,1)} de Força`,ok,{invest:!ok});
- $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?"de "+civLabel(civ):"livre"}`)}${targetNums(need,mil)}${infoTip(`Custo = ${tc.mult?"(":""}${defTxt} + conquista ${fmt(m.conquestCost,0)}${tc.mult?")"+tc.mult:""}${discTxt} = ${fmt(need,1)} de Força. Vence em ${ATTACK_CHANCE} das vezes; a Força é gasta mesmo se o ataque falhar.${ok?"":" Invista em Militar: a Força chega na era seguinte."}`)}`;
+ const ok=mil+1e-9>=need;setAttackBtn(btn,ok?tr("map.btnAttack",{n:fmt(need,1)}):tr("map.btnLack",{n:fmt(need-mil,1)}),ok,{invest:!ok});
+ $("mapStatus").innerHTML=`${tgtTitle(`${regionHtml(t)} · ${civ?tr("map.owner.civ",{civ:civLabel(civ)}):tr("map.owner.free")}`)}${targetNums(need,mil)}${infoTip(`${tr("map.costEq",{f:`${tc.mult?"(":""}${defTxt}${tr("map.plusConquest",{n:fmt(m.conquestCost,0)})}${tc.mult?")"+tc.mult:""}${discTxt}`,n:fmt(need,1)})} ${tr("map.winsChance",{chance:chance()})}${ok?"":" "+tr("map.invest")}`)}`;
 }
 // Botão "Atacar" do painel do alvo (ataque imediato quando as ordens simultâneas estão desligadas).
 export function attackSelected(){
  if(simOrders())return orderSelected();
  if(selectedTerritory===null)return;
- const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>Você conquistou ${escapeHtml(regionName(t))}!</strong></span>`:`<span class="red"><strong>O ataque a ${escapeHtml(regionName(t))} falhou</strong></span>; a Força foi gasta.`):escapeHtml(uiText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))
+ const t=selectedTerritory,r=attackTerritory(state,t,"player",configApplied);setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();const msg=r.ok?(r.win?`<span class="green"><strong>${tr("map.youConquered",{region:escapeHtml(regionName(t))})}</strong></span>`:tr("map.attackFailed",{region:escapeHtml(regionName(t))})):escapeHtml(engineText(r.reason));$("mapStatus").innerHTML=msg;showToast(msg,!(r.ok&&r.win))
 }
 // Botão do painel com ordens simultâneas: dá ou cancela a ordem contra o território escolhido.
 export function orderSelected(){
  if(selectedTerritory===null)return;const t=selectedTerritory,ord=myOrder(t);let msg,bad=false;
- if(ord){cancelOrder(state,"player",t);msg=`Ordem contra ${escapeHtml(regionName(t))} cancelada; Força devolvida.`}
- else{const r=orderAttack(state,t,"player",configApplied);bad=!r.ok;msg=r.ok?`<span class="gold"><strong>⚔ Ordem dada:</strong></span> atacar ${escapeHtml(regionName(t))} no fim da era (${fmt(r.need,1)} de Força reservada${r.mult>1?`, ${myOrders().length}.º ataque ×${fmt(r.mult,1)}`:""}).`:escapeHtml(uiText(r.reason))}
+ if(ord){cancelOrder(state,"player",t);msg=tr("map.orderCanceled",{region:escapeHtml(regionName(t))})}
+ else{const r=orderAttack(state,t,"player",configApplied);bad=!r.ok;msg=r.ok?tr(r.mult>1?"map.orderOkNth":"map.orderOk",{region:escapeHtml(regionName(t)),n:fmt(r.need,1),k:ordinalOf(myOrders().length),m:fmt(r.mult,1)}):escapeHtml(engineText(r.reason))}
  setSelectedTerritory(null);closeSheet({focus:false});saveGame();renderAll();$("mapStatus").innerHTML=msg;showToast(msg,bad)}
 export function renderEvents(){
  if(!$("lastEvents"))return;
  const ev=state.log.filter(x=>/ataque|conquist|repelid|falhou|eliminad|🏁/i.test(x.text)).slice(0,3);
- $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">Era ${escapeHtml(e.era)}</span> · ${escapeHtml(uiText(e.text))}</div>`).join(""):"";
+ $("lastEvents").innerHTML=ev.length?ev.map(e=>`<div><span class="muted">${tr("details.eraN",{era:escapeHtml(e.era)})}</span> · ${escapeHtml(engineText(e.text))}</div>`).join(""):"";
 }

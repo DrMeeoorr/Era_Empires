@@ -6,7 +6,7 @@ import {safeNum,clone} from "../core/util.js";
 import {strategyName} from "./settings-ui.js";
 import {svgLine} from "../ui/charts.js";
 import {$,setStatus} from "../ui/dom.js";
-import {money,fmt} from "../ui/format.js";
+import {moneyBR as money,fmtBR as fmt} from "../ui/format.js";
 
 export let compareResults=[];
 export const COMPARE_COLORS=["#f4bd50","#56d6a1","#b49aff","#62a8ff","#ff737b","#e88a43","#72d0df","#d9a4c7"];

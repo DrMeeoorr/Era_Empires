@@ -11,7 +11,7 @@ import {PARAM_OPTIONS,setConfigEdited} from "./settings.js";
 import {refreshValConfigOptions} from "./validation-ui.js";
 import {barChart,legendHtml,svgLine} from "../ui/charts.js";
 import {$,setStatus} from "../ui/dom.js";
-import {escapeHtml,fmt,cssColor} from "../ui/format.js";
+import {escapeHtml,fmtBR as fmt,cssColor} from "../ui/format.js";
 import {renderAll} from "../ui/game.js";
 
 export function renderExpTable(){

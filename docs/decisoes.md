@@ -333,6 +333,50 @@ e acabam, ele tem a menor Força e, quando vencia, era quase sempre pela Grande 
 - **Pendências**: Construtor ainda abaixo de 35% no 1×1 do 2× (26%) e 14% no 4× com 3 rivais; domínio decide 76–82%
   dos 1×1; no 2× com 2 rivais o plano de Obras virou a melhor receita do jogador (reagir −9).
 
+## 23/11/2026 — Opções de idioma: regras e base técnica (game-designer) — aprovado aplicar
+- Idiomas: **pt-BR** (origem e reserva), **en**, **pt-PT**, **it**, **de**, **fr**. Regras completas e glossário-base em
+  `docs/idiomas.md`; dicionários em `src/i18n/` (o `tradutor` extrai e traduz os textos; o `mobile-ux` cria o seletor).
+- Idioma padrão: `?lang=xx` (testes, não grava) › escolha gravada no aparelho (`imperios-idioma`, fora do save da
+  partida) › idioma do aparelho (pt-PT → pt-PT; outros pt → pt-BR; en/it/de/fr pelas duas letras) › pt-BR.
+- Trocar de idioma (também no meio da partida) muda só a exibição: a partida, o save e a impressão digital das
+  simulações (`39190b06`) não mudam. Laboratórios (`?dev=1`), chaves internas e valores salvos não se traduzem.
+- Nomes próprios: **regiões iguais em todos os idiomas**; **rivais traduzidos como cores** (Crimson, Ochre, Indigo,
+  Violet, Turquoise…); **"Você" traduzido**; **IMPÉRIOS traduzido** — EMPIRES (en, fr), IMPÉRIOS (pt-PT), IMPERI (it),
+  IMPERIEN (de). A confirmar antes da publicação: se o nome do app no ícone fica único ("Impérios").
+- Números no formato de cada idioma (`Intl`); o pt-BR continua 1.234,5.
+
+## 23/11/2026 — Seletor de idioma (mobile-ux) — autorizado aplicar direto
+Nenhuma regra, número ou IA mudou (impressões digitais **39190b06** / **5c97e2c2**). Detalhes em `docs/idiomas.md`
+(secção 3) e capturas antes/depois em `docs/img/idiomas/`.
+- **Tela inicial ("Aurora")**: botão 🌐 + código do idioma (`PT-BR`, `EN`, `DE`, `FR`…) no canto inferior esquerdo da
+  cena, sobre as colinas — fora do caminho do "Jogar" e do nome do jogo, perto do polegar; cabe em 360×640 sem rolar.
+- **Partida**: item **Idioma** no menu ☰ (com o idioma atual à direita); troca ao vivo sem mexer na partida nem no save.
+- **Folha de idiomas ("Atlas")**: 6 idiomas pelo nome nativo, radio acessível (aria-checked, foco no atual, setas,
+  Esc/Voltar fecham sem trocar); o atual marcado com ✓ e borda, não só pela cor. Tocar escolhe e fecha.
+- **Primeira abertura**: sem pergunta obrigatória; vale o idioma do aparelho e o botão fica à vista.
+- **Textos apertados** (ajustados por layout ou encurtando o texto, mesmo sentido):
+  - Tela inicial: "Tutorial" e "Como jogar" sempre numa linha (fr "Comment jouer", de "Spielanleitung").
+  - Personalizar → Duração: a coluna "Sem limite" ficou mais larga (de "Unbegrenzt / bis zum Sieg").
+  - Personalizar → Terrenos, "Com efeitos": subtítulo curto em en/it/de/fr ("changes the game", "cambia il gioco",
+    "ändert das Spiel", "change le jeu"); o pt continua "cada terreno muda o jogo".
+  - Menu ☰ (de): "Ära-Zusammenfassung: an" (antes "Zusammenfassung jeder Ära:"); o estado não quebra sozinho.
+  - Fim de jogo: de "Punkte Vorsprung" / "Punkte Rückstand", fr "points d'avance" / "points de retard",
+    en "points ahead" / "points behind" (a posição já aparece no placar logo acima).
+  - Legenda do mapa: em telas estreitas (360 px), quando a legenda não cabe, "ⓘ Terrenos" vira só "ⓘ" (o nome continua
+    no aria-label) e "Pode atacar" / "Angreifbar" / "Attaquable" aparece inteiro em todos os idiomas (antes ficava
+    cortado também em pt-BR).
+  - **Fonte larga** (DejaVu Sans, a do GitHub Actions e de vários Android; os testes de idioma também rodam com ela):
+    Duração com colunas que nunca ficam menores que a palavra mais longa (fr "moyenne"); Terrenos lado a lado quando
+    cabe, senão uma opção por linha (o pt continua "cada terreno muda o jogo"); it "punti di vantaggio" (sem "sul 2º",
+    como en/de/fr); fr menu "Résumé des ères : activé"; tela de resultado com os botões presos embaixo (o conteúdo rola
+    por baixo deles) e emblema menor em telas baixas.
+
+## 23/11/2026 — Dúvidas de tradução (tradutor) — decididas
+- Força em inglês: **Might**. Obras: **fr "Ouvrages"**, **de "Bauwerke"** (em todo o jogo). Domínio em alemão:
+  **"Gebietsherrschaft"**; Supremacia continua **"Vormacht"**. de "Forscher" (estilo Científico) mantido.
+- pt-PT: "Classificação" (placar) e tratamento impessoal mantidos. Medalhas traduzidas pelo sentido.
+- Nome do jogo traduzido dentro do jogo e na loja (EMPIRES, IMPÉRIOS, IMPERI, IMPERIEN); **ícone do app: "Impérios"**.
+
 ## 23/11/2026 — Tipos de vitória escolhidos pelo jogador (game-designer + mobile-ux) — aprovado
 - Contrato: **`config.endgame.victories = {dominion, supremacy, discovery, wonder}`** (booleanos; padrão tudo ligado).
   **Desligáveis**: domínio (inclui a pergunta "Você domina o mapa!"), supremacia, Grande Descoberta e Maravilha (as duas

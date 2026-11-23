@@ -1,13 +1,20 @@
 // Medalhas na interface: arte (SVG próprio, estilo "Atlas"), aviso no resumo da era, lista na tela de resultado,
 // tela "Medalhas" (tela inicial e menu ☰) e o aviso de "Primeiros passos" no fim do tutorial.
 // Os critérios e a gravação ficam em src/app/medals.js (sem DOM).
-import {MEDALS,MEDAL_BY_ID,earnedMedals,earnedCount,matchMedals,medalsAllowed,trackEra,awardMedals} from "../app/medals.js";
+import {MEDALS,MEDAL_BY_ID,MEDAL_RULES,earnedMedals,earnedCount,matchMedals,medalsAllowed,trackEra,awardMedals} from "../app/medals.js";
 import {state} from "../app/session.js";
 import {DIFFICULTIES} from "../core/config.js";
 import {$} from "./dom.js";
 import {escapeHtml} from "./format.js";
 import {closeSheet,isSheetOpen,SHEET_HOOKS} from "./sheets.js";
 import {showToast} from "./toast.js";
+import {diffName} from "./labels.js";
+import {numberLocale,onLanguageChange,t} from "../i18n/index.js";
+
+// Nome e critério de cada medalha no idioma do jogador (chaves medal.<id>.name / medal.<id>.goal).
+const RP=Object.fromEntries(Object.entries(MEDAL_RULES).map(([k,v])=>[k,String(v)]));
+export const medalName=id=>MEDAL_BY_ID[id]?t("medal."+id+".name"):String(id);
+export const medalGoal=id=>MEDAL_BY_ID[id]?t("medal."+id+".goal",RP):"";
 
 // Desenho de cada medalha (grade 24×24, traço) e a cor da fita (a forma do desenho distingue cada uma; a cor só ajuda).
 const GLYPH={
@@ -31,7 +38,7 @@ export function medalSvg(id,{locked=false,cls=""}={}){
  return `<svg class="medal-svg${cls?" "+cls:""}${locked?" locked":""}" viewBox="0 0 64 72" aria-hidden="true" focusable="false"><path d="M20 44l-7 24 9-5 6 7 6-22z" fill="${rib}"/><path d="M44 44l7 24-9-5-6 7-6-22z" fill="${rib}" opacity=".85"/><circle cx="32" cy="30" r="25" fill="#0a1322" stroke="${ring}" stroke-width="3.2"/><circle cx="32" cy="30" r="19.5" fill="none" stroke="${locked?"#3a4558":"#e9d9ad"}" stroke-opacity=".55" stroke-dasharray="1.6 3.4"/><g transform="translate(18 16) scale(1.1667)" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${GLYPH[id]||""}</g>${locked?`<g transform="translate(50 49)"><circle r="8.5" fill="#1b2638" stroke="#56637a" stroke-width="1.6"/><rect x="-4.2" y="-1.4" width="8.4" height="6.4" rx="1.4" fill="#9aa7bd"/><path d="M-2.6-1.4v-2a2.6 2.6 0 0 1 5.2 0v2" fill="none" stroke="#9aa7bd" stroke-width="1.6"/></g>`:""}</svg>`;
 }
 const total=()=>MEDALS.length;
-const countTxt=()=>`${earnedCount()} de ${total()}`;
+const countTxt=()=>t("medals.count",{n:String(earnedCount()),total:String(total())});
 
 /* ── Na partida ── */
 // Fim da partida fora do botão Concluir era ("Vencer agora" na pergunta do domínio): dá as medalhas de fim de partida.
@@ -47,51 +54,51 @@ export function noteEraMedals(before){
 // Bloco do resumo da era: "Nova medalha" com a arte, o nome e o critério.
 export function medalNoticeHtml(list){
  if(!list?.length)return "";
- return `<div class="sum-medals" role="status">${list.map(({id})=>{const m=MEDAL_BY_ID[id];return `<div class="sum-medal">${medalSvg(id,{cls:"pop"})}<div class="sm-t"><span class="sm-k">Nova medalha</span><b>${escapeHtml(m.name)}</b><span>${escapeHtml(m.goal)}</span></div></div>`}).join("")}</div>`;
+ return `<div class="sum-medals" role="status">${list.map(({id})=>{const m=MEDAL_BY_ID[id];return `<div class="sum-medal">${medalSvg(id,{cls:"pop"})}<div class="sm-t"><span class="sm-k">${t("medals.new")}</span><b>${escapeHtml(medalName(m.id))}</b><span>${escapeHtml(medalGoal(m.id))}</span></div></div>`}).join("")}</div>`;
 }
 // Aviso curto (eras tranquilas com o resumo desligado e fim do tutorial).
-export const medalToastText=list=>list?.length?`<span class="toast-medal">${medalSvg(list[0].id)}</span> <strong>Nova medalha: ${list.map(g=>escapeHtml(MEDAL_BY_ID[g.id].name)).join(", ")}</strong>`:"";
+export const medalToastText=list=>list?.length?`<span class="toast-medal">${medalSvg(list[0].id)}</span> <strong>${t("medals.newToast",{list:list.map(g=>escapeHtml(medalName(g.id))).join(", ")})}</strong>`:"";
 // Fim do tutorial (todos os passos): "Primeiros passos".
 export function noteTutorialMedal(){const got=awardMedals(state,"tutorial").filter(g=>g.first);refreshMedalCounts();if(got.length)showToast(medalToastText(got));return got}
 
 /* ── Tela de resultado ── */
 // Dá as medalhas do fim da partida (se ainda não foram dadas) e devolve uma faixa compacta (um botão que abre a tela
 // Medalhas): as medalhas da partida, ou o próximo desafio quando não houve nenhuma. Cabe entre os números e os botões.
-const listTxt=names=>names.length<=2?names.join(" e "):`${names.slice(0,2).join(", ")} e mais ${names.length-2}`;
+const listTxt=names=>names.length<=2?names.join(t("end.and")):t("medals.andMore",{list:names.slice(0,2).join(", "),n:String(names.length-2),count:names.length-2});
 export function resultMedalsHtml(){
  const s=state;if(!s?.result)return "";
  const btn=(icons,k,b,t,label)=>`<button type="button" class="res-medals" data-open="medalsScreen" aria-haspopup="dialog" aria-label="${escapeHtml(label)}"><span class="rm-icons" aria-hidden="true">${icons}</span><span class="rm-t"><span class="rm-k">${k}</span><b>${b}</b>${t?`<span>${t}</span>`:""}</span><span class="rm-c" aria-hidden="true">${earnedCount()}/${total()}<svg class="ic"><use href="#i-next"/></svg></span></button>`;
- if(!medalsAllowed(s)){const t=s.tutorial?"O tutorial só dá “Primeiros passos”.":"Partidas dos laboratórios não valem medalhas.";return btn(medalSvg("coroa",{locked:true}),"Medalhas","Esta partida não vale medalhas",t,`Medalhas: ${t} Ver todas (${countTxt()})`)}
+ if(!medalsAllowed(s)){const why=t(s.tutorial?"medals.tutOnly":"medals.labs");return btn(medalSvg("coroa",{locked:true}),t("medals.title"),t("medals.notThis"),why,t("medals.ariaWhy",{why,count:countTxt()}))}
  awardMedals(s,"end");refreshMedalCounts();
  const list=matchMedals(s);
- if(list.length){const names=list.map(g=>escapeHtml(MEDAL_BY_ID[g.id].name)),fresh=list.filter(g=>g.first).length;
-  const k=fresh?(fresh>1?`${fresh} novas medalhas`:"Nova medalha"):(list.length>1?"Medalhas da partida":"Medalha da partida");
-  return btn(list.slice(0,3).map(g=>medalSvg(g.id,{cls:g.first?"pop":""})).join(""),k,listTxt(names),"",`${k}: ${list.map(g=>MEDAL_BY_ID[g.id].name).join(", ")}. Ver todas (${countTxt()})`)}
+ if(list.length){const names=list.map(g=>escapeHtml(medalName(g.id))),fresh=list.filter(g=>g.first).length;
+  const k=fresh?(fresh>1?t("medals.nNew",{n:String(fresh),count:fresh}):t("medals.new")):t(list.length>1?"medals.ofMatchMany":"medals.ofMatch");
+  return btn(list.slice(0,3).map(g=>medalSvg(g.id,{cls:g.first?"pop":""})).join(""),k,listTxt(names),"",t("medals.ariaList",{k,list:list.map(g=>medalName(g.id)).join(", "),count:countTxt()}))}
  const locked=MEDALS.filter(m=>!earnedMedals[m.id]&&m.id!=="passos"),tip=locked.length?locked[s.result.era%locked.length]:null;
- if(!tip)return btn(medalSvg("coroa"),"Medalhas","Todas conquistadas!","",`Medalhas: todas conquistadas (${countTxt()})`);
- return btn(medalSvg(tip.id,{locked:true}),"Próximo desafio",escapeHtml(tip.name),escapeHtml(tip.goal),`Próximo desafio: ${tip.name}. ${tip.goal} Ver todas as medalhas (${countTxt()})`);
+ if(!tip)return btn(medalSvg("coroa"),t("medals.title"),t("medals.allDone"),"",t("medals.ariaAll",{count:countTxt()}));
+ return btn(medalSvg(tip.id,{locked:true}),t("medals.next"),escapeHtml(medalName(tip.id)),escapeHtml(medalGoal(tip.id)),t("medals.ariaNext",{name:medalName(tip.id),goal:medalGoal(tip.id),count:countTxt()}));
 }
 
 /* ── Tela "Medalhas" ── */
-const fmtDate=at=>{try{return new Date(at).toLocaleDateString("pt-BR")}catch(e){return ""}};
+const fmtDate=at=>{try{return new Date(at).toLocaleDateString(numberLocale())}catch(e){return ""}};
 function medalRow(m,tag="",{status=true}={}){
- const e=earnedMedals[m.id],st=e?[e.diff&&DIFFICULTIES[e.diff]?DIFFICULTIES[e.diff].name:"",e.at?fmtDate(e.at):""].filter(Boolean).join(" · "):"";
- return `<li class="md-row${e?" on":""}">${medalSvg(m.id,{locked:!e})}<div class="md-t"><b>${escapeHtml(m.name)}${tag?` <span class="md-tag">${tag}</span>`:""}</b><span class="md-goal">${escapeHtml(m.goal)}</span>${status?`<span class="md-st">${e?`<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Conquistada${st?" · "+escapeHtml(st):""}`:`<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>A conquistar`}</span>`:""}</div></li>`;
+ const e=earnedMedals[m.id],st=e?[e.diff&&DIFFICULTIES[e.diff]?diffName(e.diff):"",e.at?fmtDate(e.at):""].filter(Boolean).join(" · "):"";
+ return `<li class="md-row${e?" on":""}">${medalSvg(m.id,{locked:!e})}<div class="md-t"><b>${escapeHtml(medalName(m.id))}${tag?` <span class="md-tag">${tag}</span>`:""}</b><span class="md-goal">${escapeHtml(medalGoal(m.id))}</span>${status?`<span class="md-st">${e?`<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>${t("medals.earned")}${st?" · "+escapeHtml(st):""}`:`<svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>${t("medals.toEarn")}`}</span>`:""}</div></li>`;
 }
 export function renderMedalsScreen(){
  const box=$("medalsBody");if(!box)return;const n=earnedCount(),got=MEDALS.filter(m=>earnedMedals[m.id]),left=MEDALS.filter(m=>!earnedMedals[m.id]);
  const match=state?.result?matchMedals(state):[];
- box.innerHTML=`<div class="pg-card md-head"><div class="md-count"><b>${n}</b><span>de ${total()} medalhas</span></div><div class="md-bar" role="progressbar" aria-label="Medalhas conquistadas" aria-valuemin="0" aria-valuemax="${total()}" aria-valuenow="${n}"><i style="width:${(100*n/total()).toFixed(1)}%"></i></div><p class="pg-desc">Medalhas são só de honra: não mudam as regras. O tutorial só dá “Primeiros passos”.</p></div>
-${match.length?`<section class="pg-card md-match"><h2 class="pg-lab">Nesta partida <span class="md-n">${match.length}</span></h2><ul class="md-list">${match.map(g=>medalRow(MEDAL_BY_ID[g.id],g.first?"Nova!":"de novo",{status:false})).join("")}</ul></section>`:""}
-${got.length?`<section class="pg-card"><h2 class="pg-lab">Conquistadas <span class="md-n">${got.length}</span></h2><ul class="md-list">${got.map(m=>medalRow(m)).join("")}</ul></section>`:""}
-${left.length?`<section class="pg-card"><h2 class="pg-lab">A conquistar <span class="md-n">${left.length}</span></h2><ul class="md-list">${left.map(m=>medalRow(m)).join("")}</ul></section>`:""}`;
+ box.innerHTML=`<div class="pg-card md-head"><div class="md-count"><b>${n}</b><span>${t("medals.ofTotal",{total:String(total())})}</span></div><div class="md-bar" role="progressbar" aria-label="${t("medals.barAria")}" aria-valuemin="0" aria-valuemax="${total()}" aria-valuenow="${n}"><i style="width:${(100*n/total()).toFixed(1)}%"></i></div><p class="pg-desc">${t("medals.honor")}</p></div>
+${match.length?`<section class="pg-card md-match"><h2 class="pg-lab">${t("medals.thisMatch")} <span class="md-n">${match.length}</span></h2><ul class="md-list">${match.map(g=>medalRow(MEDAL_BY_ID[g.id],t(g.first?"medals.tagNew":"medals.tagAgain"),{status:false})).join("")}</ul></section>`:""}
+${got.length?`<section class="pg-card"><h2 class="pg-lab">${t("medals.earnedMany")} <span class="md-n">${got.length}</span></h2><ul class="md-list">${got.map(m=>medalRow(m)).join("")}</ul></section>`:""}
+${left.length?`<section class="pg-card"><h2 class="pg-lab">${t("medals.toEarn")} <span class="md-n">${left.length}</span></h2><ul class="md-list">${left.map(m=>medalRow(m)).join("")}</ul></section>`:""}`;
 }
 // Contagem "3/12" no botão da tela inicial e no menu ☰.
 export function refreshMedalCounts(){
- const t=`${earnedCount()}/${total()}`;
- for(const id of ["homeMedalsCount","menuMedalsCount"]){const el=$(id);if(el)el.textContent=t}
- const hb=$("homeMedals");if(hb)hb.setAttribute("aria-label",`Medalhas: ${countTxt()}`);
- const mb=$("menuMedals");if(mb)mb.setAttribute("aria-label",`Medalhas: ${countTxt()}`);
+ const cnt=`${earnedCount()}/${total()}`;
+ for(const id of ["homeMedalsCount","menuMedalsCount"]){const el=$(id);if(el)el.textContent=cnt}
+ const hb=$("homeMedals");if(hb)hb.setAttribute("aria-label",t("medals.aria",{count:countTxt()}));
+ const mb=$("menuMedals");if(mb)mb.setAttribute("aria-label",t("medals.aria",{count:countTxt()}));
  if(isSheetOpen("medalsScreen"))renderMedalsScreen();
 }
 // Liga a tela: na tela inicial (seta Voltar) ou por cima da partida/resultado (✕), como o Como jogar.
@@ -99,6 +106,8 @@ export function initMedals(){
  const scr=$("medalsScreen");if(!scr)return;
  SHEET_HOOKS.medalsScreen={onOpen:medalsScreenOpen};
  $("medalsBack")?.addEventListener("click",()=>closeSheet());$("medalsOk")?.addEventListener("click",()=>closeSheet());
+ // Trocar o idioma: contagem, rótulos e a tela aberta voltam a ser desenhados (o HTML estático troca sozinho).
+ onLanguageChange(()=>refreshMedalCounts());
  refreshMedalCounts();
 }
 // Ao abrir: por cima da partida mostra o ✕ (como o Como jogar); na tela inicial, a seta Voltar.

@@ -2,7 +2,7 @@
 import {executeTests,testRegistry,ftHistory,TEST_CATS,ftResults,ftLastRun} from "./tests-def.js";
 import {csvDownload} from "../platform/files.js";
 import {$} from "../ui/dom.js";
-import {fmt} from "../ui/format.js";
+import {fmtBR as fmt} from "../ui/format.js";
 
 // Corre os testes e, se a aba "Testes funcionais" estiver ligada (versão de desenvolvimento), mostra o resultado.
 export let ftLabReady=false;

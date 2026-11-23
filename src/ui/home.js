@@ -8,7 +8,8 @@ import {RIVAL_NAMES} from "../core/names.js";
 import {clamp} from "../core/util.js";
 import {$} from "./dom.js";
 import {startNewGame,showView,renderAll} from "./game.js";
-import {civSymHtml,playerProfileName} from "./labels.js";
+import {civSymHtml,playerProfileName,rivalDisplayName,diffName,diffDesc} from "./labels.js";
+import {onLanguageChange,t} from "../i18n/index.js";
 import {showDialog} from "./modal.js";
 import {recommendedRivalsFor} from "./mapshape.js";
 import {racesRuleForSize} from "./discovery.js";
@@ -17,12 +18,13 @@ import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
 // Tamanho do mapa: 1 = Original (6×4), 2×, 3×, 4× a área (8×6, 10×7, 12×8). Grava em config.map.mapSize.
+const PLAYER_STYLE=["reference","military","aggressive","technologist","economist","adaptive"];
 const MAP_SIZE_INFO={1:["6 × 4",24],2:["8 × 6",48],3:["10 × 7",70],4:["12 × 8",96]};
 const mapSizeChoice=v=>MAP_SIZE_INFO[Number(v)]?Number(v):1;
 // Tipos de vitória escolhidos. A chave Supremacia é o único controle da supremacia (substitui Clássica/Conquista):
 // desligada grava supremacyEnabled=false, como o antigo modo Conquista; saves antigos de Conquista abrem com ela desligada.
 const victoriesOf=(v,sup)=>({...victoriesOfConfig({endgame:{victories:v}}),supremacy:sup!==false});
-const joinOu=l=>l.length<2?(l[0]||""):l.slice(0,-1).join(", ")+" ou "+l.at(-1);
+const joinOu=l=>l.length<2?(l[0]||""):l.slice(0,-1).join(", ")+t("common.or")+l.at(-1);
 export function initHome(){
  const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
@@ -35,65 +37,69 @@ export function initHome(){
   return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:unlimitedChoice?30:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,mapSize:mapSizeChoice(configApplied.map.mapSize),victories:victoriesOf(configApplied.endgame.victories,configApplied.endgame.supremacyEnabled!==false),effects:terrainEffectsChoice,unlimited:unlimitedChoice}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
- const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));const opts=visibleOpponentOptions().map(([v,t])=>{const [short,desc]=t.split(" — ");return [v,short.replace(" (revelado no fim)",""),desc||(v==="random"?"revelado no fim da partida":"")]});
-  $("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>{const cur=opts.find(o=>o[0]===opponentChoices[i]);return `<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${RIVAL_NAMES[i]}</span><select data-prof="${i}" aria-label="Estilo de ${RIVAL_NAMES[i]}" aria-describedby="profDesc${i}">${opts.map(([v,t])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${t}</option>`).join("")}</select><small class="profile-desc" id="profDesc${i}">${cur?.[2]||""}</small></div>`}).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">🎲 Todos aleatórios</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
+ const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));const opts=visibleOpponentOptions().map(([v])=>v==="random"?[v,t("setup.opt.random"),t("setup.opt.random.desc")]:v==="config"?[v,t("setup.opt.config"),""]:[v,playerProfileName(v),t("style."+v+".desc")]);
+  $("homeProfiles").innerHTML=Array.from({length:choice.ai},(_,i)=>{const cur=opts.find(o=>o[0]===opponentChoices[i]);return `<div class="profile-row"><span>${civSymHtml({index:i+1,color:CIV_COLORS[i+1]})} ${rivalDisplayName(RIVAL_NAMES[i])}</span><select data-prof="${i}" aria-label="${t("setup.styleOf",{name:rivalDisplayName(RIVAL_NAMES[i])})}" aria-describedby="profDesc${i}">${opts.map(([v,txt])=>`<option value="${v}" ${opponentChoices[i]===v?"selected":""}>${txt}</option>`).join("")}</select><small class="profile-desc" id="profDesc${i}">${cur?.[2]||""}</small></div>`}).join("")+(choice.ai>1?`<div class="chips"><button type="button" class="chip" id="allRandom">${t("setup.allRandom")}</button></div>`:"");document.querySelectorAll("[data-prof]").forEach(el=>el.onchange=()=>{opponentChoices[+el.dataset.prof]=el.value;sync()});const ar=$("allRandom");if(ar)ar.onclick=()=>{setOpponentChoices(opponentChoices.map(()=>"random"));sync()}};
  const inProgress=()=>!!(state&&!state.result&&(state.era>1||state.history.length>0));
- const rivalsTxt=n=>n===1?"1 rival":n+" rivais";
+ const rivalsTxt=n=>t("common.rivals",{n:String(n),count:n});
  const sync=()=>{
   $("modeSlow").classList.toggle("selected",choice.mode==="slow");$("modeFast").classList.toggle("selected",choice.mode==="fast");
   $("modeSlow").setAttribute("aria-pressed",String(choice.mode==="slow"));$("modeFast").setAttribute("aria-pressed",String(choice.mode==="fast"));
-  $("homeModeDesc").textContent=choice.mode==="fast"?"Os retornos chegam antes: tudo acontece em menos eras.":"Os investimentos rendem no tempo normal.";
+  $("homeModeDesc").textContent=t(choice.mode==="fast"?"setup.mode.fast.desc":"setup.mode.slow.desc");
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
   // Duração: 15 / 30 / Sem limite (teto de segurança por tamanho do mapa, decidido por pontos) / Outra (10–150).
   let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=b.dataset.eras==="unlimited"?!!choice.unlimited:!choice.unlimited&&Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
   // Textos da Duração e da Vitória a partir dos tipos de vitória ligados (os de sempre quando está tudo no padrão).
   choice.conquest=!choice.victories.supremacy;
   const vOn=k=>choice.victories[k]&&victoryAvailable(k,choice.mapSize),dom=vOn("dominion"),sup=vOn("supremacy");
-  const ends=[dom&&"domínio","eliminação",sup&&"supremacia",vOn("discovery")&&"Grande Descoberta",vOn("wonder")&&"Maravilha"].filter(Boolean);
-  $("homeErasDesc").textContent=choice.unlimited?`Termina por ${joinOu(ends)}.`:`A partida acaba na era ${choice.eras}, ou antes se alguém vencer.`;
+  const ends=[dom&&t("vic.end.dominion"),t("vic.end.elimination"),sup&&t("vic.end.supremacy"),vOn("discovery")&&t("vic.end.discovery"),vOn("wonder")&&t("vic.end.wonder")].filter(Boolean);
+  $("homeErasDesc").textContent=choice.unlimited?t("setup.eras.unl",{list:joinOu(ends)}):t("setup.eras.limit",{n:String(choice.eras)});
   // Vitória: ao chegar a 70% você escolhe vencer na hora ou continuar até o limite (Sem limite: vence na hora).
-  {const l=[dom&&"domínio (70% das regiões)",dom||sup||vOn("discovery")||vOn("wonder")?"eliminação":"eliminação dos rivais",sup&&(choice.unlimited?`supremacia (a partir da era ${UNLIMITED.supremacyFromEra})`:"supremacia (na fase final)"),vOn("discovery")&&"Grande Descoberta",vOn("wonder")&&"Maravilha da Humanidade"].filter(Boolean);
-   let t=joinOu(l);t=(!sup&&l.length<=2?"Só "+t:t.charAt(0).toUpperCase()+t.slice(1))+".";
-   if(dom)t+=choice.unlimited?" Ao dominar o mapa, você vence na hora.":" Ao dominar o mapa, vença na hora ou continue.";
-   if(!choice.unlimited)t+=" No limite de eras, vencem os pontos.";
-   $("homeVictoryDesc").textContent=t}
+  {const l=[dom&&t("vic.l.dominion"),dom||sup||vOn("discovery")||vOn("wonder")?t("vic.end.elimination"):t("vic.l.eliminationRivals"),sup&&(choice.unlimited?t("vic.l.supremacyUnl",{era:String(UNLIMITED.supremacyFromEra)}):t("vic.l.supremacy")),vOn("discovery")&&t("vic.end.discovery"),vOn("wonder")&&t("vic.l.wonder")].filter(Boolean);
+   let txt=joinOu(l);txt=!sup&&l.length<=2?t("vic.only",{list:txt}):t("vic.all",{list:txt.charAt(0).toUpperCase()+txt.slice(1)});
+   if(dom)txt+=" "+t(choice.unlimited?"vic.domWinNow":"vic.domChoose");
+   if(!choice.unlimited)txt+=" "+t("vic.pointsAtLimit");
+   $("homeVictoryDesc").textContent=txt}
   // Tipos de vitória: chaves (Descoberta e Maravilha só nos mapas 2×–4×), linha resumida e aviso quando nada sobra.
   document.querySelectorAll("#victoryTypes [data-victory]").forEach(el=>{const k=el.dataset.victory,av=victoryAvailable(k,choice.mapSize);
    el.checked=!!choice.victories[k]&&av;el.disabled=!av;el.closest(".pg-vrow")?.classList.toggle("na",!av);
-   const txt=document.querySelector(`[data-vtxt="${k}"]`);if(txt){txt.dataset.base??=txt.textContent;txt.textContent=av?txt.dataset.base:"Só em mapas 2×, 3× e 4×."}});
+   const txt=document.querySelector(`[data-vtxt="${k}"]`);if(txt)txt.textContent=t(av?"setup.vtxt."+k:"setup.vtxt.bigOnly")});
   {const eff=effectiveVictories(choice.victories,choice.mapSize);
    $("victoryNoneTip").hidden=eff.length>0}
-  const offTxt=VICTORY_KEYS.filter(k=>victoryAvailable(k,choice.mapSize)&&!choice.victories[k]).map(k=>` · sem ${VICTORY_SHORT[k]}`).join("");
+  const offs=VICTORY_KEYS.filter(k=>victoryAvailable(k,choice.mapSize)&&!choice.victories[k]).map(k=>t("setup.sum.without",{name:t("vic.short."+k)}));
   for(const [id,on] of [["mapFixed",choice.map!=="sorteado"],["mapRandom",choice.map==="sorteado"]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("mapDesc").textContent=choice.map==="sorteado"?"Os terrenos mudam a cada partida. Todos começam em Campina e o sorteio evita mapas injustos.":"Cada região tem sempre o mesmo terreno: Jaspe é montanha, Musgo é floresta. Bom para aprender o mapa.";
+  $("mapDesc").textContent=t(choice.map==="sorteado"?"setup.map.random.desc":"setup.map.fixed.desc");
   document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>{const on=Number(b.dataset.mapSize)===choice.mapSize;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
-  {const [grid,n]=MAP_SIZE_INFO[choice.mapSize];$("mapSizeDesc").textContent=choice.mapSize===1?`${grid} = ${n} regiões. O mapa cabe inteiro na tela.`:`${grid} = ${n} regiões, do mesmo tamanho. Arraste o mapa para ver o resto; aproxime com dois dedos ou + e −.`}
+  {const [grid,n]=MAP_SIZE_INFO[choice.mapSize];$("mapSizeDesc").textContent=t(choice.mapSize===1?"setup.size.desc1":"setup.size.descBig",{grid,n:String(n),count:n})}
   // Grande Descoberta (Ciência) e Maravilha da Humanidade (Obras): só nos mapas 2×–4×, com a meta e o mínimo de regiões do tamanho.
   {const l=racesRuleForSize(choice.mapSize),el=$("mapSizeGd");if(el){el.hidden=!l.length;el.textContent=l.join("\n")}}
   // Mapa grande com poucos rivais: aviso curto e atalho para usar o número recomendado (pelo motor, quando houver).
   {const most=Math.max(1,...[...document.querySelectorAll("#homeOpponents [data-ai]")].map(b=>Number(b.dataset.ai)||1)),rec=Math.min(MAX_AI,most,recommendedRivalsFor(choice.mapSize)),tip=$("mapSizeTip");
    if(tip){const show=choice.mapSize>1&&choice.ai<rec;tip.hidden=!show;
-    if(show){$("mapSizeTipTxt").textContent=`Mapas ${choice.mapSize}× ficam melhores com ${rec}${rec<most?" ou mais":""} ${rec===1?"rival":"rivais"}.`;$("mapSizeUseRivals").textContent=`Usar ${rec} rivais`;$("mapSizeUseRivals").dataset.ai=rec}}}
+    if(show){$("mapSizeTipTxt").textContent=t(rec<most?"setup.sizeTipMore":"setup.sizeTip",{size:String(choice.mapSize),n:String(rec),count:rec});$("mapSizeUseRivals").textContent=t("setup.useRivals",{n:String(rec),count:rec});$("mapSizeUseRivals").dataset.ai=rec}}}
   for(const [id,on] of [["terrVisual",!choice.effects],["terrEffects",!!choice.effects]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("terrFxDesc").textContent=choice.effects?"Cada terreno dá 2 vantagens e 1 desvantagem (ouro, defesa, Obras, Força ou Ciência). Veja em ⓘ Terrenos.":"O terreno só enfeita o mapa: as regras são as de sempre. Bom para começar.";
+  $("terrFxDesc").textContent=t(choice.effects?"setup.terr.effects.desc":"setup.terr.visual.desc");
   $("homeRandomStart").checked=!!choice.randomStart;
   renderProfiles();
-  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>{const on=b.dataset.diff===choice.difficulty;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeDiffDesc").textContent=DIFFICULTIES[choice.difficulty]?.desc||"";
-  const styleName=v=>v==="random"?"aleatório":v==="config"?"das Configurações":playerProfileName(v).toLowerCase();
-  const styles=Array.from({length:choice.ai},(_,i)=>styleName(opponentChoices[i]||"random"));const uniq=[...new Set(styles)];
-  const erasTxt=choice.unlimited?"sem limite":`${choice.eras} eras`;
-  $("customizeSummary").textContent=`${choice.unlimited?"Sem limite":erasTxt} · ritmo ${choice.mode==="fast"?"rápido":"normal"}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""}`;
-  $("setupSummary").innerHTML=`<strong>${rivalsTxt(choice.ai)}</strong> ${uniq.length===1?(choice.ai===1?uniq[0]:(uniq[0]==="aleatório"?"aleatórios":uniq[0])):"("+styles.join(", ")+")"} · <strong>${DIFFICULTIES[choice.difficulty]?.name||""}</strong> · ${erasTxt}${offTxt}${choice.randomStart?" · posição aleatória":""}${choice.mapSize>1?` · mapa ${choice.mapSize}×`:""}${choice.map==="sorteado"?" · mapa sorteado":""}${choice.effects?" · terrenos com efeito":""} · ritmo ${choice.mode==="fast"?"rápido":"normal"}`;
+  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>{const on=b.dataset.diff===choice.difficulty;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeDiffDesc").textContent=DIFFICULTIES[choice.difficulty]?diffDesc(choice.difficulty):"";
+  // Estilos no resumo (minúsculas no português: "adaptativo"; cada idioma tem a sua forma em style.*.lower).
+  const styleName=v=>v==="random"?t("setup.sum.random"):v==="config"?t("setup.sum.config"):PLAYER_STYLE.includes(v)?t("style."+v+".lower"):playerProfileName(v).toLowerCase();
+  const styleKeys=Array.from({length:choice.ai},(_,i)=>opponentChoices[i]||"random"),styles=styleKeys.map(styleName);const uniq=[...new Set(styles)];
+  const erasTxt=choice.unlimited?t("setup.sum.unlimitedLower"):t("setup.sum.eras",{n:String(choice.eras)});
+  const extras=[choice.randomStart&&t("setup.sum.randomStart"),choice.mapSize>1&&t("setup.sum.mapSize",{n:String(choice.mapSize)}),choice.map==="sorteado"&&t("setup.sum.mapRandom"),choice.effects&&t("setup.sum.effects")].filter(Boolean);
+  const pace=t(choice.mode==="fast"?"setup.sum.paceFast":"setup.sum.paceNormal");
+  $("customizeSummary").textContent=[choice.unlimited?t("setup.sum.unlimited"):erasTxt,pace,...offs,...extras].join(" · ");
+  const stylesTxt=uniq.length===1?(choice.ai===1?uniq[0]:(styleKeys.every(v=>v==="random")?t("setup.sum.randomPlural"):uniq[0])):t("setup.sum.styleList",{list:styles.join(", ")});
+  $("setupSummary").innerHTML=[t("setup.sum.rivals",{rivals:rivalsTxt(choice.ai),styles:stylesTxt}),`<strong>${DIFFICULTIES[choice.difficulty]?diffName(choice.difficulty):""}</strong>`,erasTxt,...offs,...extras,pace].filter(Boolean).join(" · ");
   // Com partida salva: "Continuar · Era N" é o botão principal e "Nova partida" fica como secundário.
   const saved=inProgress(),cont=$("homeContinue"),start=$("homeStart");
   cont.classList.toggle("hidden",!saved);
   start.classList.toggle("btn-main",!saved);start.classList.toggle("btn-line",saved);
-  $("homeStartLabel").textContent=saved?"Nova partida":"Jogar";start.querySelector(".ic")?.classList.toggle("hidden",saved);
+  $("homeStartLabel").textContent=t(saved?"home.newGame":"home.play");start.querySelector(".ic")?.classList.toggle("hidden",saved);
   if(saved){
-   const tut=state.tutorial&&!state.tutorial.done,diff=DIFFICULTIES[state.difficulty]&&(DEV_MODE||state.difficulty!=="config")?DIFFICULTIES[state.difficulty].name:"";
-   $("homeContinueLabel").textContent=`Continuar · Era ${state.era}`;
-   $("homeContinueMeta").textContent=[state.unlimited?"sem limite":`de ${state.maxEras}`,tut?"tutorial":diff,rivalsTxt(Math.max(1,(state.civs?.length||2)-1))].filter(Boolean).join(" · ");
-   cont.setAttribute("aria-label",`Continuar a partida: era ${state.era}${state.unlimited?", sem limite de eras":` de ${state.maxEras}`}`);
+   const tut=state.tutorial&&!state.tutorial.done,diff=DIFFICULTIES[state.difficulty]&&(DEV_MODE||state.difficulty!=="config")?diffName(state.difficulty):"";
+   $("homeContinueLabel").textContent=t("home.continueEra",{era:String(state.era)});
+   $("homeContinueMeta").textContent=[state.unlimited?t("home.meta.unlimited"):t("home.meta.of",{n:String(state.maxEras)}),tut?t("home.meta.tutorial"):diff,rivalsTxt(Math.max(1,(state.civs?.length||2)-1))].filter(Boolean).join(" · ");
+   cont.setAttribute("aria-label",state.unlimited?t("home.continueAriaUnl",{era:String(state.era)}):t("home.continueAria",{era:String(state.era),max:String(state.maxEras)}));
   }
  };
  document.querySelectorAll("#homeDifficulty [data-diff]").forEach(b=>b.onclick=()=>{choice.difficulty=b.dataset.diff;sync()});
@@ -115,7 +121,7 @@ export function initHome(){
  $("homeHowTo").onclick=()=>openSheet("howToScreen",$("homeHowTo"));
  $("howToBack").onclick=()=>closeSheet();$("howToOk").onclick=()=>closeSheet();
  $("setupStart").onclick=()=>{
-  if(inProgress())showDialog({icon:"play",title:"Começar uma nova partida?",text:`A partida em andamento (era ${state.era}) será substituída.`,buttons:[{label:"Cancelar"},{label:"Nova partida",kind:"primary",onClick:begin}],esc:0});else begin();
+  if(inProgress())showDialog({icon:"play",title:t("setup.replace.title"),text:t("setup.replace.text",{era:String(state.era)}),buttons:[{label:t("common.cancel")},{label:t("home.newGame"),kind:"primary",onClick:begin}],esc:0});else begin();
  };
  const openTab=v=>{home.hidden=true;showView(v)};
  $("homeContinue").onclick=()=>{openTab("game");renderAll();runHook("continueGame")};
@@ -124,5 +130,7 @@ export function initHome(){
  // uma folha e fecha sozinho).
  document.addEventListener("keydown",e=>{if(e.key!=="Escape"||e.defaultPrevented||isSheetOpen()||$("modalRoot").childElementCount)return;
   if(!setup.hidden){e.preventDefault();$("setupBack").click()}});
+ // Trocar o idioma redesenha a tela inicial e a configuração (as escolhas não mudam).
+ onLanguageChange(()=>sync());
  sync();
 }

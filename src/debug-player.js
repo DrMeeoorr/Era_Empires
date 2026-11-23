@@ -22,6 +22,13 @@ import * as ns_core_rng from "./core/rng.js";
 import * as ns_core_state from "./core/state.js";
 import * as ns_core_terrain from "./core/terrain.js";
 import * as ns_core_util from "./core/util.js";
+import * as ns_i18n_index from "./i18n/index.js";
+import * as ns_i18n_pt_BR from "./i18n/pt-BR.js";
+import * as ns_i18n_en from "./i18n/en.js";
+import * as ns_i18n_pt_PT from "./i18n/pt-PT.js";
+import * as ns_i18n_it from "./i18n/it.js";
+import * as ns_i18n_de from "./i18n/de.js";
+import * as ns_i18n_fr from "./i18n/fr.js";
 import * as ns_platform_files from "./platform/files.js";
 import * as ns_platform_storage from "./platform/storage.js";
 import * as ns_ui_allocation from "./ui/allocation.js";
@@ -32,6 +39,7 @@ import * as ns_ui_game from "./ui/game.js";
 import * as ns_ui_home from "./ui/home.js";
 import * as ns_ui_hud from "./ui/hud.js";
 import * as ns_ui_labels from "./ui/labels.js";
+import * as ns_ui_language from "./ui/language.js";
 import * as ns_ui_map from "./ui/map.js";
 import * as ns_ui_medals from "./ui/medals.js";
 import * as ns_ui_mapshape from "./ui/mapshape.js";
@@ -46,4 +54,4 @@ import * as ns_ui_terrain_art from "./ui/terrain-art.js";
 import * as ns_ui_toast from "./ui/toast.js";
 import * as ns_ui_tutorial from "./ui/tutorial.js";
 
-export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_medals,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_terrain,ns_core_util,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_map,ns_ui_medals,ns_ui_mapshape,ns_ui_mapview,ns_ui_discovery,ns_ui_victories,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_terrain_art,ns_ui_toast,ns_ui_tutorial])}
+export function install(){return exposeGlobals([ns_ai_decide,ns_ai_profiles,ns_app_hooks,ns_app_medals,ns_app_save,ns_app_session,ns_app_setup,ns_core_config,ns_core_economy,ns_core_endgame,ns_core_era,ns_core_format,ns_core_map,ns_core_match,ns_core_military,ns_core_names,ns_core_references,ns_core_rng,ns_core_state,ns_core_terrain,ns_core_util,ns_i18n_index,ns_i18n_pt_BR,ns_i18n_en,ns_i18n_pt_PT,ns_i18n_it,ns_i18n_de,ns_i18n_fr,ns_platform_files,ns_platform_storage,ns_ui_allocation,ns_ui_charts,ns_ui_dom,ns_ui_format,ns_ui_game,ns_ui_home,ns_ui_hud,ns_ui_labels,ns_ui_language,ns_ui_map,ns_ui_medals,ns_ui_mapshape,ns_ui_mapview,ns_ui_discovery,ns_ui_victories,ns_ui_modal,ns_ui_panels,ns_ui_report,ns_ui_sheets,ns_ui_terrain_art,ns_ui_toast,ns_ui_tutorial])}
