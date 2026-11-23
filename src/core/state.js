@@ -1,5 +1,5 @@
 // Estado de uma partida: civilizações, criação do estado inicial e acesso às civilizações.
-import {CIV_COLORS,CHART_COLORS,MAX_AI,VERSION,normMode,mapTerritories,normMapSize} from "./config.js";
+import {CIV_COLORS,CHART_COLORS,MAX_AI,VERSION,normMode,mapTerritories,normMapSize,normVictories,OPTIONAL_VICTORIES} from "./config.js";
 import {civIds,startPositions,startSeedFor} from "./map.js";
 import {rand} from "./rng.js";
 import {clone,clamp} from "./util.js";
@@ -30,8 +30,10 @@ export function newState(cfg,opts={}){
  // Mapas maiores (config.map.mapSize 2–4): o estado guarda o tamanho; no mapa de sempre o campo nem existe.
  const size=normMapSize(c.map.mapSize);if(size>1)st.mapSize=size;
  // Grande Descoberta (vitória por Ciência): sempre nos mapas maiores; no Original só se ligada (endgame.greatDiscovery).
- const gd=makeGreatDiscovery(c,size,n);if(gd)st.greatDiscovery=gd;
- const wd=makeWonder(c,size,n);if(wd)st.wonder=wd;
+ // Tipos de vitória: só ficam no estado quando algum foi desligado (o padrão é o jogo de sempre, sem o campo).
+ const vic=normVictories(c.endgame?.victories);if(OPTIONAL_VICTORIES.some(k=>!vic[k]))st.victories=vic;
+ const gd=vic.discovery?makeGreatDiscovery(c,size,n):null;if(gd)st.greatDiscovery=gd;
+ const wd=vic.wonder?makeWonder(c,size,n):null;if(wd)st.wonder=wd;
  return st;
 }
 /* Grande Descoberta (22/11/2026): vence quem junta discoveryGoal × k pontos de Ciência tendo pelo menos

@@ -119,7 +119,7 @@ test("salvar e recarregar: depois de uma partida terminada, reabrir o jogo mantÃ
   await page.locator('#homeOpponents [data-ai="3"]').click();
   await page.locator('[data-prof="1"]').selectOption("military");
   await page.locator('#homeEraPresets [data-eras="15"]').click();
-  await page.locator("#homeConquest").click();
+  await page.locator('[data-vrow="supremacy"]').click();   // Supremacia desligada = antigo modo Conquista
   await page.locator('#homeDifficulty [data-diff="dificil"]').click();
   await page.locator("#setupStart").click();
   const read = () => page.evaluate(() => ({

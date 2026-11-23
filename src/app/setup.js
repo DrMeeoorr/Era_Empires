@@ -11,7 +11,7 @@ export function tutorialPrevSetup(){const p=state?.tutorial?.prevSetup;return p&
 export function restoreSetupAfterTutorial(){
  const p=tutorialPrevSetup();if(!p)return;delete state.tutorial.prevSetup;
  try{const c=clone(configApplied),diff=DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY;
-  c.map.aiCount=p.ai;c.map.mapSize=p.mapSize??1;c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;c.map.randomStart=p.randomStart===true;const n=normalizeConfig(c);
+  c.map.aiCount=p.ai;c.map.mapSize=p.mapSize??1;if(p.victories)c.endgame.victories={...p.victories};c.endgame.maxEras=p.eras;c.endgame.supremacyEnabled=p.supremacy!==false;c.map.randomStart=p.randomStart===true;const n=normalizeConfig(c);
   setConfigApplied(n);setGameMode(p.mode==="fast"?"fast":"slow");setMapType(p.mapType);setTerrainEffectsChoice(p.terrainEffects===true);setUnlimitedChoice(p.unlimited===true);setCurrentDifficulty(diff);applyDifficulty(diff);runHook("configChanged");
  }catch(e){}
 }
@@ -21,9 +21,9 @@ export function restoreSetupAfterTutorial(){
 export const TUTORIAL_POS={player:7,ai:9,target:8};
 export function newTutorialGame(){
  // Escolhas do jogador antes do tutorial (se já estiver num tutorial, mantém as originais).
- const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false,randomStart:!!configApplied.map.randomStart,mapType,terrainEffects:terrainEffectsChoice,unlimited:unlimitedChoice,mapSize:configApplied.map.mapSize??1};
+ const prevSetup=tutorialPrevSetup()||{mode:gameMode,difficulty:currentDifficulty,ai:configApplied.map.aiCount||1,eras:configApplied.endgame.maxEras,supremacy:configApplied.endgame.supremacyEnabled!==false,randomStart:!!configApplied.map.randomStart,mapType,terrainEffects:terrainEffectsChoice,unlimited:unlimitedChoice,mapSize:configApplied.map.mapSize??1,victories:{...(configApplied.endgame.victories||{})}};
  // O tutorial usa sempre o mapa padrão e os terrenos só visuais; as escolhas do jogador voltam depois (restoreSetupAfterTutorial).
- setMapType("padrao");setTerrainEffectsChoice(false);setUnlimitedChoice(false);setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.map.mapSize=1;configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
+ setMapType("padrao");setTerrainEffectsChoice(false);setUnlimitedChoice(false);setGameMode("slow");setCurrentDifficulty("facil");applyDifficulty("facil");configApplied.map.aiCount=1;configApplied.map.mapSize=1;configApplied.endgame.victories={dominion:true,supremacy:true,discovery:true,wonder:true};configApplied.endgame.maxEras=30;configApplied.endgame.supremacyEnabled=true;setConfigApplied(normalizeConfig(configApplied));
  // O rival do tutorial é sempre "Equilibrado" (ai.profile); opponentChoices do jogador não muda. Sorteio das batalhas
  // fixo (semente da configuração): o tutorial é sempre igual.
  setState(newGame({fixedSeed:true}));

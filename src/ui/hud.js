@@ -10,6 +10,7 @@ import {$} from "./dom.js";
 import {fmt,escapeHtml,money,cssColor} from "./format.js";
 import {civLabel,profileLabel} from "./labels.js";
 import {renderDiscoveryHud} from "./discovery.js";
+import {victoryOn,VICTORY_SHORT} from "./victories.js";
 
 /* ── Barra de recursos (topo) ── */
 // Números curtos para a barra: sem casas decimais a partir de 100.
@@ -25,15 +26,17 @@ export function renderMetrics(){
  $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">Força</span></span>`;
  $("statForce").title="Força para atacar; a que você não usa defende suas regiões (perde 20% por era).";
  renderDiscoveryHud();
- $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">terras</span></span>`;
- $("statTerr").setAttribute("aria-label",`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`);
+ // Domínio desligado nesta partida: só a contagem (sem o mínimo para a maioria).
+ const domOn=victoryOn("dominion",s);
+ $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}${domOn?`<small>/${min}</small>`:""}</b><span class="k">terras</span></span>`;
+ $("statTerr").setAttribute("aria-label",domOn?`Terras: ${mine} de ${min} para a maioria${mine>=min?" (maioria atingida)":""}. Abrir placar e condições de vitória`:`Terras: ${mine}. Abrir placar e condições de vitória`);
  const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");
  if(!lv){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap none">—</span>`;pill.setAttribute("aria-label","Placar: aparece no fim da 1.ª era. Abrir placar e condições de vitória")}
  else if(!meS){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap down">fora</span>`;pill.setAttribute("aria-label","Placar: você foi eliminado. Abrir placar")}
  else{const pos=lv.indexOf(meS)+1,lead=lv[0],d=pos===1?(lv[1]?PTS(meS.score)-PTS(lv[1].score):0):PTS(lead.score)-PTS(meS.score);
   pill.innerHTML=`<span aria-hidden="true">🏆</span> ${pos}.º <span class="gap ${pos===1?"up":"down"}">${pos===1?"+":"−"}${d}</span>`;
   pill.setAttribute("aria-label",`Placar: você está em ${pos}.º${pos===1?(lv[1]?`, ${d} pontos à frente`:""):`, ${d} pontos atrás de ${lead.name}`}. Abrir placar e condições de vitória`)}
- $("matchInfo").textContent=`${s.unlimited?"Sem limite":s.maxEras+" eras"} · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · ritmo ${s.mode==="fast"?"rápido":"normal"}${g.supremacyEnabled===false?" · Conquista":""} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
+ $("matchInfo").textContent=`${s.unlimited?"Sem limite":s.maxEras+" eras"} · ${DIFFICULTIES[s.difficulty]?.name||"Médio"} · ritmo ${s.mode==="fast"?"rápido":"normal"}${["dominion","supremacy","discovery","wonder"].filter(k=>((k==="discovery"||k==="wonder")?s.mapSize>1:true)&&!victoryOn(k,s)).map(k=>" · sem "+VICTORY_SHORT[k]).join("")} · ${mine} terras suas, ${countTerritories(s,"neutral")} livres.`;
  // Placar completo (folha "Placar e vitória"): posição, pontos, diferença para o líder e variação na última era.
  const strip=$("scoreStrip");
  if(!lv){strip.innerHTML=`<p class="muted small">O placar aparece no fim da 1.ª era.</p>`;return}

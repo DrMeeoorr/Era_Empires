@@ -55,7 +55,7 @@ for (const [name, opts] of MOBILE_SCREENS) {
     await openCustomize(page);
     await checkButtons(page, [
       ['#homeEraPresets [data-eras="15"]', "15 eras", true], ["#homeEraPresets .pg-other", "Outra duração (toque no campo)", true], ["#modeSlow", "Ritmo Normal", true], ["#modeFast", "Ritmo Rápido", true],
-      ["#homeClassic", "Clássica", true], ["#homeConquest", "Conquista", true], ["#homeProfiles select", "estilo do rival", true], ["label.pg-switch", "Posição inicial aleatória (linha inteira)", true], ["#homeRandomStart", "interruptor (a linha inteira é o alvo)", false],
+      ['[data-vrow="dominion"]', "Domínio (linha inteira)", true], ['[data-vrow="supremacy"]', "Supremacia (linha inteira)", true], ["#homeProfiles select", "estilo do rival", true], ["label.pg-switch", "Posição inicial aleatória (linha inteira)", true], ["#homeRandomStart", "interruptor (a linha inteira é o alvo)", false],
     ], "Personalizar", smalls);
     // 3 adversários: a configuração tem de continuar sem rolagem horizontal.
     await page.locator('#homeOpponents [data-ai="3"]').click();

@@ -7,7 +7,7 @@ import {describeResult,dominionAsking} from "../core/endgame.js";
 import {simulate} from "../core/era.js";
 import {addLog,P,newState} from "../core/state.js";
 import {clone,safeNum} from "../core/util.js";
-import {PARAM_GROUPS,paramInput,configEdited,setConfigEdited} from "./settings.js";
+import {PARAM_GROUPS,paramInput,configEdited,setConfigEdited,setParam} from "./settings.js";
 import {$,setStatus} from "../ui/dom.js";
 import {money,fmt,escapeHtml} from "../ui/format.js";
 import {renderAll} from "../ui/game.js";
@@ -19,7 +19,7 @@ export function makeSnapshot(){return {config:clone(configApplied),state:clone(s
 export function renderParams(){
  const groups=PARAM_GROUPS;
  $("params").innerHTML=groups.map(([title,g,items])=>`<h3>${title}</h3><div class="param-grid">${items.map(p=>paramInput(g,...p)).join("")}</div>`).join("");
- document.querySelectorAll("[data-param]").forEach(el=>el.addEventListener("change",()=>{const [g,k]=el.dataset.param.split(".");let v;try{v=paramValue(el)}catch(e){el.setAttribute("aria-invalid","true");setStatus("labStatus",e.message,"error");return}el.removeAttribute("aria-invalid");configEdited[g][k]=v;$("configState").textContent="Edição pendente";}));
+ document.querySelectorAll("[data-param]").forEach(el=>el.addEventListener("change",()=>{const [g,k]=el.dataset.param.split(".");let v;try{v=paramValue(el)}catch(e){el.setAttribute("aria-invalid","true");setStatus("labStatus",e.message,"error");return}el.removeAttribute("aria-invalid");setParam(configEdited,g,k,v);$("configState").textContent="Edição pendente";}));
 }
 // Valor de um campo das Configurações. Campo numérico vazio ou inválido é recusado (Number("") seria 0).
 export function paramValue(el){
@@ -30,7 +30,7 @@ export function paramValue(el){
  return n;
 }
 // Lê todos os campos; se algum for inválido, lança erro sem alterar configEdited.
-export function readParams(){const next=clone(configEdited);document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");next[g][k]=paramValue(el)});const c=normalizeConfig(next);setConfigEdited(next);return c}
+export function readParams(){const next=clone(configEdited);document.querySelectorAll("[data-param]").forEach(el=>{const [g,k]=el.dataset.param.split(".");setParam(next,g,k,paramValue(el))});const c=normalizeConfig(next);setConfigEdited(next);return c}
 export function applyConfig(){
  const c=readParams();rememberAiBase(c);if($("recalcExisting").checked){setConfigApplied(clone(c));setState(newGame());setSelectedTerritory(null);addLog(state,"Partida reiniciada com recálculo explícito.");}
  else setConfigApplied(clone(c));

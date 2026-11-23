@@ -16,6 +16,7 @@ import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml} from "./labels.js";
 import {resultMedalsHtml} from "./medals.js";
 import {unlimitedCapFor} from "./mapshape.js";
+import {victoryOn,applyVictoryVisibility,VICTORY_NAMES} from "./victories.js";
 import {fillGdRules,discoveryPanelHtml,wonderPanelHtml,racePlayerPoints} from "./discovery.js";
 
 export function chartData(key){return state.history.map(r=>({x:r.era,y:r[key]||0}))}
@@ -41,22 +42,28 @@ export function renderNotifications(){const events=state.log.filter(x=>/ataque|c
 /* ── Condições de vitória e fim de partida ── */
 export function renderVictory(){
  // Regras completas (Como jogar): o teto do Sem limite desta partida (depende do tamanho do mapa).
- fillGdRules();
+ fillGdRules();applyVictoryVisibility();
  document.querySelectorAll("[data-unl-cap]").forEach(el=>{el.textContent=String(state?.unlimited?state.maxEras:unlimitedCapFor(mapSizeOf(state)))});
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
  $("victoryPill").textContent=s.result?"Partida encerrada":s.unlimited?"Sem limite":`${left===1?"Última era":`Faltam ${left} eras`}`;
  const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
- const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
+ const domOn=victoryOn("dominion",s),supOn=victoryOn("supremacy",s),base=territoryBase(s);
+ const terr=s.civs.map(c=>{const t=countTerritories(s,c.id);if(!domOn)return `<div class="row between small"><span>${civLabel(c)}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t}</strong></div>${bar(t,base,c.chartColor)}`;return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":' <span class="red">· eliminado</span>'}</span><strong>${t} / ${min}</strong></div>${bar(t,min,c.chartColor)}`}).join("");
  const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
- const statusTxt={off:"Desativada neste modo (Conquista).",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${supremacyMinEra(s,cfg)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
+ const statusTxt={off:"Desligada nesta partida.",none:"Ainda não avaliada.",suspended:"Suspensa nesta era.",tiedLeadership:"Sem líder claro.",gapTooSmall:`O 2.º ainda tem mais de ${fmt(100*g.supremacyRelative,0)}% do índice do líder.`,belowMinimum:"O líder ainda não é forte o suficiente.",counting:"Condição cumprida nesta era.",notYet:`Só conta a partir da era ${supremacyMinEra(s,cfg)} e com no máximo ${Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)} territórios livres (agora ${countTerritories(s,"neutral")}).`,notApplicable:"—"}[sup.status]||"";
  const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?' <span class="gold">· líder</span>':""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
  // Domínio com escolha: o que acontece ao chegar a 70% (e, se o jogador decidiu continuar, o que falta para vencer no fim).
  const mineT=countTerritories(s,"player"),holding=!s.result&&!s.unlimited&&s.dominion?.declined&&mineT>=min;
  const domTxt=s.unlimited?"Quem chegar lá vence na hora.":!s.dominion?"Quem chegar lá vence na hora.":holding?`<strong class="gold">Você domina o mapa.</strong> Mantenha ${min} regiões até a era ${s.maxEras} para vencer por domínio.`:"Ao chegar lá, você escolhe: vencer na hora ou continuar até a última era. Um rival que chegar lá vence na hora.";
- $("victoryPanel").innerHTML=`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}${discoveryPanelHtml()}${wonderPanelHtml()}
- <h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
- <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
+ // Tipos de vitória desligados nesta partida: o domínio vira só a contagem de regiões; a supremacia some (também nos
+ // saves antigos do modo Conquista, que tinham supremacyEnabled=false).
+ const offList=["dominion","supremacy","discovery","wonder"].filter(k=>(k==="discovery"||k==="wonder")?(s.mapSize>1&&!victoryOn(k,s)):!victoryOn(k,s));
+ const offTxt=offList.length?`<div class="small muted vic-off" style="margin:0 0 6px">Desligadas nesta partida: ${offList.map(k=>VICTORY_NAMES[k]).join(", ")}. Sempre valem: eliminar todos os rivais e pontos no fim.</div>`:"";
+ const supHide=!supOn;
+ $("victoryPanel").innerHTML=offTxt+(domOn?`<h3>Maioria territorial: ${min} de ${territoryBase(s)}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>`:`<h3>Regiões</h3>`)+`${terr}${discoveryPanelHtml()}${wonderPanelHtml()}
+ ${supHide?"":`<h3>Supremacia: liderar com folga ${g.supremacyEras} eras seguidas</h3>${iceRows||'<div class="small muted">Calculada a partir do fim da 1.ª era.</div>'}
+ <div class="small" style="margin-top:6px">Sequência: <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?"você":escapeHtml(civName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>`}
  <h3>${s.unlimited?`Sem limite (teto de ${s.maxEras} eras): pontuação`:`Última era (${s.maxEras}): pontuação`}</h3><div class="small muted">${s.unlimited?`Se ninguém vencer até a era ${s.maxEras}, ganha a maior pontuação.`:"Sem outra vitória, ganha a maior pontuação."} Territórios valem ${fmt(100*g.scoreWTerritory,0)}%; Força, Obras, Ciência e ouro guardado dividem o resto.</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">Se a partida acabasse agora:</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?' <span class="gold">· 1.º</span>':""}</span><strong>${PTS(x.score)} pts</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }
