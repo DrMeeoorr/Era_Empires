@@ -13,7 +13,7 @@
 | Busca na web (motor de busca) | **Funcionou.** É a base de tudo o que está aqui. |
 | Google Play (busca direta), App Store (API de busca), Steam (busca), AppBrain | **Bloqueados nesta sessão** (o proxy recusou o acesso: `play.google.com` e `itunes.apple.com` não são liberados). Os jogos citados vieram de resultados da busca na web que apontam para páginas dessas lojas. |
 | USPTO, EUIPO/TMview, WIPO Global Brand Database, INPI | **Bloqueados nesta sessão.** Só vi registros que aparecem em sites públicos que copiam o USPTO (Justia Trademarks). **Nenhum candidato foi confirmado como "livre" numa base oficial.** |
-| Domínios (.com / .app / .game) e redes sociais | **Não verificados**: consulta de domínio (RDAP/DNS) também bloqueada. Só procurei na web se existe site ou empresa com o nome. |
+| Domínios (.com / .app / .game) e redes sociais | Domínios: **verificados em 23/11/2026** (DNS público + RDAP), ver seção 6. Redes sociais: não verificadas. |
 
 Para completar: liberar `play.google.com`, `apps.apple.com`/`itunes.apple.com`, `store.steampowered.com`,
 `tmsearch.uspto.gov`, `www.tmdn.org`, `branddb.wipo.int` e `busca.inpi.gov.br` na rede da sessão, ou fazer a busca à mão.
@@ -211,6 +211,48 @@ só quando o app Android estiver pronto. Não há menção a multijogador, compr
 - **Próximos passos se o usuário escolher**: registrar a decisão em `docs/decisoes.md`; `tradutor` troca
   `app.title`/`app.tabTitle`/`tut.invite.title` e revisa a ficha; `arquiteto` troca o título da aba, ícone e
   `package.json` (se quiser); `mobile-ux` ajusta o tamanho do nome na tela inicial; consulta jurídica antes do registro.
+
+## 6. Domínios de Eravia e Arvela (verificados em 23/11/2026)
+
+Método: DNS público (`dns.google`, registro NS) para todas as extensões e RDAP oficial do registro para .com, .net,
+.app, .dev, .com.br e .fr. "Livre" = o DNS diz que o domínio não existe **e**, quando há RDAP, o registro responde 404.
+Sem RDAP (.org, .io, .gg, .game, .games, .it, .de, .pt, .es, .eu, .studio) é **provavelmente livre**: confirme no
+registrador antes de comprar. Não verifiquei preço nem se os ocupados estão à venda além do que o DNS indica.
+
+### Eravia
+
+| Domínio | Situação | Detalhe |
+|---|---|---|
+| eravia.com | **Ocupado** | Desde 2013 (Joker.com), DNS na Finlândia (hostaan.fi) — a agência web. **Expira em 29/12/2026**; costuma ser renovado. |
+| eravia.net | **Ocupado** | Registrado em **18/10/2026** (GoDaddy) — muito recente; pode ser alguém guardando o nome. |
+| eravia.de | Ocupado, **estacionado na Sedo** | Sedo é um mercado de domínios: provavelmente à venda. |
+| eravia.eu | Ocupado | GoDaddy. |
+| eravia.app, eravia.dev, eravia.com.br, eravia.fr | **Livre** (confirmado no RDAP) | |
+| eravia.game, .games, .io, .gg, .org, .co, .it, .pt, .es, .studio | Provavelmente livre | |
+| playeravia.com, eraviagame.com (e as outras extensões) | Provavelmente livre | |
+
+### Arvela
+
+| Domínio | Situação | Detalhe |
+|---|---|---|
+| arvela.com | **Ocupado** | Desde 2001 (GoDaddy), travado até 2029. |
+| arvela.net, .org, .eu, .it, .de, .pt, .es | **Ocupados** | Vários donos e sites diferentes. |
+| arvela.app | **Ocupado** | Registrado em 03/2026 (Cloudflare). |
+| arvela.fr | **Ocupado** | Registrado em **29/10/2026** (OVH). |
+| arvela.com.br | Ocupado, estacionado | Registrado em 04/2026, página de estacionamento. |
+| arvela.co | Ocupado, **à venda** (Afternic) | |
+| arvela.dev, .game, .games, .io, .gg, .studio | Livre / provavelmente livre | arvela.dev confirmado no RDAP. |
+| arvelagame.com (e as outras extensões) | Provavelmente livre | |
+
+### Conclusão
+
+- **Eravia está bem melhor**: livres .app, .com.br, .fr e .dev (confirmados) e .game/.games/.io/.gg (prováveis).
+  O .com e o .net estão ocupados; a saída comum é **eravia.app** ou **eravia.game** como site principal,
+  ou **playeravia.com** se quiser um .com. O .net registrado há um mês merece atenção: se o nome vazar, outros podem ser pegos.
+- **Arvela está muito disputado**: ocupado em quase todas as extensões e em vários países (há empresas e projetos
+  usando o nome), o que também sugere mais risco de conflito de marca. Reforça Eravia como finalista principal.
+- Se escolher Eravia, vale **registrar logo** eravia.app, eravia.game e eravia.com.br (e talvez playeravia.com),
+  antes de anunciar o nome. A compra é com você — não comprei nada.
 
 ## Fontes (consultadas em 23/11/2026)
 
