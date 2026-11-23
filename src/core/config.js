@@ -19,9 +19,16 @@ export const DEFAULTS={
   scoreWMilitary:0.15,scoreWInfrastructure:0.15,scoreWTechnology:0.15,scoreWTreasury:0.15,scoreWTerritory:0.4,scoreNormalization:"log",scoreTerritoryProportional:true,
   scoreCapMilitary:1.5,scoreCapInfrastructure:1.5,scoreCapTechnology:1.5,scoreCapTreasury:1.5,scoreCapTerritory:1.5,scoreTieMargin:0.01,extendForSupremacy:false,
   greatDiscovery:false,discoveryGoal:6000,discoveryMinRegions:5,discoveryReact:0.5,discoveryReactMilitary:20,
-  wonder:false,wonderGoal:3000,wonderMinRegions:4,wonderPerGold:0.2}
+  wonder:false,wonderGoal:3000,wonderMinRegions:4,wonderPerGold:0.2,
+  victories:{dominion:true,supremacy:true,discovery:true,wonder:true}}
 };
 export const MAX_AI=5, MAP_COLS=6;
+/* ── Tipos de vitória escolhidos para a partida (config.endgame.victories, 23/11/2026) ──
+   Desligáveis: domínio, supremacia, Grande Descoberta e Maravilha (estas duas só existem nos mapas 2×–4×). Sempre
+   ativos: eliminação (último império) e pontos no limite de eras / teto do Sem limite, para toda partida ter fim.
+   Padrão: tudo ligado (o jogo de sempre). */
+export const OPTIONAL_VICTORIES=["dominion","supremacy","discovery","wonder"];
+export function normVictories(v){const out={};for(const k of OPTIONAL_VICTORIES)out[k]=!(v&&typeof v==="object"&&v[k]===false);return out}
 /* ── Tamanho do mapa (config.map.mapSize = 1, 2, 3 ou 4; padrão 1) ──
    Grades com cerca de 1×, 2×, 3× e 4× a área do mapa original (6×4), com a mesma vizinhança (até 4 vizinhas, sem
    diagonais). 3× = 10×7 = 70 regiões (o retângulo mais próximo de 72 com a forma do original).
@@ -73,6 +80,7 @@ export function normalizeConfig(c){
  if(x.economy.precision>6)throw Error("Precisão máxima: 6");
  if(!Number.isInteger(x.map.aiCount))throw Error("Número de IAs deve ser inteiro.");
  x.map.randomStart=x.map.randomStart===true;
+ {const v=x.endgame.victories;if(v!==undefined&&(v===null||typeof v!=="object"||Array.isArray(v)||Object.entries(v).some(([k,b])=>!OPTIONAL_VICTORIES.includes(k)||typeof b!=="boolean")))throw Error("Tipos de vitória inválidos (use true/false para dominion, supremacy, discovery e wonder).");x.endgame.victories=normVictories(v)}
  if(!MAP_SIZE_KEYS.includes(x.map.mapSize))throw Error("Tamanho do mapa deve ser 1, 2, 3 ou 4.");
  const eg=x.endgame;
  if(!Number.isInteger(eg.maxEras)||!Number.isInteger(eg.supremacyEras))throw Error("Limite de eras e eras consecutivas devem ser inteiros.");

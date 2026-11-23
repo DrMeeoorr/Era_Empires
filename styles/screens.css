@@ -95,12 +95,12 @@ button.btn-main,.btn-main{display:flex;align-items:center;justify-content:center
 .profile-desc{grid-column:2;padding-left:8px;font-size:12.5px;color:var(--scr-muted);line-height:1.25}
 .profile-rows .chips{display:flex}
 #allRandom{min-height:48px;width:100%;border-radius:12px;border:1px dashed #3a5070;background:transparent;color:#ffd58a;font-weight:700}
-.pg-switch{display:flex;align-items:center;gap:10px;min-height:56px;cursor:pointer}
-.pg-switch>.ic{color:var(--scr-gold);width:20px;height:20px}
-.pg-switch .t{flex:1;min-width:0}.pg-switch .t b{display:block;font-size:14.5px}.pg-switch .t span{display:block;font-size:12.5px;color:var(--scr-muted)}
-.pg-switch input{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:56px;height:32px;margin:0;border-radius:99px;background:#33476a;border:1px solid #4a6080;cursor:pointer;transition:background .15s}
-.pg-switch input::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#dfe7f3;transition:transform .15s}
-.pg-switch input:checked{background:var(--scr-gold2);border-color:var(--scr-gold)}.pg-switch input:checked::after{transform:translateX(24px);background:#fff}
+.pg-switch,.pg-vrow{display:flex;align-items:center;gap:10px;min-height:56px;cursor:pointer}
+.pg-switch>.ic,.pg-vrow>.ic{color:var(--scr-gold);width:20px;height:20px}
+.pg-switch .t,.pg-vrow .t{flex:1;min-width:0}.pg-switch .t b,.pg-vrow .t b{display:block;font-size:14.5px}.pg-switch .t span,.pg-vrow .t span{display:block;font-size:12.5px;color:var(--scr-muted)}
+.pg-switch input,.pg-vrow input{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:56px;height:32px;margin:0;border-radius:99px;background:#33476a;border:1px solid #4a6080;cursor:pointer;transition:background .15s}
+.pg-switch input::after,.pg-vrow input::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#dfe7f3;transition:transform .15s}
+.pg-switch input:checked,.pg-vrow input:checked{background:var(--scr-gold2);border-color:var(--scr-gold)}.pg-switch input:checked::after,.pg-vrow input:checked::after{transform:translateX(24px);background:#fff}
 /* Rodapé fixo com o botão principal */
 .pg-sticky{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;gap:6px;justify-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(#0a132200,#0a1322 22px)}
 .pg-sticky .btn-main{max-width:560px}
@@ -220,3 +220,9 @@ button.btn-danger{display:flex;align-items:center;justify-content:center;border-
 /* Duração: "Sem limite / até vencer" (de "Unbegrenzt / bis zum Sieg", it "Senza limite / fino alla vittoria")
    ganha a coluna mais larga; 15 e 30 precisam de pouco. */
 #homeEraPresets{grid-template-columns:minmax(0,.78fr) minmax(0,.78fr) minmax(0,1.4fr) minmax(0,1.04fr)}
+/* Como vencer (Personalizar): uma chave por tipo de vitória (a Supremacia substitui o antigo Clássica/Conquista). */
+.pg-vic{border-radius:12px;border:1px solid #23375a;background:var(--scr-ink)}
+.pg-vbody{padding:0 12px 10px}
+.pg-vrow{border-top:1px solid #1d2f4d}.pg-vbody>.pg-vrow:first-child{border-top:0}
+.pg-vrow.na{cursor:default}.pg-vrow.na .t b{color:var(--scr-muted)}.pg-vrow.na input{opacity:.45;cursor:not-allowed}
+.pg-always{margin-top:6px}

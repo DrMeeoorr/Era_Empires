@@ -13,6 +13,7 @@ import {onLanguageChange,t} from "../i18n/index.js";
 import {showDialog} from "./modal.js";
 import {recommendedRivalsFor} from "./mapshape.js";
 import {racesRuleForSize} from "./discovery.js";
+import {VICTORY_KEYS,VICTORY_SHORT,victoriesOfConfig,victoryAvailable,effectiveVictories} from "./victories.js";
 import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 
 // Ações da tela inicial: o jogo existente permanece intacto por trás da proposta.
@@ -20,6 +21,10 @@ import {closeSheet,openSheet,isSheetOpen} from "./sheets.js";
 const PLAYER_STYLE=["reference","military","aggressive","technologist","economist","adaptive"];
 const MAP_SIZE_INFO={1:["6 × 4",24],2:["8 × 6",48],3:["10 × 7",70],4:["12 × 8",96]};
 const mapSizeChoice=v=>MAP_SIZE_INFO[Number(v)]?Number(v):1;
+// Tipos de vitória escolhidos. A chave Supremacia é o único controle da supremacia (substitui Clássica/Conquista):
+// desligada grava supremacyEnabled=false, como o antigo modo Conquista; saves antigos de Conquista abrem com ela desligada.
+const victoriesOf=(v,sup)=>({...victoriesOfConfig({endgame:{victories:v}}),supremacy:sup!==false});
+const joinOu=l=>l.length<2?(l[0]||""):l.slice(0,-1).join(", ")+t("common.or")+l.at(-1);
 export function initHome(){
  const home=$("homeScreen");if(!home)return;const setup=$("setupScreen");
  // Abre a configuração com as escolhas atuais (também usada no fim da partida: "Mudar definições").
@@ -27,9 +32,9 @@ export function initHome(){
  // Escolhas atuais; durante/depois do tutorial, as que o jogador tinha antes de o começar.
  // Na versão do jogador, "Configurações" (de um save antigo) aparece como "Médio" na próxima partida.
  const shownDiff=d=>DIFFICULTIES[d]&&(DEV_MODE||d!=="config")?d:"medio";
- const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:p.unlimited===true?30:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY),randomStart:!!p.randomStart,map:p.mapType==="sorteado"?"sorteado":"padrao",mapSize:mapSizeChoice(p.mapSize),effects:p.terrainEffects===true,unlimited:p.unlimited===true};
+ const currentChoice=()=>{const p=tutorialPrevSetup();if(p)return {mode:p.mode==="fast"?"fast":"slow",ai:clamp(Number(p.ai)|0,1,MAX_AI),eras:p.unlimited===true?30:clamp(Number(p.eras)|0,10,150),conquest:p.supremacy===false,difficulty:shownDiff(DIFFICULTIES[p.difficulty]?p.difficulty:DEFAULT_DIFFICULTY),randomStart:!!p.randomStart,map:p.mapType==="sorteado"?"sorteado":"padrao",mapSize:mapSizeChoice(p.mapSize),victories:victoriesOf(p.victories,p.supremacy!==false),effects:p.terrainEffects===true,unlimited:p.unlimited===true};
   // Sem limite: o campo "Outra" mostra 30 (o teto de segurança, 100 eras no Original, não é uma duração escolhida).
-  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:unlimitedChoice?30:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,mapSize:mapSizeChoice(configApplied.map.mapSize),effects:terrainEffectsChoice,unlimited:unlimitedChoice}};
+  return {mode:gameMode,ai:configApplied.map.aiCount||1,eras:unlimitedChoice?30:configApplied.endgame.maxEras,conquest:configApplied.endgame.supremacyEnabled===false,difficulty:shownDiff(currentDifficulty),randomStart:!!configApplied.map.randomStart,map:mapType,mapSize:mapSizeChoice(configApplied.map.mapSize),victories:victoriesOf(configApplied.endgame.victories,configApplied.endgame.supremacyEnabled!==false),effects:terrainEffectsChoice,unlimited:unlimitedChoice}};
  const openSetup=(fromGame=false)=>{if(fromGame===true)choice=currentChoice();sync();setup.hidden=false;setup.scrollTop=0};window.openSetup=openSetup;
  let choice=currentChoice();
  const renderProfiles=()=>{if(!DEV_MODE)setOpponentChoices(opponentChoices.map(v=>v==="config"?"adaptive":v));const opts=visibleOpponentOptions().map(([v])=>v==="random"?[v,t("setup.opt.random"),t("setup.opt.random.desc")]:v==="config"?[v,t("setup.opt.config"),""]:[v,playerProfileName(v),t("style."+v+".desc")]);
@@ -43,12 +48,24 @@ export function initHome(){
   document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>{b.classList.toggle("selected",Number(b.dataset.ai)===choice.ai);b.setAttribute("aria-pressed",String(Number(b.dataset.ai)===choice.ai))});
   // Duração: 15 / 30 / Sem limite (teto de segurança por tamanho do mapa, decidido por pontos) / Outra (10–150).
   let preset=false;document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>{const on=b.dataset.eras==="unlimited"?!!choice.unlimited:!choice.unlimited&&Number(b.dataset.eras)===choice.eras;preset||=on;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});$("homeMaxEras").value=choice.eras;$("homeMaxEras").closest(".pg-other")?.classList.toggle("on",!preset);
-  for(const [id,on] of [["homeClassic",!choice.conquest],["homeConquest",!!choice.conquest]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
-  $("homeErasDesc").textContent=choice.unlimited?t(choice.conquest?"setup.eras.unl.conquest":"setup.eras.unl.classic"):t("setup.eras.limit",{n:String(choice.eras)});
+  // Textos da Duração e da Vitória a partir dos tipos de vitória ligados (os de sempre quando está tudo no padrão).
+  choice.conquest=!choice.victories.supremacy;
+  const vOn=k=>choice.victories[k]&&victoryAvailable(k,choice.mapSize),dom=vOn("dominion"),sup=vOn("supremacy");
+  const ends=[dom&&t("vic.end.dominion"),t("vic.end.elimination"),sup&&t("vic.end.supremacy"),vOn("discovery")&&t("vic.end.discovery"),vOn("wonder")&&t("vic.end.wonder")].filter(Boolean);
+  $("homeErasDesc").textContent=choice.unlimited?t("setup.eras.unl",{list:joinOu(ends)}):t("setup.eras.limit",{n:String(choice.eras)});
   // Vitória: ao chegar a 70% você escolhe vencer na hora ou continuar até o limite (Sem limite: vence na hora).
-  $("homeVictoryDesc").textContent=choice.unlimited
-   ?(choice.conquest?t("setup.victory.unl.conquest"):t("setup.victory.unl.classic",{era:String(UNLIMITED.supremacyFromEra)}))
-   :t(choice.conquest?"setup.victory.conquest":"setup.victory.classic");
+  {const l=[dom&&t("vic.l.dominion"),dom||sup||vOn("discovery")||vOn("wonder")?t("vic.end.elimination"):t("vic.l.eliminationRivals"),sup&&(choice.unlimited?t("vic.l.supremacyUnl",{era:String(UNLIMITED.supremacyFromEra)}):t("vic.l.supremacy")),vOn("discovery")&&t("vic.end.discovery"),vOn("wonder")&&t("vic.l.wonder")].filter(Boolean);
+   let txt=joinOu(l);txt=!sup&&l.length<=2?t("vic.only",{list:txt}):t("vic.all",{list:txt.charAt(0).toUpperCase()+txt.slice(1)});
+   if(dom)txt+=" "+t(choice.unlimited?"vic.domWinNow":"vic.domChoose");
+   if(!choice.unlimited)txt+=" "+t("vic.pointsAtLimit");
+   $("homeVictoryDesc").textContent=txt}
+  // Tipos de vitória: chaves (Descoberta e Maravilha só nos mapas 2×–4×), linha resumida e aviso quando nada sobra.
+  document.querySelectorAll("#victoryTypes [data-victory]").forEach(el=>{const k=el.dataset.victory,av=victoryAvailable(k,choice.mapSize);
+   el.checked=!!choice.victories[k]&&av;el.disabled=!av;el.closest(".pg-vrow")?.classList.toggle("na",!av);
+   const txt=document.querySelector(`[data-vtxt="${k}"]`);if(txt)txt.textContent=t(av?"setup.vtxt."+k:"setup.vtxt.bigOnly")});
+  {const eff=effectiveVictories(choice.victories,choice.mapSize);
+   $("victoryNoneTip").hidden=eff.length>0}
+  const offs=VICTORY_KEYS.filter(k=>victoryAvailable(k,choice.mapSize)&&!choice.victories[k]).map(k=>t("setup.sum.without",{name:t("vic.short."+k)}));
   for(const [id,on] of [["mapFixed",choice.map!=="sorteado"],["mapRandom",choice.map==="sorteado"]]){$(id).classList.toggle("selected",on);$(id).setAttribute("aria-pressed",String(on))}
   $("mapDesc").textContent=t(choice.map==="sorteado"?"setup.map.random.desc":"setup.map.fixed.desc");
   document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>{const on=Number(b.dataset.mapSize)===choice.mapSize;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
@@ -70,9 +87,9 @@ export function initHome(){
   const erasTxt=choice.unlimited?t("setup.sum.unlimitedLower"):t("setup.sum.eras",{n:String(choice.eras)});
   const extras=[choice.randomStart&&t("setup.sum.randomStart"),choice.mapSize>1&&t("setup.sum.mapSize",{n:String(choice.mapSize)}),choice.map==="sorteado"&&t("setup.sum.mapRandom"),choice.effects&&t("setup.sum.effects")].filter(Boolean);
   const pace=t(choice.mode==="fast"?"setup.sum.paceFast":"setup.sum.paceNormal");
-  $("customizeSummary").textContent=[choice.unlimited?t("setup.sum.unlimited"):erasTxt,pace,t(choice.conquest?"setup.sum.victoryConquest":"setup.sum.victoryClassic"),...extras].join(" · ");
+  $("customizeSummary").textContent=[choice.unlimited?t("setup.sum.unlimited"):erasTxt,pace,...offs,...extras].join(" · ");
   const stylesTxt=uniq.length===1?(choice.ai===1?uniq[0]:(styleKeys.every(v=>v==="random")?t("setup.sum.randomPlural"):uniq[0])):t("setup.sum.styleList",{list:styles.join(", ")});
-  $("setupSummary").innerHTML=[t("setup.sum.rivals",{rivals:rivalsTxt(choice.ai),styles:stylesTxt}),`<strong>${DIFFICULTIES[choice.difficulty]?diffName(choice.difficulty):""}</strong>`,erasTxt,choice.conquest&&t("setup.sum.conquest"),...extras,pace].filter(Boolean).join(" · ");
+  $("setupSummary").innerHTML=[t("setup.sum.rivals",{rivals:rivalsTxt(choice.ai),styles:stylesTxt}),`<strong>${DIFFICULTIES[choice.difficulty]?diffName(choice.difficulty):""}</strong>`,erasTxt,...offs,...extras,pace].filter(Boolean).join(" · ");
   // Com partida salva: "Continuar · Era N" é o botão principal e "Nova partida" fica como secundário.
   const saved=inProgress(),cont=$("homeContinue"),start=$("homeStart");
   cont.classList.toggle("hidden",!saved);
@@ -89,13 +106,14 @@ export function initHome(){
  $("modeSlow").onclick=()=>{choice.mode="slow";sync()};$("modeFast").onclick=()=>{choice.mode="fast";sync()};
  document.querySelectorAll("#homeOpponents [data-ai]").forEach(b=>b.onclick=()=>{choice.ai=Number(b.dataset.ai);sync()});
  document.querySelectorAll("#homeEraPresets [data-eras]").forEach(b=>b.onclick=()=>{if(b.dataset.eras==="unlimited")choice.unlimited=true;else{choice.unlimited=false;choice.eras=Number(b.dataset.eras)}sync()});
- $("homeConquest").onclick=()=>{choice.conquest=true;sync()};$("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};$("homeClassic").onclick=()=>{choice.conquest=false;sync()};
+ document.querySelectorAll("#victoryTypes [data-victory]").forEach(el=>el.onchange=()=>{const k=el.dataset.victory;choice.victories[k]=el.checked;sync()});
+ $("homeRandomStart").onchange=()=>{choice.randomStart=$("homeRandomStart").checked;sync()};
  $("mapFixed").onclick=()=>{choice.map="padrao";sync()};$("mapRandom").onclick=()=>{choice.map="sorteado";sync()};
  document.querySelectorAll("#homeMapSize [data-map-size]").forEach(b=>b.onclick=()=>{choice.mapSize=mapSizeChoice(b.dataset.mapSize);sync()});
  if($("mapSizeUseRivals"))$("mapSizeUseRivals").onclick=()=>{choice.ai=clamp(Number($("mapSizeUseRivals").dataset.ai)|0,1,MAX_AI);sync();$("homeMapSize").querySelector(".selected")?.focus()};
  $("terrVisual").onclick=()=>{choice.effects=false;sync()};$("terrEffects").onclick=()=>{choice.effects=true;sync()};
  $("homeMaxEras").onchange=()=>{const v=Math.round(Number($("homeMaxEras").value));choice.eras=Number.isFinite(v)?clamp(v,10,150):30;choice.unlimited=false;sync()};
- const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.unlimited?UNLIMITED.maxEras:choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.map.randomStart=!!choice.randomStart;configApplied.map.mapSize=choice.mapSize;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setUnlimitedChoice(!!choice.unlimited);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
+ const begin=()=>{restoreSetupAfterTutorial();setGameMode(choice.mode);setCurrentDifficulty(choice.difficulty);applyDifficulty(choice.difficulty);configApplied.map.aiCount=choice.ai;configApplied.endgame.maxEras=choice.unlimited?UNLIMITED.maxEras:choice.eras;configApplied.endgame.supremacyEnabled=!choice.conquest;configApplied.endgame.victories={...choice.victories,supremacy:!choice.conquest};configApplied.map.randomStart=!!choice.randomStart;configApplied.map.mapSize=choice.mapSize;setMapType(choice.map);setTerrainEffectsChoice(!!choice.effects);setUnlimitedChoice(!!choice.unlimited);setConfigApplied(normalizeConfig(configApplied));runHook("configChanged");startNewGame();home.hidden=true;setup.hidden=true;showView("game")};
  $("homeStart").onclick=()=>{$("setupCustomize").open=false;openSetup(false)};
  $("setupBack").onclick=()=>{setup.hidden=true;sync();home.hidden=false;$("homeStart").focus()};
  // Como jogar (tela própria, a mesma que o "?" abre por cima da partida): funciona como uma folha (sheets.js), por isso

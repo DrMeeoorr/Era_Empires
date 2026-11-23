@@ -25,7 +25,7 @@ before(async () => {
   [S, C, SV, M] = await Promise.all([load("app/session.js"), load("core/index.js"), load("app/save.js"), load("app/medals.js")]);
 });
 
-// Partida nova do jogador (como "Jogar"): eras, Conquista (sem supremacia) e Sem limite à escolha.
+// Partida nova do jogador (como "Jogar"): eras, Supremacia desligada (antigo Conquista) e Sem limite à escolha.
 function game({ eras = 30, conquest = false, unlimited = false } = {}) {
   const c = C.clone(C.DEFAULTS); c.endgame.maxEras = unlimited ? C.UNLIMITED.maxEras : eras; c.endgame.supremacyEnabled = !conquest;
   S.setConfigApplied(C.normalizeConfig(c)); S.setCurrentDifficulty("medio"); S.applyDifficulty("medio"); S.setUnlimitedChoice(unlimited);
@@ -270,12 +270,12 @@ test("Pixel 7: Personalizar → Duração \"Sem limite\" (no lugar de 50): texto
   assert.equal(await b.getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("#homeErasDesc").innerText(), "Termina por domínio, eliminação ou supremacia.");
   assert.equal(await page.locator("#homeMaxEras").inputValue(), "30", "o teto de 100 eras não é a duração escolhida em Outra");
-  assert.match(await page.locator("#customizeSummary").innerText(), /^Sem limite · ritmo normal · vitória clássica$/);
+  assert.match(await page.locator("#customizeSummary").innerText(), /^Sem limite · ritmo normal$/);
   assert.match(await page.locator("#setupSummary").innerText(), /Médio · sem limite · ritmo normal/);
   assert.match(await page.locator("#homeVictoryDesc").innerText(), /a partir da era 15\)\. Ao dominar o mapa, você vence na hora\./);
-  await page.locator("#homeConquest").click();
+  await page.locator('[data-vrow="supremacy"]').click();   // Supremacia desligada (antigo modo Conquista)
   assert.equal(await page.locator("#homeErasDesc").innerText(), "Termina por domínio ou eliminação.");
-  await page.locator("#homeClassic").click();
+  await page.locator('[data-vrow="supremacy"]').click();
   // "Outra" continua (10–150) e desmarca o Sem limite.
   await page.locator("#homeMaxEras").fill("50"); await page.locator("#homeMaxEras").press("Tab");
   assert.equal(await b.getAttribute("aria-pressed"), "false");

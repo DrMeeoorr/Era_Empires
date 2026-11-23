@@ -16,6 +16,7 @@ import {isSheetOpen,closeSheet} from "./sheets.js";
 import {civLabel,profileLabel,civSymHtml,civDisplayName,diffName,engineText,resultSentence} from "./labels.js";
 import {resultMedalsHtml} from "./medals.js";
 import {unlimitedCapFor} from "./mapshape.js";
+import {victoryOn,applyVictoryVisibility,VICTORY_NAMES} from "./victories.js";
 import {fillGdRules,discoveryPanelHtml,wonderPanelHtml,racePlayerPoints} from "./discovery.js";
 
 // Lista "a e b" no idioma (end.and).
@@ -43,22 +44,28 @@ export function renderNotifications(){const events=state.log.filter(x=>/ataque|c
 /* ── Condições de vitória e fim de partida ── */
 export function renderVictory(){
  // Regras completas (Como jogar): o teto do Sem limite desta partida (depende do tamanho do mapa).
- fillGdRules();
+ fillGdRules();applyVictoryVisibility();
  document.querySelectorAll("[data-unl-cap]").forEach(el=>{el.textContent=String(state?.unlimited?state.maxEras:unlimitedCapFor(mapSizeOf(state)))});
  const s=state,cfg=configApplied,g=cfg.endgame;
  const last=s.timeline.at(-1),min=territorialMinimum(territoryBase(s),g.territoryPct),left=Math.max(0,s.maxEras-s.era+(s.pending?1:0));
  $("victoryPill").textContent=s.result?t("vic.ended"):s.unlimited?t("setup.sum.unlimited"):left===1?t("vic.lastEra"):t("vic.erasLeft",{n:String(left),count:left});
  const bar=(v,max,c)=>`<div class="bar" style="margin:3px 0 8px"><span style="width:${clamp(100*v/Math.max(1e-9,max),0,100)}%;background:${cssColor(c)}"></span></div>`;
- const terr=s.civs.map(c=>{const nT=countTerritories(s,c.id);return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${c.active?"":` <span class="red">· ${t("vic.eliminated")}</span>`}</span><strong>${nT} / ${min}</strong></div>${bar(nT,min,c.chartColor)}`}).join("");
+ const domOn=victoryOn("dominion",s),supOn=victoryOn("supremacy",s),base=territoryBase(s);
+ const terr=s.civs.map(c=>{const nT=countTerritories(s,c.id),elim=c.active?"":` <span class="red">· ${t("vic.eliminated")}</span>`;if(!domOn)return `<div class="row between small"><span>${civLabel(c)}${elim}</span><strong>${nT}</strong></div>${bar(nT,base,c.chartColor)}`;return `<div class="row between small"><span>${civLabel(c)}${c.id!=="player"?` <span class="muted">· ${escapeHtml(profileLabel(c))}</span>`:""}${elim}</span><strong>${nT} / ${min}</strong></div>${bar(nT,min,c.chartColor)}`}).join("");
  const sup=s.supremacy||{},row=id=>last?.civs.find(r=>r.id===id),ices=s.civs.filter(c=>c.active).map(c=>({c,ice:row(c.id)?.ice})).sort((a,b)=>(b.ice??-1)-(a.ice??-1));
  const statusTxt=sup.status==="notApplicable"?"—":sup.status==="gapTooSmall"?t("sup.gapTooSmall",{pct:fmt(100*g.supremacyRelative,0)}):sup.status==="notYet"?t("sup.notYet",{era:String(supremacyMinEra(s,cfg)),max:String(Math.floor(g.supremacyMaxNeutralShare*territoryBase(s)+1e-9)),now:String(countTerritories(s,"neutral"))}):["off","none","suspended","tiedLeadership","belowMinimum","counting"].includes(sup.status)?t("sup."+sup.status):"";
  const iceRows=ices.map(({c,ice})=>`<div class="row between small"><span>${civLabel(c)}${sup.leader===c.id?` <span class="gold">· ${t("sup.leader")}</span>`:""}</span><strong>${ice==null?"—":fmt(ice,2)}</strong></div>`).join("");
  // Domínio com escolha: o que acontece ao chegar a 70% (e, se o jogador decidiu continuar, o que falta para vencer no fim).
  const mineT=countTerritories(s,"player"),holding=!s.result&&!s.unlimited&&s.dominion?.declined&&mineT>=min;
  const domTxt=s.unlimited||!s.dominion?t("vic.domNow"):holding?t("vic.domHolding",{min:String(min),era:String(s.maxEras)}):t("vic.domChoice");
- $("victoryPanel").innerHTML=`<h3>${t("vic.majority",{min:String(min),total:String(territoryBase(s))})}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>${terr}${discoveryPanelHtml()}${wonderPanelHtml()}
- <h3>${t("vic.supTitle",{n:String(g.supremacyEras)})}</h3>${iceRows||`<div class="small muted">${t("vic.supLater")}</div>`}
- <div class="small" style="margin-top:6px">${t("vic.streak")} <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?t("civ.youObj"):escapeHtml(civDisplayName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>
+ // Tipos de vitória desligados nesta partida: o domínio vira só a contagem de regiões; a supremacia some (também nos
+ // saves antigos do modo Conquista, que tinham supremacyEnabled=false).
+ const offList=["dominion","supremacy","discovery","wonder"].filter(k=>(k==="discovery"||k==="wonder")?(s.mapSize>1&&!victoryOn(k,s)):!victoryOn(k,s));
+ const offTxt=offList.length?`<div class="small muted vic-off" style="margin:0 0 6px">${t("vic.offList",{list:offList.map(k=>t("vic.name."+k)).join(", ")})}</div>`:"";
+ const supHide=!supOn;
+ $("victoryPanel").innerHTML=offTxt+(domOn?`<h3>${t("vic.majority",{min:String(min),total:String(territoryBase(s))})}</h3><div class="small muted" id="dominionRule" style="margin:-2px 0 6px">${domTxt}</div>`:`<h3>${t("vic.regions")}</h3>`)+`${terr}${discoveryPanelHtml()}${wonderPanelHtml()}
+ ${supHide?"":`<h3>${t("vic.supTitle",{n:String(g.supremacyEras)})}</h3>${iceRows||`<div class="small muted">${t("vic.supLater")}</div>`}
+ <div class="small" style="margin-top:6px">${t("vic.streak")} <strong class="gold">${sup.streak||0} / ${g.supremacyEras}</strong>${sup.leader?` (${sup.leader==="player"?t("civ.youObj"):escapeHtml(civDisplayName(getCiv(s,sup.leader)))})`:""}. <span class="muted">${statusTxt}</span></div>`}
  <h3>${s.unlimited?t("vic.scoreTitleUnl",{n:String(s.maxEras)}):t("vic.scoreTitle",{n:String(s.maxEras)})}</h3><div class="small muted">${s.unlimited?t("vic.scoreUnl",{n:String(s.maxEras)}):t("vic.scoreLimit")} ${t("vic.scoreWeights",{pct:fmt(100*g.scoreWTerritory,0)})}</div>${(()=>{const lv=liveScores();if(!lv)return "";const mx=Math.max(...lv.map(x=>x.score));return `<div class="small muted" style="margin:6px 0 2px">${t("vic.ifNow")}</div>`+lv.map((x,i)=>`<div class="row between small"><span>${x.civ?civLabel(x.civ):escapeHtml(x.name)}${i===0?` <span class="gold">· ${ord(1)}</span>`:""}</span><strong>${t("vic.pts",{n:String(PTS(x.score))})}</strong></div>${bar(x.score,mx,x.civ?.chartColor||"#888")}`).join("")})()}`;
  renderResult();
 }

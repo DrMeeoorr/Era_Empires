@@ -1,5 +1,6 @@
 // Fim de partida: maioria territorial, eliminação, supremacia (ICE), pontuação final e descrição do resultado.
 import {countTerritories} from "./map.js";
+import {normVictories} from "./config.js";
 import {DEFAULT_REFERENCES,refAt} from "./references.js";
 import {addLog,getCiv} from "./state.js";
 import {clamp,clone} from "./util.js";
@@ -51,6 +52,23 @@ export const wonderMinRegions=s=>wonderOf(s)?.minRegions??null;
 export function wonderPoints(s,civ){const g=wonderOf(s);return g&&civ?Math.max(0,(civ.wonderInvested||0)*g.perGold):0}
 export function wonderProgress(s){const g=wonderOf(s);if(!g)return [];
  return s.civs.filter(c=>c.active).map(c=>{const p=wonderPoints(s,c),r=countTerritories(s,c.id);return {id:c.id,progress:p,goal:g.goal,share:Math.min(1,p/g.goal),regions:r,minRegions:g.minRegions,regionsOk:r>=g.minRegions,reached:p>=g.goal&&r>=g.minRegions}})}
+/* ── Tipos de vitória da partida ── */
+// Escolha gravada na partida (sem o campo: tudo ligado). A Grande Descoberta e a Maravilha desligadas nem são criadas.
+export const victoriesOf=s=>normVictories(s?.victories);
+export const VICTORY_TYPES=Object.freeze([
+ Object.freeze({id:"dominion",name:"Domínio do mapa",optional:true,minMapSize:1}),
+ Object.freeze({id:"supremacy",name:"Supremacia",optional:true,minMapSize:1}),
+ Object.freeze({id:"discovery",name:"Grande Descoberta",optional:true,minMapSize:2}),
+ Object.freeze({id:"wonder",name:"Maravilha da Humanidade",optional:true,minMapSize:2}),
+ Object.freeze({id:"elimination",name:"Eliminação dos rivais",optional:false,minMapSize:1}),
+ Object.freeze({id:"score",name:"Pontos no fim",optional:false,minMapSize:1}),
+]);
+// Lista para a tela de configuração: {id, name, optional, available} (available: existe neste tamanho de mapa).
+export function victoryTypes(mapSize=1){const k=[1,2,3,4].includes(Number(mapSize))?Number(mapSize):1;return VICTORY_TYPES.map(v=>({id:v.id,name:v.name,optional:v.optional,available:k>=v.minMapSize}))}
+// Ids das vitórias que podem acontecer nesta partida (cfg opcional: o modo Conquista desliga a supremacia).
+export function activeVictories(s,cfg){const v=victoriesOf(s),out=[];
+ if(v.dominion)out.push("dominion");if(v.supremacy&&cfg?.endgame?.supremacyEnabled!==false)out.push("supremacy");
+ if(greatDiscoveryOf(s))out.push("discovery");if(wonderOf(s))out.push("wonder");out.push("elimination","score");return out}
 export const unlimitedMaxErasOf=s=>unlimitedMaxEras(s?.mapSize);
 export function supremacyMinEra(s,cfg){return s?.unlimited?UNLIMITED.supremacyFromEra:Math.ceil((cfg.endgame.supremacyMinEraShare||0)*s.maxEras)}
 /* Domínio com escolha (21/11/2026): só nas partidas do jogador humano (state.dominion, criado por app/session.js;
@@ -132,6 +150,8 @@ export function evaluateEndOfEra(s,cfg,era,entry,apply=true){
   if(s.civs.length>1&&active.length===1)add(active[0].id,"elimination");
   // 2c) Maioria territorial.
   out.territorial=territorialCheck(s,cfg,active);
+  // Domínio desligado nesta partida (state.victories): ninguém vence por domínio nem há a pergunta do domínio.
+  const vic=victoriesOf(s);if(!vic.dominion)out.territorial.winners=[];
   const dom=apply&&s.dominion&&typeof s.dominion==="object"&&getCiv(s,"player")?.controller!=="ai"?s.dominion:null,playerDom=out.territorial.winners.includes("player");
   if(dom&&!playerDom)dom.declined=false;   // caiu abaixo de 70%: se voltar a subir, pergunta de novo
   const choose=!!dom&&playerDom&&!s.unlimited&&era<s.maxEras;   // o domínio do jogador espera pela escolha
@@ -141,7 +161,7 @@ export function evaluateEndOfEra(s,cfg,era,entry,apply=true){
   // quando restam poucos territórios livres (neutros). Fora disso: "notYet", sequência a zero.
   const neutralShare=countTerritories(s,"neutral")/territoryBase(s),minEra=supremacyMinEra(s,cfg);
   // Modo Conquista: supremacia desligada; só a maioria territorial, a eliminação ou a pontuação na última era decidem.
-  out.supremacy=g.supremacyEnabled===false?{leader:null,streak:0,status:"off",achieved:false}:(era<minEra||neutralShare>(g.supremacyMaxNeutralShare??1)+1e-12)?{leader:null,streak:0,status:"notYet",achieved:false,minEra,neutralShare}:evaluateSupremacy(s.supremacy,ices,era,cfg);
+  out.supremacy=g.supremacyEnabled===false||!vic.supremacy?{leader:null,streak:0,status:"off",achieved:false}:(era<minEra||neutralShare>(g.supremacyMaxNeutralShare??1)+1e-12)?{leader:null,streak:0,status:"notYet",achieved:false,minEra,neutralShare}:evaluateSupremacy(s.supremacy,ices,era,cfg);
   if(out.supremacy.achieved)add(out.supremacy.leader,"supremacy");
   // 2e) Grande Descoberta (só com state.greatDiscovery): pontos de Ciência próprios no fim desta era.
   if(wonderOf(s))for(const c of active){if(wonderPoints(s,c)>=s.wonder.goal&&countTerritories(s,c.id)>=s.wonder.minRegions)add(c.id,"wonder")}

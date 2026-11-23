@@ -372,3 +372,20 @@ Nenhuma regra, número ou IA mudou (impressões digitais **39190b06** / **5c97e2
 - pt-PT: "Classificação" (placar) e tratamento impessoal mantidos. Medalhas traduzidas pelo sentido.
 - Nome do jogo traduzido dentro do jogo e na loja (EMPIRES, IMPÉRIOS, IMPERI, IMPERIEN); **ícone do app: "Impérios"**.
 
+## 23/11/2026 — Tipos de vitória escolhidos pelo jogador (game-designer + mobile-ux) — aprovado
+- Contrato: **`config.endgame.victories = {dominion, supremacy, discovery, wonder}`** (booleanos; padrão tudo ligado).
+  **Desligáveis**: domínio (inclui a pergunta "Você domina o mapa!"), supremacia, Grande Descoberta e Maravilha (as duas
+  últimas só existem nos mapas 2×–4×). **Sempre ligados**: eliminação (último império) e pontos no limite de eras / teto
+  do Sem limite — toda partida termina. O modo Conquista continua a desligar a supremacia.
+- Gravado na partida (`state.victories`) **só quando algo está desligado**: Original e saves antigos iguais
+  (impressões **39190b06** / **5c97e2c2**). Grande Descoberta/Maravilha desligadas não são criadas na partida (as IAs
+  não reforçam nem miram ninguém por elas). O tutorial usa o padrão e devolve a escolha do jogador.
+- Funções para a tela: `victoryTypes(mapSize)`, `activeVictories(state, cfg)`, `victoriesOf(state)`.
+- Medido com tudo desligado (Sem limite, só IAs): termina sempre por eliminação, nenhuma no teto; Original 37 eras em
+  média no 1×1 / 43 com 3 rivais (mais longas 77 / 82); 4× 45 / 56 (68 / 101; teto 175). Mais longo que o padrão
+  (Original 29 / 36; 4× 35 / 41), mas aceitável. Só sem domínio: Original 1×1 37 eras (71% eliminação, 29% supremacia);
+  4× com 3 rivais 41 eras (Grande Descoberta 62%, supremacia 18%, Maravilha 12%).
+- **Atualização (23/11/2026, aprovado pelo usuário):** os botões **Clássica/Conquista** saíram de Personalizar. O campo
+  passou a se chamar "Como vencer" e as 4 chaves ficam sempre à vista; a chave **Supremacia** é o único controle.
+  Desligada, grava `supremacyEnabled=false` (igual ao antigo Conquista) e `victories.supremacy=false`. Configurações e
+  saves antigos em Conquista abrem com a chave desligada. As referências a Clássica/Conquista acima são históricas.

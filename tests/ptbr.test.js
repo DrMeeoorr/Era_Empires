@@ -20,7 +20,7 @@ const PT_PT = [
 ];
 // Nomes antigos que não podem aparecer ao jogador.
 const OLD_NAMES = [/\d u\./, /\bu\.$/m, /Poder militar/i, /pontos militares/i, /Infraestrutura/i, /\bTecnologia\b/i, /\bInfra\.(?=\s|$)/,
-  // Nomes aprovados em 20/11/2026: Lendário, Ritmo Normal/Rápido, vitória Clássica; e nada de textos de laboratório.
+  // Nomes aprovados em 20/11/2026: Lendário, Ritmo Normal/Rápido; e nada de textos de laboratório.
   /Hardcore/i, /\bModo (lento|rápido)\b/i, /\bClássico\b/, /\bMVP\b/, /Funciona offline/i, /sem instalação/i];
 
 function check(where, text, problems) {
@@ -55,12 +55,12 @@ test("pt-BR: telas principais do jogador sem palavras de pt-PT nem nomes antigos
     await page.locator(`#homeOpponents [data-ai="${n}"]`).click();
     check(`configurar partida (${n} rival${n === "1" ? "" : "es"})`, await bodyText(page), problems);
   }
-  await page.locator("#homeConquest").click();
+  await page.locator('[data-vrow="supremacy"]').click();
   for (const d of ["muitofacil", "facil", "medio", "dificil", "hardcore"]) {
     await page.locator(`#homeDifficulty [data-diff="${d}"]`).click();
     check(`configurar partida (${d})`, await bodyText(page), problems);
   }
-  await page.locator("#homeClassic").click();
+  await page.locator('[data-vrow="supremacy"]').click();
   await page.locator('#homeDifficulty [data-diff="medio"]').click();
   await page.locator('#homeOpponents [data-ai="1"]').click();
   await page.locator("#setupStart").click();

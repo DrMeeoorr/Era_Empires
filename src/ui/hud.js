@@ -10,6 +10,7 @@ import {fmt,escapeHtml,money,cssColor,ord} from "./format.js";
 import {civLabel,profileLabel,civDisplayName,diffName} from "./labels.js";
 import {t} from "../i18n/index.js";
 import {renderDiscoveryHud} from "./discovery.js";
+import {victoryOn,VICTORY_SHORT} from "./victories.js";
 
 /* ── Barra de recursos (topo) ── */
 // Números curtos para a barra: sem casas decimais a partir de 100.
@@ -25,15 +26,18 @@ export function renderMetrics(){
  $("statForce").innerHTML=`<span class="hud-ico force-ico" aria-hidden="true">⚔</span><span class="hud-v"><b>${fmt(me.military,1)}</b><span class="k">${t("hud.force")}</span></span>`;
  $("statForce").title=t("hud.forceTitle");
  renderDiscoveryHud();
- $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}<small>/${min}</small></b><span class="k">${t("hud.lands")}</span></span>`;
- $("statTerr").setAttribute("aria-label",t(mine>=min?"hud.landsAriaReached":"hud.landsAria",{mine:String(mine),min:String(min)}));
+ // Domínio desligado nesta partida: só a contagem (sem o mínimo para a maioria).
+ const domOn=victoryOn("dominion",s);
+ $("statTerr").innerHTML=`<span class="hud-ico terr-ico" aria-hidden="true">⚑</span><span class="hud-v"><b>${mine}${domOn?`<small>/${min}</small>`:""}</b><span class="k">${t("hud.lands")}</span></span>`;
+ $("statTerr").setAttribute("aria-label",domOn?t(mine>=min?"hud.landsAriaReached":"hud.landsAria",{mine:String(mine),min:String(min)}):t("hud.landsAriaNoDom",{mine:String(mine)}));
  const lv=liveScores(),pill=$("scorePill"),meS=lv?.find(x=>x.id==="player");
  if(!lv){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap none">—</span>`;pill.setAttribute("aria-label",t("hud.pillNone"))}
  else if(!meS){pill.innerHTML=`<span aria-hidden="true">🏆</span> <span class="gap down">${t("hud.out")}</span>`;pill.setAttribute("aria-label",t("hud.pillOut"))}
  else{const pos=lv.indexOf(meS)+1,lead=lv[0],d=pos===1?(lv[1]?PTS(meS.score)-PTS(lv[1].score):0):PTS(lead.score)-PTS(meS.score);
   pill.innerHTML=`<span aria-hidden="true">🏆</span> ${ord(pos)} <span class="gap ${pos===1?"up":"down"}">${pos===1?"+":"−"}${d}</span>`;
   pill.setAttribute("aria-label",pos===1?(lv[1]?t("hud.pillLead",{pos:ord(pos),d:String(d),count:d}):t("hud.pillPos",{pos:ord(pos)})):t("hud.pillBehind",{pos:ord(pos),d:String(d),count:d,name:lead.name}))}
- $("matchInfo").textContent=[s.unlimited?t("setup.sum.unlimited"):t("setup.sum.eras",{n:String(s.maxEras)}),DIFFICULTIES[s.difficulty]?diffName(s.difficulty):diffName("medio"),t(s.mode==="fast"?"setup.sum.paceFast":"setup.sum.paceNormal"),g.supremacyEnabled===false&&t("setup.sum.conquest"),t("hud.matchLands",{mine:String(mine),free:String(countTerritories(s,"neutral"))})].filter(Boolean).join(" · ");
+ const offs=["dominion","supremacy","discovery","wonder"].filter(k=>((k==="discovery"||k==="wonder")?s.mapSize>1:true)&&!victoryOn(k,s)).map(k=>t("setup.sum.without",{name:t("vic.short."+k)}));
+ $("matchInfo").textContent=[s.unlimited?t("setup.sum.unlimited"):t("setup.sum.eras",{n:String(s.maxEras)}),DIFFICULTIES[s.difficulty]?diffName(s.difficulty):diffName("medio"),t(s.mode==="fast"?"setup.sum.paceFast":"setup.sum.paceNormal"),...offs,t("hud.matchLands",{mine:String(mine),free:String(countTerritories(s,"neutral"))})].filter(Boolean).join(" · ");
  // Placar completo (folha "Placar e vitória"): posição, pontos, diferença para o líder e variação na última era.
  const strip=$("scoreStrip");
  if(!lv){strip.innerHTML=`<p class="muted small">${t("hud.scoreLater")}</p>`;return}
