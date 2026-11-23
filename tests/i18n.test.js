@@ -45,7 +45,9 @@ test("t(): marcadores, plural por idioma, reserva em pt-BR e chave sem texto", a
   // Chave que falta no inglês usa o pt-BR; chave que não existe devolve a própria chave e é anotada.
   await m.setLanguage("en", { persist: false });
   assert.equal(m.t("app.title"), "EMPIRES");
-  assert.equal(m.t("home.tagline"), "Uma era de cada vez");
+  m.DICTIONARIES["pt-BR"]["test.soPtBr"] = "Só em pt-BR";
+  assert.equal(m.t("test.soPtBr"), "Só em pt-BR", "chave que falta no inglês usa o pt-BR");
+  delete m.DICTIONARIES["pt-BR"]["test.soPtBr"];
   assert.equal(m.t("nao.existe.chave"), "nao.existe.chave");
   assert.ok(m.missingKeys.has("nao.existe.chave"));
   // Plural: categorias do Intl.PluralRules de cada idioma (o francês trata 0 como singular).
@@ -165,7 +167,7 @@ test("setLanguage grava a escolha no aparelho (fora do save), redesenha e não m
     const ok = await setLanguage("de");
     return { ok, events, renders, lang: getLanguage(), html: document.documentElement.lang, title: document.getElementById("homeTitle").textContent, back: document.getElementById("setupBack").getAttribute("aria-label") };
   });
-  assert.deepEqual(out, { ok: true, events: 1, renders: 1, lang: "de", html: "de", title: "IMPERIEN", back: "Voltar" });
+  assert.deepEqual(out, { ok: true, events: 1, renders: 1, lang: "de", html: "de", title: "IMPERIEN", back: "Zurück" });
   const after = await page.evaluate((k) => ({ state: JSON.stringify(state), save: localStorage.getItem(k) }), SAVE_KEY);
   assert.equal(after.state, before.state, "trocar o idioma mudou a partida");
   assert.equal(after.save, before.save, "trocar o idioma regravou o save");

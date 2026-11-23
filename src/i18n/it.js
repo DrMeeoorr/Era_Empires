@@ -197,7 +197,7 @@ export const DICT_IT={
  "race.halfTarget":"Chi supera la metà diventa il bersaglio dei rivali.",
  "race.passedHalf":"oltre la metà",
  "race.regionsOk":{one:"{n} regione (minimo {min})",other:"{n} regioni (minimo {min})"},
- "race.regionsLack":"{n} regioni su {min} · ne mancano {lack}",
+ "race.regionsLack":"{n} su {min} regioni · ne mancano {lack}",
  "race.meSub":"i rivali reagiranno: più Forza e attacchi contro di te",
  "race.rivalSub":"{pts} su {goal} punti di {area} · {regions}/{min} regioni",
  // ── Recursos ──

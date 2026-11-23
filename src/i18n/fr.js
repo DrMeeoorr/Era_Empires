@@ -197,7 +197,7 @@ export const DICT_FR={
  "race.halfTarget":"Celui qui dépasse la moitié devient la cible des rivaux.",
  "race.passedHalf":"a dépassé la moitié",
  "race.regionsOk":{one:"{n} région (minimum {min})",other:"{n} régions (minimum {min})"},
- "race.regionsLack":"{n} régions sur {min} · il en manque {lack}",
+ "race.regionsLack":"{n} sur {min} régions · il en manque {lack}",
  "race.meSub":"les rivaux vont réagir : plus de Force et d'attaques contre vous",
  "race.rivalSub":"{pts} sur {goal} points de {area} · {regions}/{min} régions",
  // ── Recursos ──
@@ -633,7 +633,7 @@ export const DICT_FR={
  "help.mil":"De la Force dès l'ère suivante. Inutilisée, elle défend et perd 20 % par ère.",
  "help.works":"De l'or pendant quelques ères : il augmente puis s'épuise. Défend vos régions.",
  "help.sci":"Commence après 2 ères et rapporte pour toujours. Rend les attaques moins chères.",
- "help.now":"maintenant",
+ "help.now":"départ",
  "help.eras":"ères →",
  "help.terrain":"Chaque région a un terrain. Dans Nouvelle partie → Personnaliser → Terrains, choisissez <b>Visuels</b> (règles habituelles) ou <b>Avec effets</b> (chaque terrain donne 2 avantages et 1 inconvénient).",
  "help.win":"Comment gagner",

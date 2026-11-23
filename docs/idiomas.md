@@ -75,7 +75,7 @@ tutorial, Como jogar, relatórios, medalhas, nomes mostrados das dificuldades/es
 | **"Você"** (o jogador ★) | **Traduzido**. | É um pronome, não um nome. |
 | **IMPÉRIOS** (nome do jogo) | **Traduzido**: EMPIRES (en, fr), IMPÉRIOS (pt-PT), IMPERI (it), IMPERIEN (de). | É uma palavra comum, não uma marca registrada; o jogador deve entender o nome na loja e na tela inicial. A Play Store aceita título por idioma na ficha da loja. A fonte Marcellus SC tem todos os caracteres. Em alemão, "Imperien" (plural de Imperium) é reconhecível e curto, e evita o ambíguo "Reiche" (= "os ricos"). *Ponto a confirmar antes da publicação*: o nome do app instalado (ícone) é único por pacote; se o usuário quiser um só nome de app, usar "Impérios" no ícone e o nome traduzido só dentro do jogo e na ficha da loja. |
 
-Nomes dos rivais (proposta; o tradutor revisa):
+Nomes dos rivais (revisado pelo tradutor em 23/11/2026; em uso nos dicionários):
 
 | pt-BR | en | pt-PT | it | de | fr |
 |-------|----|-------|----|----|----|
@@ -86,10 +86,11 @@ Nomes dos rivais (proposta; o tradutor revisa):
 | Turquesa ✚ | Turquoise | Turquesa | Turchese | Türkis | Turquoise |
 | Você ★ | You | Você | Tu | Du | Vous |
 
-Em pt-BR os rivais são masculinos ("o Rubro"); nos outros idiomas o tradutor escolhe o artigo/gênero (ex.: fr "le
-Carmin", de "Karmin" sem artigo, it "il Cremisi").
+Em pt-BR os rivais são masculinos ("o Rubro"); nos outros idiomas os nomes aparecem **sem artigo** e concordam no
+masculino ("Carmin a été éliminé", "Cremisi è stato eliminato", "Karmin wurde ausgelöscht"). Em pt-PT os nomes ficam
+iguais aos do pt-BR. O jogador como objeto da frase: en "you", it "te", de "dir", fr/pt "vous"/"você" (`civ.youObj`).
 
-## 6. Glossário-base (proposta — o tradutor revisa)
+## 6. Glossário (final — revisado pelo tradutor em 23/11/2026)
 
 Um termo = uma tradução, em todo o jogo. Maiúscula inicial quando é nome de recurso/modo, como no pt-BR.
 
@@ -141,6 +142,28 @@ Notas de escolha: en "Might" (curto, comum em jogos de estratégia) em vez de "S
 "Forschung" em vez de "Wissenschaft" (mais curto para botões e chips), "Forscher"/"Flexibel" para caber nas etiquetas
 de estilo; fr "Travaux" (como em "travaux publics") para Obras.
 
+| **Termos da interface (acrescentados na tradução)** | | | | | |
+| Terrenos (título, botão ⓘ) | Terrain | Terrenos | Terreni | Gelände | Terrains |
+| Força guardada | reserve Might | Força guardada | Forza di riserva | Stärke-Reserve | Force en réserve |
+| Placar | Scoreboard | Classificação | Classifica | Rangliste | Classement |
+| Conquista (modo de vitória) | Conquest | Conquista | Conquista | Eroberung | Conquête |
+| Eliminação | Elimination | Eliminação | Eliminazione | Auslöschung | Élimination |
+| Militar (área de investimento) | Military | Militar | Militare | Militär | Militaire |
+| Concluir era | End era | Concluir era | Concludi l'era | Ära beenden | Terminer l'ère |
+| Como jogar | How to play | Como jogar | Come si gioca | Spielanleitung | Comment jouer |
+| Personalizar | Customize | Personalizar | Personalizza | Anpassen | Personnaliser |
+| Mapa Padrão / Sorteado | Standard / Random | Padrão / Sorteado | Standard / Sorteggiata | Standard / Ausgelost | Standard / Au hasard |
+| Só visual / Com efeitos | Visual only / With effects | Só visual / Com efeitos | Solo visivi / Con effetti | Nur optisch / Mit Effekten | Visuels / Avec effets |
+| Planos: Equilibrado, Ataque, Economia, Ciência, Limpar | Balanced, Attack, Economy, Science, Clear | (= pt-BR) | Equilibrato, Attacco, Economia, Scienza, Pulisci | Ausgewogen, Angriff, Wirtschaft, Forschung, Leeren | Équilibré, Attaque, Économie, Science, Effacer |
+| saque | plunder | saque | bottino | Beute | butin / pillage |
+| Ordem (de ataque) | order | ordem | ordine | Befehl | ordre |
+| Medalhas | Medals | Medalhas | Medaglie | Medaillen | Médailles |
+| Tutorial | Tutorial | Tutorial | Tutorial | Tutorial | Tutoriel |
+
+Tratamento: en neutro; pt-PT "você"/impessoal ("Ainda tem…", "Toque numa…"); it "tu"; de "du"; fr "vous".
+Ordinais (`format.ordinal`, `ord()` em `src/ui/format.js`): pt "1.º" (fem. "1.ª"), en "1st/2nd/3rd", it "1º", de "1.",
+fr "1er/2e". Em fr usa-se espaço fino (`\u202f`) antes de `: ; ! ? %` e dentro de « ».
+
 ## 7. Como usar no código (`src/i18n/index.js`)
 
 - **Texto**: `t("home.play")`, com marcadores `t("common.rivals", {n: 3})` → "3 rivais". Nunca montar frases juntando
@@ -159,5 +182,32 @@ de estilo; fr "Travaux" (como em "travaux publics") para Obras.
   `tutorial.*`, `medals.*`, `help.*`, `terrain.*`, `format.*`, `settings.*`). O pt-BR é a fonte; os outros arquivos
   só têm chaves que existem no pt-BR e com os mesmos marcadores (verificado em `tests/i18n.test.js`).
 - **Chave esquecida**: `t()` devolve a própria chave e a anota em `missingKeys` (sem erro no console).
-- **Pendente para o tradutor**: campos de valor (`fmtInput`/`parseAmount`) ainda usam vírgula decimal em todos os
-  idiomas; em inglês "1,250" seria lido como 1,25. Ajustar junto com a tradução da tela de investimento.
+- **Campos de valor**: `fmtInput`/`parseAmount` (`src/ui/format.js`) usam o separador decimal do idioma (ponto em en,
+  vírgula nos outros); aceitam também a outra forma, e trocar o idioma a meio regrava os campos sem mudar o valor.
+- **Textos do motor**: `engineText()` (`src/ui/labels.js`) reconhece cada frase do motor (registo, recusas, resultado) e
+  monta-a com as chaves `log.*`, `refuse.*`, `result.*`, `reason.*`; em pt-BR continua a usar `uiText()`. Frase nova no
+  motor sem regra em `ENGINE_RULES` aparece em pt-BR (não quebra) — acrescentar a regra e as chaves.
+- **Nomes mostrados**: rivais por `civDisplayName()`/`rivalDisplayName()`, estilos por `playerProfileName()`,
+  dificuldades por `diffName()`, terrenos por `terrainName()`, medalhas por `medalName()`/`medalGoal()`.
+- **Plural com zero**: `{zero:"…", one:"…", other:"…"}` — "zero" vale para o número 0 em qualquer idioma (o Intl trata
+  0 como singular em pt-BR e fr).
+
+## 8. Dúvidas de tradução (para o usuário decidir)
+
+1. **Força → en "Might"** (glossário-base) — alternativa "Strength"/"Power". "Força guardada" ficou "reserve Might".
+2. **Obras → fr "Travaux"** e **de "Bauten"**: soam um pouco técnicos; alternativas fr "Ouvrages"/"Constructions",
+   de "Bauwerke". A "Maravilha" conta "Baupunkte"/"points de Travaux".
+3. **Ciência → de "Forschung"** (mais curto que "Wissenschaft"): o estilo "Científico" ficou "Forscher" (substantivo),
+   que no resumo aparece em maiúscula entre parênteses ("3 Rivalen (Forscher)").
+4. **Domínio × Supremacia em alemão**: "Vorherrschaft" (70% do mapa) e "Vormacht" (supremacia) são quase sinónimos
+   para um leitor alemão; alternativa: "Gebietsherrschaft" para o domínio.
+5. **Placar** em pt-PT ficou "Classificação" (em Portugal "placar" não se usa; "marcador" é de desporto).
+6. **"Você" em pt-PT**: mantido como nome do jogador no mapa (decisão de docs/idiomas.md), mas nas frases usei o
+   tratamento impessoal ("Domina o mapa!"). Alternativa: "Tu" no mapa.
+7. **Nome do jogo em it/de**: "IMPERI" / "IMPERIEN" conforme a decisão; confirmar antes da publicação (ícone).
+8. **Nomes das medalhas**: traduzidos pelo sentido (Muralha → Bulwark / Muraglia / Bollwerk / Rempart; Contra a maré →
+   Against the tide / Controcorrente / Gegen den Strom / À contre-courant). Confirmar se preferem nomes mais curtos.
+9. **Dicas dos terrenos** ("Campos abertos", "Charco e juncos"…) foram adaptadas, não traduzidas palavra a palavra.
+10. **Regiões com palavras portuguesas** (Musgo, Névoa, Pedral… e os 72 nomes dos mapas grandes) ficam iguais em todos
+    os idiomas, como decidido; para quem não fala português são só nomes. "Jaspe é montanha, Musgo é floresta" na
+    descrição do mapa ficou com os nomes originais.
