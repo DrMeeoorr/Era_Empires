@@ -365,3 +365,10 @@ Nenhuma regra, número ou IA mudou (impressões digitais **39190b06** / **5c97e2
   - Legenda do mapa: em telas estreitas (360 px), quando a legenda não cabe, "ⓘ Terrenos" vira só "ⓘ" (o nome continua
     no aria-label) e "Pode atacar" / "Angreifbar" / "Attaquable" aparece inteiro em todos os idiomas (antes ficava
     cortado também em pt-BR).
+
+## 23/11/2026 — Dúvidas de tradução (tradutor) — decididas
+- Força em inglês: **Might**. Obras: **fr "Ouvrages"**, **de "Bauwerke"** (em todo o jogo). Domínio em alemão:
+  **"Gebietsherrschaft"**; Supremacia continua **"Vormacht"**. de "Forscher" (estilo Científico) mantido.
+- pt-PT: "Classificação" (placar) e tratamento impessoal mantidos. Medalhas traduzidas pelo sentido.
+- Nome do jogo traduzido dentro do jogo e na loja (EMPIRES, IMPÉRIOS, IMPERI, IMPERIEN); **ícone do app: "Impérios"**.
+

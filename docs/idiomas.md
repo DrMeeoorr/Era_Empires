@@ -114,12 +114,12 @@ Um termo = uma tradução, em todo o jogo. Maiúscula inicial quando é nome de 
 |-------|----|-------|----|----|----|
 | Ouro | Gold | Ouro | Oro | Gold | Or |
 | Força | Might | Força | Forza | Stärke | Force |
-| Obras | Works | Obras | Opere | Bauten | Travaux |
+| Obras | Works | Obras | Opere | Bauwerke | Ouvrages |
 | Ciência | Science | Ciência | Scienza | Forschung | Science |
 | era | era | era | era | Ära | ère |
 | região | region | região | regione | Region | région |
 | rival / rivais | rival / rivals | rival / rivais | rivale / rivali | Rivale / Rivalen | rival / rivaux |
-| Domínio (vitória por 70% do mapa) | Domination | Domínio | Dominio | Vorherrschaft | Domination |
+| Domínio (vitória por 70% do mapa) | Domination | Domínio | Dominio | Gebietsherrschaft | Domination |
 | Supremacia | Supremacy | Supremacia | Supremazia | Vormacht | Suprématie |
 | Clássica (vitória) | Classic | Clássica | Classica | Klassisch | Classique |
 | Grande Descoberta | Great Discovery | Grande Descoberta | Grande Scoperta | Große Entdeckung | Grande Découverte |
@@ -156,7 +156,7 @@ Um termo = uma tradução, em todo o jogo. Maiúscula inicial quando é nome de 
 
 Notas de escolha: en "Might" (curto, comum em jogos de estratégia) em vez de "Strength"/"Military power"; de
 "Forschung" em vez de "Wissenschaft" (mais curto para botões e chips), "Forscher"/"Flexibel" para caber nas etiquetas
-de estilo; fr "Travaux" (como em "travaux publics") para Obras.
+de estilo; fr "Ouvrages" e de "Bauwerke" para Obras (decisão do usuário, 23/11/2026).
 
 | **Termos da interface (acrescentados na tradução)** | | | | | |
 | Terrenos (título, botão ⓘ) | Terrain | Terrenos | Terreni | Gelände | Terrains |
@@ -208,22 +208,14 @@ fr "1er/2e". Em fr usa-se espaço fino (`\u202f`) antes de `: ; ! ? %` e dentro 
 - **Plural com zero**: `{zero:"…", one:"…", other:"…"}` — "zero" vale para o número 0 em qualquer idioma (o Intl trata
   0 como singular em pt-BR e fr).
 
-## 8. Dúvidas de tradução (para o usuário decidir)
+## 8. Dúvidas de tradução — resolvidas pelo usuário (23/11/2026)
 
-1. **Força → en "Might"** (glossário-base) — alternativa "Strength"/"Power". "Força guardada" ficou "reserve Might".
-2. **Obras → fr "Travaux"** e **de "Bauten"**: soam um pouco técnicos; alternativas fr "Ouvrages"/"Constructions",
-   de "Bauwerke". A "Maravilha" conta "Baupunkte"/"points de Travaux".
-3. **Ciência → de "Forschung"** (mais curto que "Wissenschaft"): o estilo "Científico" ficou "Forscher" (substantivo),
-   que no resumo aparece em maiúscula entre parênteses ("3 Rivalen (Forscher)").
-4. **Domínio × Supremacia em alemão**: "Vorherrschaft" (70% do mapa) e "Vormacht" (supremacia) são quase sinónimos
-   para um leitor alemão; alternativa: "Gebietsherrschaft" para o domínio.
-5. **Placar** em pt-PT ficou "Classificação" (em Portugal "placar" não se usa; "marcador" é de desporto).
-6. **"Você" em pt-PT**: mantido como nome do jogador no mapa (decisão de docs/idiomas.md), mas nas frases usei o
-   tratamento impessoal ("Domina o mapa!"). Alternativa: "Tu" no mapa.
-7. **Nome do jogo em it/de**: "IMPERI" / "IMPERIEN" conforme a decisão; confirmar antes da publicação (ícone).
-8. **Nomes das medalhas**: traduzidos pelo sentido (Muralha → Bulwark / Muraglia / Bollwerk / Rempart; Contra a maré →
-   Against the tide / Controcorrente / Gegen den Strom / À contre-courant). Confirmar se preferem nomes mais curtos.
-9. **Dicas dos terrenos** ("Campos abertos", "Charco e juncos"…) foram adaptadas, não traduzidas palavra a palavra.
-10. **Regiões com palavras portuguesas** (Musgo, Névoa, Pedral… e os 72 nomes dos mapas grandes) ficam iguais em todos
-    os idiomas, como decidido; para quem não fala português são só nomes. "Jaspe é montanha, Musgo é floresta" na
-    descrição do mapa ficou com os nomes originais.
+1. Força em inglês: **"Might"** (mantido; "Força guardada" = "reserve Might").
+2. Obras: **fr "Ouvrages"** (les ouvrages, masculino plural) e **de "Bauwerke"** (die Bauwerke; dativo "Bauwerken";
+   "Baupunkte" para os pontos da Maravilha) — em todo o jogo.
+3. de **"Forscher"** para o estilo Científico: mantido.
+4. Domínio em alemão: **"Gebietsherrschaft"** ("Sieg durch Gebietsherrschaft!"); Supremacia continua **"Vormacht"**.
+5. pt-PT: mantidos **"Classificação"** e o tratamento impessoal.
+6. Nome do jogo traduzido por idioma (EMPIRES, IMPÉRIOS, IMPERI, IMPERIEN); o **ícone do app fica "Impérios"**.
+7. Medalhas: mantida a tradução pelo sentido.
+8. Dicas dos terrenos adaptadas e regiões com o nome original: sem mudança.
