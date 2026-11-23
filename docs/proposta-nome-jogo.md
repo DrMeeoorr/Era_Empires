@@ -254,6 +254,40 @@ registrador antes de comprar. Não verifiquei preço nem se os ocupados estão �
 - Se escolher Eravia, vale **registrar logo** eravia.app, eravia.game e eravia.com.br (e talvez playeravia.com),
   antes de anunciar o nome. A compra é com você — não comprei nada.
 
+## 7. Alternativas parecidas com Eravia (pesquisadas em 23/11/2026)
+
+Objetivo: manter o som e o "Era-" de Eravia, mas achar um nome com **.com livre**. Testei cerca de 45 nomes no DNS
+público e no RDAP do .com, e pesquisei na web os que sobraram. Bases de marcas e lojas continuam não verificadas
+diretamente (bloqueadas): é preciso confirmar antes de decidir.
+
+### Melhores alternativas
+
+| Nome | Letras | Sentido / som | .com | Outras extensões | Conflitos achados | Nota |
+|---|---|---|---|---|---|---|
+| **Eravalia** | 8 | "Era" + "valia" (pt/es "valia/valía" = valor; it "valere"). Quase o mesmo som de Eravia, fácil em todos os idiomas. | **Livre** (RDAP) | .app livre (RDAP); .net, .org, .game, .games, .io, .gg, .com.br, .it, .de, .fr, .es, .eu provavelmente livres | Nenhum jogo, app ou empresa. Só se parece com **Ervália**, cidade de MG. | **4** |
+| **Eravantis** | 9 | "Era" + "avante/avanti" (seguir em frente), som épico parecido com "Atlântida/Atlantis". | **Livre** (RDAP) | Iguais às de Eravalia | Empresa americana **Eravant** (telecomunicações, outro ramo). Nenhum jogo. | **4** |
+| **Eravoria** | 8 | Lembra "era da vitória / Victoria". Forte e épico. | **Livre** (RDAP) | Iguais às de Eravalia | **Aevoria**, MMO de estratégia em tempo real no navegador (beta em 10/2026): mesmo gênero e som parecido → risco médio. | **3** |
+| Eravia (referência) | 6 | "Era" + "via" | Ocupado (agência finlandesa); .net registrado em 10/2026 | .app, .dev, .com.br, .fr livres | Agência web de outro ramo | 4 |
+
+### Descartados
+
+- **Eravon**: muito perto de **Eragon** (livros e filme famosos, e uma plataforma de jogos Web3 com esse nome).
+- **Eravel / Erevale**: perto de **Erevael**, RPG de fantasia na Steam.
+- **Lumera, Novera, Erova, Eralis, Erania**: .com e outras extensões ocupados; nomes comuns.
+- **Eralia, Eravis, Eravor, Erandor, Eravine, Eravara, Eravela, Eravya, Erivia, Eranis, Eravium, Erasta, Eraterra**: .com ocupado
+  (.app/.game livres). Sem conflito de jogo forte, mas não ganham de Eravia.
+- **Eraveth** ("th" difícil em pt/it/fr/es), **Eravessa** (lembra "travessa"), **Eravigo** (lembra Vigo, cidade), **Erandra**
+  (parece nome de pessoa, sem tema), **Eraviae** (difícil de ler): .com livre, mas fracos como nome.
+
+### Conclusão
+
+- **Eravalia** é a alternativa mais próxima de Eravia **com o .com livre**: mesmo som, sem conflito encontrado. Perde só no tamanho
+  (8 letras contra 6), mas ainda cabe no ícone.
+- **Eravantis** é a mais épica e também está livre; o nome é um pouco mais longo.
+- **Eravoria** soa muito bem, mas o Aevoria (mesmo gênero) é um risco.
+- Próximo passo: o usuário escolher entre **Eravia, Eravalia e Eravantis**; depois buscar à mão na Play Store, App Store e nas
+  bases de marcas (INPI, EUIPO, USPTO), e registrar os domínios antes de anunciar.
+
 ## Fontes (consultadas em 23/11/2026)
 
 - Lojas: [Empires Rise – Google Play](https://play.google.com/store/apps/details?id=com.oceanview.empiresrise&gl=US),
@@ -283,3 +317,6 @@ registrador antes de comprar. Não verifiquei preço nem se os ocupados estão �
   [AppGoblin – palavras "empire"](https://appgoblin.info/apps/com.ape.games.myempire/keywords),
   [AppGoblin – palavra "offline"](https://appgoblin.info/apps/com.gudong.games/keywords),
   [limite do nome no ícone – AppsFlyer](https://www.appsflyer.com/?p=251299).
+- Pesquisa de alternativas (23/11/2026): [Eragon (Aptos)](https://aptosfoundation.org/ecosystem/project/eragon),
+  [Erevael (Steam)](https://store.steampowered.com/app/5105940/), [Aevoria (ModDB)](https://www.moddb.com/games/aevoria),
+  [Eravant (CB Insights)](https://www.cbinsights.com/company/eravant), [Ervália (Wikipedia)](https://en.wikipedia.com/wiki/Erv%C3%A1lia).
