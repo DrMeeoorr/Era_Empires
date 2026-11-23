@@ -71,6 +71,8 @@ export function advantageEra(winnerIdx,series){let lastNotLead=0;series.forEach(
 const END_KINDS=["score","territorial","supremacy","elimination","discovery","wonder","both"];
 const END_TITLE=k=>END_KINDS.includes(k)?t("end.title."+k):null;
 const END_WHY=k=>END_KINDS.includes(k)?t("end.why."+k):"";
+// Vitórias que não dependem dos pontos (o subtítulo explica quando o vencedor não lidera os pontos).
+const NO_POINTS_KINDS=["territorial","supremacy","elimination"];
 const END_LOST=k=>["discovery","wonder","both"].includes(k)?n=>t("end.lost."+k,{name:n}):null;
 const EMBLEM={won:`<svg viewBox="0 0 84 96" aria-hidden="true"><defs><linearGradient id="resG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08f"/><stop offset="1" stop-color="#d9962a"/></linearGradient></defs><path d="M42 4 78 16v30c0 24-16 38-36 46C22 84 6 70 6 46V16Z" fill="#14213a" stroke="url(#resG)" stroke-width="4"/><path d="M20 58h44l-4-22-10 9-8-15-8 15-10-9Z" fill="url(#resG)"/><rect x="20" y="62" width="44" height="6" rx="2" fill="url(#resG)"/></svg>`,
  lost:`<svg viewBox="0 0 84 96" aria-hidden="true"><path d="M42 4 78 16v30c0 24-16 38-36 46C22 84 6 70 6 46V16Z" fill="#1a1d2b" stroke="#7d8aa3" stroke-width="4"/><path d="M44 14 36 40l12 6-10 24 4 12" fill="none" stroke="#ff9aa1" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
@@ -84,9 +86,13 @@ export function resultSummary(s=state){
  const other=pos===1?rows[1]:rows[0],gap=me!=null&&other?me-PTS(other.score):null;
  const winner=r.type==="victory"?getCiv(s,r.winners[0]):null;
  let title,sub;
- if(won){title=END_TITLE(why("player"))||t("end.victory");sub=(r.dominionKept?t("end.kept",{n:String(countTerritories(s,"player")),total:String(territoryBase(s))})+" ":"")+(pos?t("end.finished",{pos:ord(pos),n:String(rows.length)}):"")}
+ // Domínio, supremacia e eliminação vencem sem olhar os pontos: quando o vencedor não é o 1.º nos pontos (ou o
+ // jogador perde liderando os pontos), o subtítulo explica isso em vez de só dar a posição (que parecia contraditória).
+ const g=configApplied.endgame,noLead={pct:Math.round(100*(g.territoryPct??0.7)),n:g.supremacyEras??5};
+ if(won){title=END_TITLE(why("player"))||t("end.victory");const k=why("player"),explain=pos>1&&NO_POINTS_KINDS.includes(k);
+  sub=(r.dominionKept?t("end.kept",{n:String(countTerritories(s,"player")),total:String(territoryBase(s))})+" ":"")+(explain?t(r.dominionKept&&k==="territorial"?"end.winNoLead.kept":"end.winNoLead."+k,noLead):pos?t("end.finished",{pos:ord(pos),n:String(rows.length)}):"")}
  else if(drawn||(r.type==="draw")){title=t("end.draw");sub=r.allEliminated?t("end.allEliminated"):t("end.drawBetween",{list:joinAnd(r.winners.map(id=>id==="player"?t("civ.youObj"):escapeHtml(civDisplayName(getCiv(s,id)))))})}
- else{title=!P(s).active?t("end.eliminated"):winner&&END_LOST(why(winner.id))?END_LOST(why(winner.id))(escapeHtml(civDisplayName(winner))):t("end.defeat");sub=winner?t("end.winnerWon",{civ:civLabel(winner),why:END_WHY(why(winner.id))})+(pos?" "+t("end.youPlaced",{pos:ord(pos)}):""):""}
+ else{title=!P(s).active?t("end.eliminated"):winner&&END_LOST(why(winner.id))?END_LOST(why(winner.id))(escapeHtml(civDisplayName(winner))):t("end.defeat");sub=!winner?"":pos===1&&NO_POINTS_KINDS.includes(why(winner.id))?t("end.lostLead."+why(winner.id),{...noLead,civ:civLabel(winner)}):t("end.winnerWon",{civ:civLabel(winner),why:END_WHY(why(winner.id))})+(pos?" "+t("end.youPlaced",{pos:ord(pos)}):"")}
  const terr=countTerritories(s,"player"),wins=s.history.at(-1)?.attacksTotal?.playerWins??0;
  const tiles=[{v:`${terr}<small>/${territoryBase(s)}</small>`,k:t("end.tile.lands")},gap==null?{v:me==null?"—":fmt(me,0),k:t("end.tile.points")}:{v:(gap>=0?"+":"−")+fmt(Math.abs(gap),0),k:gap>=0?(pos===1?t("end.tile.ahead"):t("end.tile.points")):t("end.tile.toFirst")},{v:fmt(wins,0),k:t("end.tile.conquests",{count:wins})}];
  // Partida decidida pela Grande Descoberta ou pela Maravilha: o 3.º número vira os seus pontos dessa corrida.
