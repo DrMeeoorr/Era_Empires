@@ -1,6 +1,6 @@
 // Laboratório 3 (validação estratégica das IAs): comportamento esperado de cada perfil e diagnóstico.
 import {median,mean,profileName} from "./engine.js";
-import {fmt} from "../ui/format.js";
+import {fmtBR as fmt} from "../ui/format.js";
 
 /* ═══════════════ Laboratório 3: validação estratégica das IAs ═══════════════ */
 export let valState={results:null};

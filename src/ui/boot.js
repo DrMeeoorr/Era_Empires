@@ -13,10 +13,17 @@ import {fillTerrainLists} from "./map.js";
 import {initMedals} from "./medals.js";
 import {initTutorial} from "./tutorial.js";
 import {$} from "./dom.js";
+import {initLanguage,onLanguageChange} from "../i18n/index.js";
+import {state} from "../app/session.js";
+import {renderAll} from "./game.js";
 
 export async function boot({saveSlot="player",migrateOldSave=false,labs=null,debug=null}={}){
  if(debug)await debug();
  useSaveSlot(saveSlot);useMedalSlot(saveSlot);
+ // Idioma da interface (preferência do aparelho, fora do save): ?lang= › escolha gravada › idioma do aparelho › pt-BR.
+ // Lido antes de desenhar qualquer tela. Trocar o idioma (setLanguage) só redesenha: a partida não muda.
+ await initLanguage();
+ onLanguageChange(()=>{if(state)renderAll()});
  if(migrateOldSave)await migrateLegacySaveKey();
  initSheets();watchShortScreen();fillTerrainLists();
  await loadMedals();

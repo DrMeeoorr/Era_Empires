@@ -9,7 +9,7 @@ import {setValCancel,valState,valCancel,profileDiagnostics,PROFILE_EXPECTATIONS}
 import {csvDownload} from "../platform/files.js";
 import {svgLine,legendHtml} from "../ui/charts.js";
 import {$,setStatus} from "../ui/dom.js";
-import {fmt,escapeHtml} from "../ui/format.js";
+import {fmtBR as fmt,escapeHtml} from "../ui/format.js";
 
 export async function runValidation(){
  if(busy)return;const opts=readSimOpts("val");if(opts.civCount>mapTerritories(configApplied))throw Error("Mais civilizações do que territórios.");

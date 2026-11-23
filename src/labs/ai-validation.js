@@ -7,7 +7,7 @@ import {safeNum,clone,clamp} from "../core/util.js";
 import {profileExpectedWeights,pct,runAiControlProbe,aiProbe} from "./ai-checks.js";
 import {download} from "../platform/files.js";
 import {$,setStatus} from "../ui/dom.js";
-import {fmt} from "../ui/format.js";
+import {fmtBR as fmt} from "../ui/format.js";
 
 export let aiValidationResults=[];
 export async function runAiValidation(){

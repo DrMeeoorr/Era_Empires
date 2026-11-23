@@ -1,14 +1,19 @@
 // Formatação para o jogador (pt-BR: 1.234,5 · "de ouro"), texto seguro em HTML e conversão dos textos do motor.
 import {regionName} from "../core/names.js";
+import {formatNumber,t} from "../i18n/index.js";
 
 // Texto vindo do estado salvo ou de ficheiros importados (nomes, registo, cenários) entra no HTML sempre escapado.
 export const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 // Cores usadas em style=: só "#rgb"/"#rrggbb"/"#rrggbbaa"; qualquer outra coisa vira cinzento.
 export const cssColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:"#888888";
-export const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString("pt-BR",{maximumFractionDigits:d,minimumFractionDigits:0}):"—";
+// Números do jogador no formato do idioma escolhido (src/i18n): pt-BR 1.234,5 (igual ao de sempre), en 1,234.5...
+export const fmt=(n,d=1)=>formatNumber(n,d);
 // Ouro: "142,5 de ouro" em frases; "142,5 🪙" onde o espaço é curto (cartões, barra de baixo).
-export const money=n=>fmt(n,2)+" de ouro";
-export const goldShort=n=>fmt(n,2)+" 🪙";
+export const money=n=>t("format.gold",{n:fmt(n,2)});
+export const goldShort=n=>t("format.goldShort",{n:fmt(n,2)});
+// Laboratórios e ferramentas (?dev=1) não se traduzem: ficam sempre em pt-BR, qualquer que seja o idioma do jogador.
+export const fmtBR=(n,d=1)=>formatNumber(n,d,"pt-BR");
+export const moneyBR=n=>fmtBR(n,2)+" de ouro";
 // Exibição (pt-BR) dos textos guardados pelo motor (registo de eventos, motivos de recusa, resultado):
 // o texto guardado não muda — só a forma como aparece ao jogador. Números passam a 1.234,5;
 // "u." vira ouro, "pontos"/"poder" militar vira Força, infraestrutura → obras, tecnologia → ciência.

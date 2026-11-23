@@ -10,7 +10,7 @@
 // Versão do jogador. Endereços antigos com ?dev=1 abrem a versão de desenvolvimento (dev.html).
 (function(){const q=new URLSearchParams(location.search);if(q.get("dev")!=="1")return;q.delete("dev");window.__imperiosRedirect=true;const r=q.toString();location.replace("dev.html"+(r?"?"+r:"")+location.hash)})();
 </script>
-<title>Impérios</title>
+<title data-i18n="app.tabTitle">Impérios</title>
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/game.css">
 <link rel="stylesheet" href="styles/screens.css">
@@ -66,7 +66,7 @@
 <path d="M0 500L100 480 200 494 300 476 400 490V520H0Z" fill="#0f1e2e"/>
 
 </svg>
-      <header class="au-brand"><h1 class="brand-word" id="homeTitle">IMPÉRIOS</h1><p class="au-sub">Uma era de cada vez</p></header>
+      <header class="au-brand"><h1 class="brand-word" id="homeTitle" data-i18n="app.title">IMPÉRIOS</h1><p class="au-sub" data-i18n="home.tagline">Uma era de cada vez</p></header>
     </div>
     <nav class="au-acts" aria-label="Menu principal">
       <button type="button" class="btn-main hidden" id="homeContinue"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-two"><span id="homeContinueLabel">Continuar</span><small id="homeContinueMeta"></small></span></button>
@@ -81,7 +81,7 @@
 </section>
 
 <section class="home-screen pg-screen setup-screen" id="setupScreen" aria-labelledby="setupTitle" hidden>
-  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="setupBack" aria-label="Voltar"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="setupTitle">Nova partida</h1></div>
+  <div class="pg-bar"><button type="button" class="pg-iconbtn" id="setupBack" aria-label="Voltar" data-i18n-attr="aria-label:common.back"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button><h1 class="pg-h1" id="setupTitle">Nova partida</h1></div>
   <div class="pg-wrap">
     <div class="pg-card">
       <h2 class="pg-lab"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Dificuldade</h2>

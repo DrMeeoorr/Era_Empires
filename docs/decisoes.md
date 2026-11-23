@@ -332,3 +332,15 @@ e acabam, ele tem a menor Força e, quando vencia, era quase sempre pela Grande 
   1/3/5 rivais) — fica desligada.
 - **Pendências**: Construtor ainda abaixo de 35% no 1×1 do 2× (26%) e 14% no 4× com 3 rivais; domínio decide 76–82%
   dos 1×1; no 2× com 2 rivais o plano de Obras virou a melhor receita do jogador (reagir −9).
+
+## 23/11/2026 — Opções de idioma: regras e base técnica (game-designer) — aprovado aplicar
+- Idiomas: **pt-BR** (origem e reserva), **en**, **pt-PT**, **it**, **de**, **fr**. Regras completas e glossário-base em
+  `docs/idiomas.md`; dicionários em `src/i18n/` (o `tradutor` extrai e traduz os textos; o `mobile-ux` cria o seletor).
+- Idioma padrão: `?lang=xx` (testes, não grava) › escolha gravada no aparelho (`imperios-idioma`, fora do save da
+  partida) › idioma do aparelho (pt-PT → pt-PT; outros pt → pt-BR; en/it/de/fr pelas duas letras) › pt-BR.
+- Trocar de idioma (também no meio da partida) muda só a exibição: a partida, o save e a impressão digital das
+  simulações (`39190b06`) não mudam. Laboratórios (`?dev=1`), chaves internas e valores salvos não se traduzem.
+- Nomes próprios: **regiões iguais em todos os idiomas**; **rivais traduzidos como cores** (Crimson, Ochre, Indigo,
+  Violet, Turquoise…); **"Você" traduzido**; **IMPÉRIOS traduzido** — EMPIRES (en, fr), IMPÉRIOS (pt-PT), IMPERI (it),
+  IMPERIEN (de). A confirmar antes da publicação: se o nome do app no ícone fica único ("Impérios").
+- Números no formato de cada idioma (`Intl`); o pt-BR continua 1.234,5.

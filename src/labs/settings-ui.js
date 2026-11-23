@@ -9,7 +9,7 @@ import {addLog,P,newState} from "../core/state.js";
 import {clone,safeNum} from "../core/util.js";
 import {PARAM_GROUPS,paramInput,configEdited,setConfigEdited} from "./settings.js";
 import {$,setStatus} from "../ui/dom.js";
-import {money,fmt,escapeHtml} from "../ui/format.js";
+import {moneyBR as money,fmtBR as fmt,escapeHtml} from "../ui/format.js";
 import {renderAll} from "../ui/game.js";
 import {renderMetrics} from "../ui/hud.js";
 

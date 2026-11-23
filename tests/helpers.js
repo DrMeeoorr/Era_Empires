@@ -71,10 +71,13 @@ async function launch() {
  * opts.offerTutorial: false (padrão) marca o tutorial como já oferecido, para não abrir o convite.
  * opts.dev: true abre a versão de desenvolvimento (dev.html: laboratórios, testes internos, Exportar). Por padrão
  *   abre a versão do jogador (index.html), que é a publicada; nela não há runTests() nem os laboratórios.
+ * opts.query: acrescentado ao endereço (ex.: "?lang=en").
  * Devolve {context, page, errors}; `errors` acumula erros de consola e exceções da página.
  */
-async function openGame(browser, { contextOptions = {}, offerTutorial = false, dev = false } = {}) {
-  const context = await browser.newContext({ deviceScaleFactor: 1, ...contextOptions });
+async function openGame(browser, { contextOptions = {}, offerTutorial = false, dev = false, query = "" } = {}) {
+  // locale pt-BR: o jogo escolhe o idioma pelo aparelho (src/i18n) e a suíte verifica os textos em pt-BR.
+  // Os testes de idioma (tests/i18n.test.js) passam outro locale em contextOptions.
+  const context = await browser.newContext({ deviceScaleFactor: 1, locale: "pt-BR", ...contextOptions });
   if (!process.env.GAME_URL) await serveRepo(context);
   // O jogo é feito de módulos: as funções e o estado (state, runTests, newGame...) só ficam acessíveis como
   // variáveis globais quando os testes o pedem (ver src/app/debug.js).
@@ -93,7 +96,7 @@ async function openGame(browser, { contextOptions = {}, offerTutorial = false, d
   });
   page.on("pageerror", (e) => errors.push("exceção: " + (e.stack || e.message)));
   page.on("requestfailed", (r) => errors.push("pedido falhou: " + r.url()));
-  await page.goto(dev ? DEV_URL : GAME_URL);
+  await page.goto((dev ? DEV_URL : GAME_URL) + query);
   await page.waitForFunction(() => window.__imperiosReady === true && typeof state !== "undefined" && !!state);
   return { context, page, errors };
 }
