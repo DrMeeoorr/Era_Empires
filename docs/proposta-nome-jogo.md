@@ -318,5 +318,5 @@ diretamente (bloqueadas): é preciso confirmar antes de decidir.
   [AppGoblin – palavra "offline"](https://appgoblin.info/apps/com.gudong.games/keywords),
   [limite do nome no ícone – AppsFlyer](https://www.appsflyer.com/?p=251299).
 - Pesquisa de alternativas (23/11/2026): [Eragon (Aptos)](https://aptosfoundation.org/ecosystem/project/eragon),
-  [Erevael (Steam)](https://store.steampowered.com/app/5105940/), [Aevoria (ModDB)](https://www.moddb.com/games/aevoria),
+  Erevael (página na Steam, achada na busca; link exato não confirmado), [Aevoria (ModDB)](https://www.moddb.com/games/aevoria),
   [Eravant (CB Insights)](https://www.cbinsights.com/company/eravant), [Ervália (Wikipedia)](https://en.wikipedia.com/wiki/Erv%C3%A1lia).
